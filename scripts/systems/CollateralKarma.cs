@@ -19,8 +19,7 @@ namespace HeroArena
         private void OnEnvironmentDestroyed(Vector2 pos, float radius)
         {
             DestructionCount++;
-            int newThreat = DestructionCount / 10;
-            GameManager.Instance.SetThreatLevel(newThreat);
+            // Threat level escalation is handled centrally by GameManager
         }
 
         public override void _ExitTree()

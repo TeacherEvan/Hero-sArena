@@ -57,7 +57,11 @@ namespace HeroArena
             {
                 case PerkType.DamageUp: break; // Applied in hero weapon systems
                 case PerkType.SpeedUp: hero.MoveSpeed *= 1.1f; break;
-                case PerkType.MaxHealthUp: hero.MaxHealth *= 1.15f; break;
+                case PerkType.MaxHealthUp:
+                    float ratio = hero.CurrentHealth / hero.MaxHealth;
+                    hero.MaxHealth *= 1.15f;
+                    hero.SetCurrentHealth(hero.MaxHealth * ratio);
+                    break;
             }
         }
 

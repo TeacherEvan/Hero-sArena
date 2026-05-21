@@ -78,7 +78,9 @@ namespace HeroArena
             var cell = WorldToGrid(worldPos);
             if (cell.X < 0 || cell.X >= GRID_W || cell.Y < 0 || cell.Y >= GRID_H)
                 return Vector2.Zero;
-            byte dir = _readBuf[cell.Y * GRID_W + cell.X];
+            // Volatile.Read ensures we see the latest buffer after SwapBuffers
+            byte[] buf = System.Threading.Volatile.Read(ref _readBuf);
+            byte dir = buf[cell.Y * GRID_W + cell.X];
             return DirVectors[dir < DirVectors.Length ? dir : 0];
         }
 
@@ -162,10 +164,12 @@ namespace HeroArena
 
         private void SwapBuffers()
         {
-            // Atomic pointer swap (safe – main thread only reads, never writes)
-            var tmp = _readBuf;
-            _readBuf = _writeBuf;
-            _writeBuf = tmp;
+            // Use Volatile.Write to ensure the write buffer is fully visible to readers
+            // before _readBuf is updated. Reference assignments are atomic on all CLR
+            // platforms, but Volatile ensures ordering guarantees.
+            var tmp = _writeBuf;
+            System.Threading.Volatile.Write(ref _readBuf, tmp);
+            _writeBuf = _bufA == tmp ? _bufB : _bufA;
         }
     }
 }

@@ -18,6 +18,7 @@ namespace HeroArena
         private float _fireCooldown = 0f;
         private float _hyperDashTimer = 0f;
         private float _hyperDashCooldown = 0f;
+        private double _preHyperDashTimeScale = 1.0;
 
         protected override void OnReady()
         {
@@ -37,7 +38,7 @@ namespace HeroArena
                 _hyperDashTimer -= dt;
                 if (_hyperDashTimer <= 0f)
                 {
-                    Engine.TimeScale = 1.0;
+                    Engine.TimeScale = _preHyperDashTimeScale;
                     MoveSpeed = 260f;
                 }
             }
@@ -75,6 +76,7 @@ namespace HeroArena
         {
             _hyperDashTimer = HYPER_DASH_DURATION;
             _hyperDashCooldown = HYPER_DASH_COOLDOWN;
+            _preHyperDashTimeScale = Engine.TimeScale;
             Engine.TimeScale = 0.3;
             MoveSpeed = 260f * 3f;
             EventBus.Instance.EmitPowerupCollected("HyperDash");

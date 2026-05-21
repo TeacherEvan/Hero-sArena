@@ -56,7 +56,7 @@ namespace HeroArena
         {
             float dt = (float)delta;
             _lifetime += dt;
-            if (_lifetime >= MAX_LIFETIME) { OnHit(null); return; }
+            if (_lifetime >= MAX_LIFETIME) { Expire(); return; }
 
             GlobalPosition += Direction * Speed * dt;
         }
@@ -85,6 +85,12 @@ namespace HeroArena
         }
 
         private void OnHit(Node? _)
+        {
+            GameManager.Instance.PoolManager?.ReturnProjectile(this);
+        }
+
+        /// <summary>Expires a projectile that reached max lifetime without hitting anything.</summary>
+        private void Expire()
         {
             GameManager.Instance.PoolManager?.ReturnProjectile(this);
         }

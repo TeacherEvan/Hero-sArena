@@ -23,8 +23,9 @@ namespace HeroArena
         public override void _Process(double delta)
         {
             if (!_active) return;
-            // Use real (unscaled) delta to count down
-            _remaining -= (float)(delta / Engine.TimeScale);
+            // Use real (unscaled) delta to count down: guard against near-zero TimeScale
+            double safeScale = System.Math.Max(Engine.TimeScale, 1e-6);
+            _remaining -= (float)(delta / safeScale);
             if (_remaining <= 0f)
             {
                 Engine.TimeScale = _originalTimeScale;

@@ -67,7 +67,7 @@ namespace HeroArena
             float intensity = (WEIBULL_K / WEIBULL_LAMBDA)
                 * MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K - 1f)
                 * MathF.Exp(-MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K));
-            int count = MinWaveEnemies + (int)(intensity * IntensityScaleFactor * wave);
+            int count = MinWaveEnemies + (int)(intensity * IntensityScaleFactor);
             count = Mathf.Clamp(count, MinWaveEnemies, MAX_ENEMIES - GameManager.Instance.ActiveEnemyCount);
             return count;
         }

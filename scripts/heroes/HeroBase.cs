@@ -89,6 +89,9 @@ namespace HeroArena
             if (CurrentHealth <= 0f) Die();
         }
 
+        /// <summary>Directly sets current health, clamped between 0 and MaxHealth.</summary>
+        public void SetCurrentHealth(float value) => CurrentHealth = Mathf.Clamp(value, 0f, MaxHealth);
+
         protected virtual void Die()
         {
             GameManager.Instance.TriggerGameOver();

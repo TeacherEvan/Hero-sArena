@@ -31,6 +31,9 @@ namespace HeroArena
         private readonly int[] _activeDecalOrder = new int[MAX_DECALS];
         private int _activeDecalCount = 0;
 
+        // Tracks whether each decal index is currently checked-out (active in game world)
+        private readonly bool[] _isDecalActiveInPool = new bool[MAX_DECALS];
+
         public override void _Ready()
         {
             PreAllocateProjectiles();
@@ -96,15 +99,27 @@ namespace HeroArena
             }
             else
             {
-                // Evict oldest active decal using the circular order buffer
-                idx = _activeDecalOrder[_decalEvictHead];
-                _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
-                _decals[idx].Deactivate();
-                _activeDecalCount--;
+                // Evict the oldest *still-active* decal from the circular order buffer
+                idx = -1;
+                while (_activeDecalCount > 0 && idx < 0)
+                {
+                    int candidate = _activeDecalOrder[_decalEvictHead];
+                    _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
+                    _activeDecalCount--;
+                    if (_isDecalActiveInPool[candidate])
+                    {
+                        idx = candidate;
+                        _decals[idx].Deactivate();
+                        _isDecalActiveInPool[idx] = false;
+                    }
+                    // else: already returned via ReturnDecal; skip
+                }
+                if (idx < 0) return null; // pool exhausted (shouldn't happen with 10k)
             }
 
             var d = _decals[idx];
             d.Activate(pos, type, size, idx);
+            _isDecalActiveInPool[idx] = true;
 
             // Record this index at the tail of the circular order buffer
             int tail = (_decalEvictHead + _activeDecalCount) % MAX_DECALS;
@@ -116,7 +131,9 @@ namespace HeroArena
 
         public void ReturnDecal(DecalInstance d)
         {
+            if (!_isDecalActiveInPool[d.PoolIndex]) return; // already returned
             d.Deactivate();
+            _isDecalActiveInPool[d.PoolIndex] = false;
             _freeDecals[_freeDecalTop++] = d.PoolIndex;
         }
     }

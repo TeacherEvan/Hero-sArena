@@ -10,6 +10,7 @@ namespace HeroArena
         private const float BLOCK_REDUCTION = 0.90f;
         private ShielderState _aiState = ShielderState.Spawning;
         private float _bashCooldown = 0f;
+        private Vector2 _facingDir = Vector2.Right; // updated each AI tick
 
         protected override void OnSpawn()
         {
@@ -35,6 +36,9 @@ namespace HeroArena
                 : dist < 200f ? ShielderState.AdvanceGuarded
                 : ShielderState.Reorient;
 
+            // Keep facing direction updated toward the hero
+            _facingDir = (_hero.GlobalPosition - GlobalPosition).Normalized();
+
             if (_aiState == ShielderState.Bash && _bashCooldown <= 0f)
             {
                 _hero.TakeDamage(Damage, DamageType.Kinetic);
@@ -45,10 +49,11 @@ namespace HeroArena
         public override void TakeDamage(float amount, DamageType type = DamageType.Kinetic)
         {
             if (_hero == null) return;
-            // Check if damage comes from frontal arc (dot product > 0 means facing away = shield up)
+            // Block 90% of damage that arrives from the frontal (shielded) arc.
+            // The shielder's shield faces toward the hero; damage is frontal when the
+            // attack originates from roughly the same direction the shielder is facing.
             Vector2 toHero = (_hero.GlobalPosition - GlobalPosition).Normalized();
-            Vector2 facing = -Transform.X; // shield faces toward player
-            bool shieldBlocking = toHero.Dot(facing) > 0.5f;
+            bool shieldBlocking = toHero.Dot(_facingDir) > 0.5f;
             float reduced = shieldBlocking ? amount * (1f - BLOCK_REDUCTION) : amount;
             base.TakeDamage(reduced, type);
         }
