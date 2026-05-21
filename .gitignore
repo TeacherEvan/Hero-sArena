@@ -1,0 +1,37 @@
+# Godot
+.godot/
+*.import
+export.cfg
+export_presets.cfg
+.mono/
+
+# C# / .NET
+bin/
+obj/
+.vs/
+*.user
+*.suo
+*.userprefs
+*.pidb
+*.booproj
+*.svd
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Rider / JetBrains
+.idea/
+*.sln.iml
+
+# Visual Studio Code
+.vscode/
+
+# NuGet
+*.nupkg
+packages/

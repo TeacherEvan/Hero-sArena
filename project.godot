@@ -1,0 +1,43 @@
+; Engine configuration file.
+; It's best edited using the editor UI and not directly,
+; since the parameters that go here are not all documented.
+;
+; Format:
+;   [section] ; section goes in []
+;   param=value ; assign values to parameters
+
+config_version=5
+
+[application]
+
+config/name="Hero's Arena"
+config/description="A top-down arena shooter with 4 hero classes."
+run/main_scene="res://scenes/Main.tscn"
+config/features=PackedStringArray("4.3", "C#", "2D")
+config/icon="res://icon.svg"
+
+[autoload]
+
+EventBus="*res://scripts/core/EventBus.cs"
+GameManager="*res://scripts/core/GameManager.cs"
+ObjectPoolManager="*res://scripts/core/ObjectPoolManager.cs"
+
+[display]
+
+window/size/viewport_width=1920
+window/size/viewport_height=1080
+window/stretch/mode="canvas_items"
+window/stretch/aspect="expand"
+
+[dotnet]
+
+project/assembly_name="Hero-sArena"
+
+[physics]
+
+common/physics_ticks_per_second=60
+common/max_physics_steps_per_frame=8
+
+[rendering]
+
+textures/canvas_textures/default_texture_filter=0
