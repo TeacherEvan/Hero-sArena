@@ -14,7 +14,7 @@ namespace HeroArena
         private readonly Dictionary<long, List<int>> _cells = new();
 
         // Per-entity tracking so we can remove/update efficiently
-        private readonly Dictionary<int, (int cellX, int cellY, float radius)> _entityData = new();
+        private readonly Dictionary<int, (int cellX, int cellY, float radius, Vector2 pos)> _entityData = new();
 
         // Pre-allocated result buffer to avoid List allocation in hot path
         private readonly int[] _resultBuffer;
@@ -31,7 +31,7 @@ namespace HeroArena
         {
             int cx = Mathf.FloorToInt(pos.X / _cellSize);
             int cy = Mathf.FloorToInt(pos.Y / _cellSize);
-            _entityData[entityId] = (cx, cy, radius);
+            _entityData[entityId] = (cx, cy, radius, pos);
             AddToCells(entityId, pos, radius);
         }
 
@@ -74,7 +74,9 @@ namespace HeroArena
                     foreach (int id in list)
                     {
                         if (_resultCount >= _resultBuffer.Length) goto done;
-                        _resultBuffer[_resultCount++] = id;
+                        if (_entityData.TryGetValue(id, out var data) &&
+                            center.DistanceSquaredTo(data.pos) <= r2)
+                            _resultBuffer[_resultCount++] = id;
                     }
                 }
             }

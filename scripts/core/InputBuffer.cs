@@ -21,6 +21,11 @@ namespace HeroArena
         private int _bufferCount = 0;
         private int _frameCounter = 0;
 
+        public override void _Ready()
+        {
+            SetPhysicsProcess(true);
+        }
+
         public override void _PhysicsProcess(double delta)
         {
             _frameCounter++;

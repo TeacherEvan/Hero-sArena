@@ -45,7 +45,7 @@ namespace HeroArena
                     break;
                 case MutatorType.HealthBoost:
                     enemy.MaxHealth *= scale;
-                    enemy.TakeDamage(0f); // refresh HP reference
+                    enemy.SetCurrentHealth(enemy.MaxHealth);
                     break;
                 case MutatorType.DamageBoost:
                     enemy.Damage *= scale;

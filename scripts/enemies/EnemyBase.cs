@@ -76,6 +76,12 @@ namespace HeroArena
             if (CurrentHealth <= 0f) Die();
         }
 
+        public void SetCurrentHealth(float value)
+        {
+            CurrentHealth = Mathf.Clamp(value, 0f, MaxHealth);
+            if (CurrentHealth <= 0f) Die();
+        }
+
         protected virtual void Die()
         {
             State = EnemyAIState.Dead;
