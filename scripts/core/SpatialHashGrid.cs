@@ -14,7 +14,17 @@ namespace HeroArena
         private readonly Dictionary<long, List<int>> _cells = new();
 
         // Per-entity tracking so we can remove/update efficiently
-        private readonly Dictionary<int, (int cellX, int cellY, float radius, Vector2 pos)> _entityData = new();
+        private struct EntityData
+        {
+            public int CellX;
+            public int CellY;
+            public float Radius;
+            public Vector2 Pos;
+        }
+
+        private readonly Dictionary<int, EntityData> _entityData = new();
+        private readonly Dictionary<int, int> _queryStamps = new();
+        private int _queryStamp;
 
         // Pre-allocated result buffer to avoid List allocation in hot path
         private readonly int[] _resultBuffer;
@@ -31,15 +41,16 @@ namespace HeroArena
         {
             int cx = Mathf.FloorToInt(pos.X / _cellSize);
             int cy = Mathf.FloorToInt(pos.Y / _cellSize);
-            _entityData[entityId] = (cx, cy, radius, pos);
+            _entityData[entityId] = new EntityData { CellX = cx, CellY = cy, Radius = radius, Pos = pos };
             AddToCells(entityId, pos, radius);
         }
 
         public void Remove(int entityId)
         {
             if (!_entityData.TryGetValue(entityId, out var data)) return;
-            RemoveFromCells(entityId, data.cellX, data.cellY, data.radius);
+            RemoveFromCells(entityId, data.CellX, data.CellY, data.Radius);
             _entityData.Remove(entityId);
+            _queryStamps.Remove(entityId);
         }
 
         public void Update(int entityId, Vector2 newPos, float radius)
@@ -52,6 +63,7 @@ namespace HeroArena
         {
             _cells.Clear();
             _entityData.Clear();
+            _queryStamps.Clear();
         }
 
         // ── Queries ───────────────────────────────────────────────────────────
@@ -59,12 +71,12 @@ namespace HeroArena
         public int[] QueryRadius(Vector2 center, float radius, out int count)
         {
             _resultCount = 0;
+            _queryStamp++;
             int minCx = Mathf.FloorToInt((center.X - radius) / _cellSize);
             int maxCx = Mathf.FloorToInt((center.X + radius) / _cellSize);
             int minCy = Mathf.FloorToInt((center.Y - radius) / _cellSize);
             int maxCy = Mathf.FloorToInt((center.Y + radius) / _cellSize);
 
-            float r2 = radius * radius;
             for (int cx = minCx; cx <= maxCx; cx++)
             {
                 for (int cy = minCy; cy <= maxCy; cy++)
@@ -74,9 +86,14 @@ namespace HeroArena
                     foreach (int id in list)
                     {
                         if (_resultCount >= _resultBuffer.Length) goto done;
-                        if (_entityData.TryGetValue(id, out var data) &&
-                            center.DistanceSquaredTo(data.pos) <= r2)
+                        if (!_entityData.TryGetValue(id, out var data)) continue;
+                        if (_queryStamps.TryGetValue(id, out int stamp) && stamp == _queryStamp) continue;
+                        float threshold = radius + data.Radius;
+                        if (center.DistanceSquaredTo(data.Pos) <= threshold * threshold)
+                        {
+                            _queryStamps[id] = _queryStamp;
                             _resultBuffer[_resultCount++] = id;
+                        }
                     }
                 }
             }

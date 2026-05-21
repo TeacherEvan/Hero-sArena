@@ -72,18 +72,23 @@ namespace HeroArena
 
         public virtual void TakeDamage(float amount, DamageType type = DamageType.Kinetic)
         {
-            CurrentHealth -= amount;
-            if (CurrentHealth <= 0f) Die();
+            ApplyHealth(CurrentHealth - amount);
         }
 
         public void SetCurrentHealth(float value)
         {
-            CurrentHealth = Mathf.Clamp(value, 0f, MaxHealth);
+            ApplyHealth(value);
+        }
+
+        private void ApplyHealth(float newValue)
+        {
+            CurrentHealth = Mathf.Clamp(newValue, 0f, MaxHealth);
             if (CurrentHealth <= 0f) Die();
         }
 
         protected virtual void Die()
         {
+            if (State == EnemyAIState.Dead) return;
             State = EnemyAIState.Dead;
             GameManager.Instance.SpatialGrid?.Remove(_entityId);
             EventBus.Instance.EmitEnemyKilled(this);
