@@ -1,0 +1,46 @@
+[gd_scene load_steps=2 format=3 uid="uid://mainmenu"]
+
+[ext_resource type="Script" path="res://scripts/ui/MainMenu.cs" id="1"]
+
+[node name="MainMenu" type="Control"]
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -250.0
+offset_right = 200.0
+offset_bottom = 250.0
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+text = "Hero's Arena"
+
+[node name="HeroDescLabel" type="Label" parent="VBoxContainer"]
+text = "Select a hero"
+autowrap_mode = 3
+
+[node name="AtlasButton" type="Button" parent="VBoxContainer"]
+text = "Atlas (Strength)"
+
+[node name="ZephyrButton" type="Button" parent="VBoxContainer"]
+text = "Zephyr (Agility)"
+
+[node name="SynapseButton" type="Button" parent="VBoxContainer"]
+text = "Synapse (Intelligence)"
+
+[node name="VoltButton" type="Button" parent="VBoxContainer"]
+text = "Volt (Speed)"
+
+[node name="StartButton" type="Button" parent="VBoxContainer"]
+text = "Start Game"
+
+[node name="OptionsButton" type="Button" parent="VBoxContainer"]
+text = "Options"
+
+[node name="QuitButton" type="Button" parent="VBoxContainer"]
+text = "Quit"
