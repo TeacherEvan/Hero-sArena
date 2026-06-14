@@ -7,46 +7,66 @@ on:
     branches: [main]
 
 jobs:
-  build-and-test:
-    name: Build & Test
+  lint:
+    name: Lint (Roslynator)
     runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    env:
-      DOTNET_VERSION: '8.0.x'
-      GODOT_VERSION: '4.3'
-
+    timeout-minutes: 5
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          dotnet-version: '8.0.x'
           cache: true
+      - run: dotnet restore Hero-sArena.csproj
+      - run: dotnet tool restore
+      - run: dotnet roslynator check Hero-sArena.csproj || true
 
-      - name: Restore dependencies
-        run: dotnet restore Hero-sArena.csproj
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+      - run: dotnet restore Hero-sArena.csproj
+      - run: dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true
 
-      - name: Build main project
-        run: dotnet build Hero-sArena.csproj --configuration Release --no-restore
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+      - run: dotnet restore Hero-sArena.csproj
+      - run: dotnet build Hero-sArena.csproj --configuration Release --no-restore
 
-      - name: Restore test dependencies
-        run: dotnet restore tests/HeroArena.Tests/HeroArena.Tests.csproj
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+      - run: dotnet restore tests/HeroArena.Tests/HeroArena.Tests.csproj
+      - run: dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
 
-      - name: Build test project
-        run: dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
-
-      - name: Run analyzers on main project
-        run: dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true
-
-      - name: Run unit tests (build verification - requires Godot for full execution)
-        run: |
-          echo "Note: Unit tests require Godot runtime for Godot-dependent code."
-          echo "Running build verification only for now."
-          dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
-        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+  godot-verify:
+    name: Godot Verify & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: [build, test]
+    steps:
+      - uses: actions/checkout@v4
 
       - name: Download Godot 4.3 headless
         run: |
@@ -61,15 +81,31 @@ jobs:
       - name: Verify Godot runs
         run: godot --version
 
-      - name: Godot headless build verification (no export templates required)
-        run: |
-          godot --headless --quit
+      - name: Godot headless build verification
+        run: godot --headless --quit
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
       - name: Run Godot core system tests
-        run: |
-          godot --headless --scene res://tests/GodotTests/CoreSystemTests.tscn
+        run: godot --headless --scene res://tests/GodotTests/CoreSystemTests.tscn
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+  export:
+    name: Export (Linux/Windows/macOS)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    needs: [build, test, godot-verify]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download Godot 4.3 headless
+        run: |
+          mkdir -p godot
+          cd godot
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          echo "$PWD" >> $GITHUB_PATH
 
       - name: Download Godot 4.3 export templates
         run: |
@@ -79,18 +115,15 @@ jobs:
           unzip -q Godot_v4.3-stable_export_templates.tpz
 
       - name: Export for Linux (headless server test)
-        run: |
-          godot --headless --export-release "Linux/X11" build/linux/HeroArena.x86_64
+        run: godot --headless --export-release "Linux/X11" build/linux/HeroArena.x86_64
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
       - name: Export for Windows
-        run: |
-          godot --headless --export-release "Windows Desktop" build/windows/HeroArena.exe
+        run: godot --headless --export-release "Windows Desktop" build/windows/HeroArena.exe
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
       - name: Export for macOS
-        run: |
-          godot --headless --export-release "macOS" build/macos/HeroArena.app
+        run: godot --headless --export-release "macOS" build/macos/HeroArena.app
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
       - name: Upload Linux build artifact
@@ -120,26 +153,10 @@ jobs:
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
-    timeout-minutes: 10
-    needs: build-and-test
-
+    timeout-minutes: 5
+    needs: [lint, typecheck, test]
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Setup .NET
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-          cache: true
-
-      - name: Restore dependencies
-        run: dotnet restore Hero-sArena.csproj
-
-      - name: Validate code formatting (warn only - Roslynator)
-        run: |
-          dotnet tool restore
-          dotnet roslynator check Hero-sArena.csproj || true
+      - uses: actions/checkout@v4
 
       - name: Check for TODO/FIXME comments in production code
         run: |
