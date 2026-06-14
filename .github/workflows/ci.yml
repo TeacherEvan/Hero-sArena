@@ -71,6 +71,52 @@ jobs:
           godot --headless --scene res://tests/GodotTests/CoreSystemTests.tscn
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
+      - name: Download Godot 4.3 export templates
+        run: |
+          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
+          cd ~/.local/share/godot/export_templates/4.3.stable
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
+          unzip -q Godot_v4.3-stable_export_templates.tpz
+
+      - name: Export for Linux (headless server test)
+        run: |
+          godot --headless --export-release "Linux/X11" build/linux/HeroArena.x86_64
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+      - name: Export for Windows
+        run: |
+          godot --headless --export-release "Windows Desktop" build/windows/HeroArena.exe
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+      - name: Export for macOS
+        run: |
+          godot --headless --export-release "macOS" build/macos/HeroArena.app
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+      - name: Upload Linux build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HeroArena-Linux
+          path: build/linux/
+          retention-days: 7
+
+      - name: Upload Windows build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HeroArena-Windows
+          path: build/windows/
+          retention-days: 7
+
+      - name: Upload macOS build artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: HeroArena-macOS
+          path: build/macos/
+          retention-days: 7
+
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
