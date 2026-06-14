@@ -66,6 +66,11 @@ jobs:
           godot --headless --quit
         working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
 
+      - name: Run Godot core system tests
+        run: |
+          godot --headless --scene res://tests/GodotTests/CoreSystemTests.tscn
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
   quality-gates:
     name: Quality Gates
     runs-on: ubuntu-latest
