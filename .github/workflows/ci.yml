@@ -1,0 +1,95 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    env:
+      DOTNET_VERSION: '8.0.x'
+      GODOT_VERSION: '4.3'
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: ${{ env.DOTNET_VERSION }}
+          cache: true
+
+      - name: Restore dependencies
+        run: dotnet restore Hero-sArena.csproj
+
+      - name: Build main project
+        run: dotnet build Hero-sArena.csproj --configuration Release --no-restore
+
+      - name: Restore test dependencies
+        run: dotnet restore tests/HeroArena.Tests/HeroArena.Tests.csproj
+
+      - name: Build test project
+        run: dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
+
+      - name: Run analyzers on main project
+        run: dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true
+
+      - name: Run unit tests (build verification - requires Godot for full execution)
+        run: |
+          echo "Note: Unit tests require Godot runtime for Godot-dependent code."
+          echo "Running build verification only for now."
+          dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+      - name: Download Godot 4.3 headless
+        run: |
+          mkdir -p godot
+          cd godot
+          wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_linux.x86_64.zip
+          unzip -q Godot_v4.3-stable_linux.x86_64.zip
+          mv Godot_v4.3-stable_linux.x86_64 godot
+          chmod +x godot
+          echo "$PWD" >> $GITHUB_PATH
+
+      - name: Verify Godot runs
+        run: godot --version
+
+      - name: Godot headless build verification (no export templates required)
+        run: |
+          godot --headless --quit
+        working-directory: /home/ewaldt/Documents/VS/GAMES/Hero-sArena
+
+  quality-gates:
+    name: Quality Gates
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: build-and-test
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+
+      - name: Restore dependencies
+        run: dotnet restore Hero-sArena.csproj
+
+      - name: Validate code formatting (warn only - Roslynator)
+        run: |
+          dotnet tool restore
+          dotnet roslynator check Hero-sArena.csproj || true
+
+      - name: Check for TODO/FIXME comments in production code
+        run: |
+          find scripts -name "*.cs" -exec grep -n -i "TODO\|FIXME" {} \;

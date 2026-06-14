@@ -7,4 +7,8 @@
     <Nullable>enable</Nullable>
     <RootNamespace>HeroArena</RootNamespace>
   </PropertyGroup>
+
+  <ItemGroup>
+    <Compile Remove="tests/**/*.cs" />
+  </ItemGroup>
 </Project>
