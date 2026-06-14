@@ -29,8 +29,8 @@ namespace HeroArena
         // Double-buffered direction arrays
         private readonly byte[] _bufA = new byte[CELL_COUNT];
         private readonly byte[] _bufB = new byte[CELL_COUNT];
-        private byte[] _readBuf;
-        private byte[] _writeBuf;
+        private byte[] _readBuf = Array.Empty<byte>();
+        private byte[] _writeBuf = Array.Empty<byte>();
 
         private readonly bool[] _blocked = new bool[CELL_COUNT];
         private readonly object _targetLock = new();
