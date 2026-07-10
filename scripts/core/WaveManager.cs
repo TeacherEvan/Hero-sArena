@@ -14,6 +14,7 @@ namespace HeroArena
         private const float WEIBULL_LAMBDA = 10f;
         private const float BREATHER_SECONDS = 5f;
         private const float BOSS_INTERVAL_SECONDS = 300f;
+        private const int MAX_SPAWNS_PER_FRAME = 20;
 
         [Export] public PackedScene[] EnemyScenes { get; set; } = Array.Empty<PackedScene>();
         [Export] public Vector2[] SpawnPoints { get; set; } = Array.Empty<Vector2>();
@@ -22,6 +23,8 @@ namespace HeroArena
         private bool _waveInProgress = false;
         private float _breatherTimer = 0f;
         private int _currentWave = 0;
+        private int _pendingEnemiesToSpawn = 0;
+        private RandomNumberGenerator _rng = new RandomNumberGenerator();
 
         public override void _Ready()
         {
@@ -44,6 +47,11 @@ namespace HeroArena
                 _breatherTimer -= dt;
                 if (_breatherTimer <= 0f)
                     BeginNextWave();
+            }
+
+            if (_pendingEnemiesToSpawn > 0)
+            {
+                ProcessPendingSpawns();
             }
         }
 
@@ -75,17 +83,29 @@ namespace HeroArena
         private void SpawnWaveEnemies(int total)
         {
             if (EnemyScenes.Length == 0 || SpawnPoints.Length == 0) return;
+            _pendingEnemiesToSpawn += total;
+        }
 
-            var rng = new RandomNumberGenerator();
-            rng.Randomize();
+        private void ProcessPendingSpawns()
+        {
+            int toSpawn = Math.Min(_pendingEnemiesToSpawn, MAX_SPAWNS_PER_FRAME);
+            _rng.Randomize();
 
-            for (int i = 0; i < total; i++)
+            int spawnedThisFrame = 0;
+            for (int i = 0; i < toSpawn; i++)
             {
-                if (GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES) break;
-                int sceneIdx = rng.RandiRange(0, EnemyScenes.Length - 1);
-                Vector2 spawnPos = SpawnPoints[rng.RandiRange(0, SpawnPoints.Length - 1)];
+                if (GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES)
+                {
+                    _pendingEnemiesToSpawn = 0;
+                    return;
+                }
+                int sceneIdx = _rng.RandiRange(0, EnemyScenes.Length - 1);
+                Vector2 spawnPos = SpawnPoints[_rng.RandiRange(0, SpawnPoints.Length - 1)];
                 SpawnEnemy(EnemyScenes[sceneIdx], spawnPos);
+                spawnedThisFrame++;
             }
+
+            _pendingEnemiesToSpawn -= spawnedThisFrame;
         }
 
         private void SpawnEnemy(PackedScene scene, Vector2 pos)
