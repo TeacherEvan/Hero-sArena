@@ -38,8 +38,8 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            float dist = DistanceToHero();
-            if (dist < CHARGE_RANGE && _chargeCooldown <= 0f)
+            float distSq = DistanceSquaredToHero();
+            if (distSq < CHARGE_RANGE * CHARGE_RANGE && _chargeCooldown <= 0f)
                 StartCharge();
         }
 

@@ -27,7 +27,7 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            if (!_attached && DistanceToHero() < ATTACH_RANGE)
+            if (!_attached && DistanceSquaredToHero() < ATTACH_RANGE * ATTACH_RANGE)
                 Attach();
         }
 
