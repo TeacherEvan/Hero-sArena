@@ -25,6 +25,8 @@ namespace HeroArena
         private float _aiTimer = 0f;
         private const float AI_INTERVAL = 0.1f; // 10 Hz
 
+        private Vector2 _lastGridPos;
+
         public override void _Ready()
         {
             CurrentHealth = MaxHealth;
@@ -32,6 +34,8 @@ namespace HeroArena
 
             var grid = GameManager.Instance.SpatialGrid;
             grid?.Insert(_entityId, GlobalPosition, 16f);
+
+            _lastGridPos = GlobalPosition;
 
             _hero = GameManager.Instance.ActiveHero;
             OnSpawn();
@@ -53,7 +57,11 @@ namespace HeroArena
                 Move(dt);
 
             // Update spatial grid
-            GameManager.Instance.SpatialGrid?.Update(_entityId, GlobalPosition, 16f);
+            if (GlobalPosition.DistanceSquaredTo(_lastGridPos) > 1.0f)
+            {
+                GameManager.Instance.SpatialGrid?.Update(_entityId, GlobalPosition, 16f);
+                _lastGridPos = GlobalPosition;
+            }
         }
 
         protected abstract void UpdateAI();
