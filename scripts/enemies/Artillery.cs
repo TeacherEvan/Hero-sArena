@@ -28,7 +28,7 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            if (DistanceToHero() <= FIRE_RANGE && _fireCooldown <= 0f)
+            if (DistanceSquaredToHero() <= FIRE_RANGE * FIRE_RANGE && _fireCooldown <= 0f)
             {
                 FireMortar();
                 _fireCooldown = FIRE_COOLDOWN;

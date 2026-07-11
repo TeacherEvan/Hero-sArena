@@ -25,7 +25,7 @@ namespace HeroArena
         {
             if (_hero == null) return;
             _stateTimer -= 0.1f;
-            float dist = DistanceToHero();
+            float distSq = DistanceSquaredToHero();
 
             switch (_aiState)
             {
@@ -33,14 +33,14 @@ namespace HeroArena
                     if (_stateTimer <= 0f) _aiState = SprinterState.SwarmApproach;
                     break;
                 case SprinterState.SwarmApproach:
-                    if (dist < 250f) { _aiState = SprinterState.FlankManeuver; SetFlankTarget(); }
+                    if (distSq < 250f * 250f) { _aiState = SprinterState.FlankManeuver; SetFlankTarget(); }
                     break;
                 case SprinterState.FlankManeuver:
-                    if (dist < 80f) _aiState = SprinterState.Lunge;
-                    if (dist > 350f) _aiState = SprinterState.SwarmApproach;
+                    if (distSq < 80f * 80f) _aiState = SprinterState.Lunge;
+                    if (distSq > 350f * 350f) _aiState = SprinterState.SwarmApproach;
                     break;
                 case SprinterState.Lunge:
-                    if (dist > 120f) _aiState = SprinterState.SwarmApproach;
+                    if (distSq > 120f * 120f) _aiState = SprinterState.SwarmApproach;
                     break;
             }
         }

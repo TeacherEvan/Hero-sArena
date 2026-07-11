@@ -18,7 +18,7 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            State = DistanceToHero() < 24f ? EnemyAIState.Attack : EnemyAIState.Chase;
+            State = DistanceSquaredToHero() < 24f * 24f ? EnemyAIState.Attack : EnemyAIState.Chase;
         }
 
         protected override void Move(float dt)

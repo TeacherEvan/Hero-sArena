@@ -32,18 +32,18 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            float dist = DistanceToHero();
+            float distSq = DistanceSquaredToHero();
             switch (_aiState)
             {
                 case BurrowerState.SubmergedTrack:
-                    if (dist < ERUPT_RANGE) _aiState = BurrowerState.Erupt;
+                    if (distSq < ERUPT_RANGE * ERUPT_RANGE) _aiState = BurrowerState.Erupt;
                     break;
                 case BurrowerState.Erupt:
                     // After erupting, immediately attack
                     _aiState = BurrowerState.Attack;
                     break;
                 case BurrowerState.Attack:
-                    if (dist < ATTACK_RANGE)
+                    if (distSq < ATTACK_RANGE * ATTACK_RANGE)
                     {
                         _hero.TakeDamage(Damage, DamageType.Kinetic);
                         _aiState = BurrowerState.Submerge;

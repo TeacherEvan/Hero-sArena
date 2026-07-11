@@ -95,10 +95,10 @@ namespace HeroArena
             QueueFree();
         }
 
-        protected float DistanceToHero()
+        protected float DistanceSquaredToHero()
         {
             if (_hero == null) return float.MaxValue;
-            return GlobalPosition.DistanceTo(_hero.GlobalPosition);
+            return GlobalPosition.DistanceSquaredTo(_hero.GlobalPosition);
         }
     }
 }

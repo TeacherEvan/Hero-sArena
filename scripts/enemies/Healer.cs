@@ -42,8 +42,8 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            float distToHero = DistanceToHero();
-            if (distToHero < FLEE_RADIUS)
+            float distToHeroSq = DistanceSquaredToHero();
+            if (distToHeroSq < FLEE_RADIUS * FLEE_RADIUS)
                 _aiState = HealerState.FleePlayer;
             else
             {

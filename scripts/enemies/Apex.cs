@@ -62,7 +62,7 @@ namespace HeroArena
         private void DoMelee()
         {
             if (_hero == null) return;
-            if (DistanceToHero() < 80f && _meleeTimer <= 0f)
+            if (DistanceSquaredToHero() < 80f * 80f && _meleeTimer <= 0f)
             {
                 _hero.TakeDamage(Damage, DamageType.Kinetic);
                 _meleeTimer = 1.5f;

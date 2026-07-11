@@ -22,7 +22,7 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            if (DistanceToHero() < PROX_TRIGGER) Detonate();
+            if (DistanceSquaredToHero() < PROX_TRIGGER * PROX_TRIGGER) Detonate();
         }
 
         protected override void Die()
@@ -33,7 +33,7 @@ namespace HeroArena
         private void Detonate()
         {
             // AoE damage to hero if in radius
-            if (_hero != null && GlobalPosition.DistanceTo(_hero.GlobalPosition) <= DETONATE_RADIUS)
+            if (_hero != null && GlobalPosition.DistanceSquaredTo(_hero.GlobalPosition) <= DETONATE_RADIUS * DETONATE_RADIUS)
                 _hero.TakeDamage(DETONATE_DAMAGE, DamageType.Explosive);
 
             EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.AcidPool, DETONATE_RADIUS);

@@ -31,9 +31,9 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            float dist = DistanceToHero();
-            _aiState = dist < 40f ? ShielderState.Bash
-                : dist < 200f ? ShielderState.AdvanceGuarded
+            float distSq = DistanceSquaredToHero();
+            _aiState = distSq < 40f * 40f ? ShielderState.Bash
+                : distSq < 200f * 200f ? ShielderState.AdvanceGuarded
                 : ShielderState.Reorient;
 
             // Keep facing direction updated toward the hero

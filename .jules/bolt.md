@@ -1,3 +1,7 @@
 ## $(date +%Y-%m-%d) - Zero Allocation Random Selection using Span
 **Learning:** Selecting random items from an array traditionally uses a `List<T>` and `RemoveAt()`, which causes GC allocation on `new List` and $O(N)$ overhead from `RemoveAt()`.
 **Action:** Use `stackalloc` to create a `Span<T>`, copy array elements with `AsSpan().CopyTo()`, and use a "swap-and-pop" technique (swapping the selected item with the last item and decrementing the size) for $O(1)$ item removal and zero allocations on the heap.
+
+## 2024-05-24 - Avoid DistanceTo for performance
+**Learning:** Using `DistanceTo` which involves expensive square root calculations can be a performance bottleneck when called frequently (like in AI update loops for many enemies).
+**Action:** Use `DistanceSquaredTo` and compare against squared distances (e.g. `dist < RANGE * RANGE`) when checking if an object is within a certain radius.
