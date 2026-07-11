@@ -5,3 +5,7 @@
 ## 2024-05-24 - Avoid DistanceTo for performance
 **Learning:** Using `DistanceTo` which involves expensive square root calculations can be a performance bottleneck when called frequently (like in AI update loops for many enemies).
 **Action:** Use `DistanceSquaredTo` and compare against squared distances (e.g. `dist < RANGE * RANGE`) when checking if an object is within a certain radius.
+
+## 2026-07-10 - Avoid Redundant SpatialHashGrid Updates
+**Learning:** Checking distance traveled (`DistanceSquaredTo`) before updating spatial grid nodes saves substantial time compared to doing unconditional updates in high-frequency loops (like `_PhysicsProcess`).
+**Action:** Always verify if a state change warrants expensive data structure updates.
