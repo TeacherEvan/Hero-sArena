@@ -13,3 +13,7 @@
 ## 2024-07-10 - Time-Sliced Instantiation in Godot
 **Learning:** Godot's `Instantiate` method can be expensive when called in a tight loop for hundreds or thousands of nodes, causing significant frame time spikes (e.g., ~30ms for 2000 nodes).
 **Action:** Use time-slicing (spreading the instantiation across multiple frames in `_PhysicsProcess` or `_Process`) or object pooling to maintain smooth frame rates.
+
+## 2024-03-24 - SpatialHashGrid Allocation Bottleneck
+**Learning:** The spatial hash grid implementation eagerly removes and re-inserts entities into cell lists on every frame, even when they haven't crossed cell boundaries. In a game with many moving objects, this causes excessive O(N) list operations and heap allocations, creating a severe bottleneck during high-action scenes. The previous grid logic also had a dormant bug: bounding boxes computed during `Remove` didn't exactly match `Insert` bounds.
+**Action:** When working with spatial partitions or grid systems, always cache the exact bounding cells and implement a fast-path for the `Update` loop to skip operations if the entity is within the exact same grid bounds as the previous frame.

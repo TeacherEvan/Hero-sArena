@@ -15,8 +15,10 @@ namespace HeroArena
         // Per-entity tracking so we can remove/update efficiently
         private struct EntityData
         {
-            public int CellX;
-            public int CellY;
+            public int MinCx;
+            public int MaxCx;
+            public int MinCy;
+            public int MaxCy;
             public float Radius;
             public Vector2 Pos;
         }
@@ -38,24 +40,58 @@ namespace HeroArena
         // ── Insertion / removal ───────────────────────────────────────────────
         public void Insert(int entityId, Vector2 pos, float radius)
         {
-            int cx = Mathf.FloorToInt(pos.X / _cellSize);
-            int cy = Mathf.FloorToInt(pos.Y / _cellSize);
-            _entityData[entityId] = new EntityData { CellX = cx, CellY = cy, Radius = radius, Pos = pos };
-            AddToCells(entityId, pos, radius);
+            int minCx = Mathf.FloorToInt((pos.X - radius) / _cellSize);
+            int maxCx = Mathf.FloorToInt((pos.X + radius) / _cellSize);
+            int minCy = Mathf.FloorToInt((pos.Y - radius) / _cellSize);
+            int maxCy = Mathf.FloorToInt((pos.Y + radius) / _cellSize);
+
+            _entityData[entityId] = new EntityData { MinCx = minCx, MaxCx = maxCx, MinCy = minCy, MaxCy = maxCy, Radius = radius, Pos = pos };
+            AddToCells(entityId, minCx, maxCx, minCy, maxCy);
         }
 
         public void Remove(int entityId)
         {
             if (!_entityData.TryGetValue(entityId, out var data)) return;
-            RemoveFromCells(entityId, data.CellX, data.CellY, data.Radius);
+            RemoveFromCells(entityId, data.MinCx, data.MaxCx, data.MinCy, data.MaxCy);
             _entityData.Remove(entityId);
             _queryStamps.Remove(entityId);
         }
 
         public void Update(int entityId, Vector2 newPos, float radius)
         {
-            Remove(entityId);
-            Insert(entityId, newPos, radius);
+            if (!_entityData.TryGetValue(entityId, out var oldData))
+            {
+                Insert(entityId, newPos, radius);
+                return;
+            }
+
+            int newMinCx = Mathf.FloorToInt((newPos.X - radius) / _cellSize);
+            int newMaxCx = Mathf.FloorToInt((newPos.X + radius) / _cellSize);
+            int newMinCy = Mathf.FloorToInt((newPos.Y - radius) / _cellSize);
+            int newMaxCy = Mathf.FloorToInt((newPos.Y + radius) / _cellSize);
+
+            if (oldData.MinCx == newMinCx && oldData.MaxCx == newMaxCx &&
+                oldData.MinCy == newMinCy && oldData.MaxCy == newMaxCy)
+            {
+                // Bolt: ⚡ Fast path to skip unnecessary list allocations and manipulations
+                // if the entity's bounding box hasn't crossed cell boundaries.
+                oldData.Pos = newPos;
+                oldData.Radius = radius;
+                _entityData[entityId] = oldData;
+                return;
+            }
+
+            RemoveFromCells(entityId, oldData.MinCx, oldData.MaxCx, oldData.MinCy, oldData.MaxCy);
+
+            oldData.MinCx = newMinCx;
+            oldData.MaxCx = newMaxCx;
+            oldData.MinCy = newMinCy;
+            oldData.MaxCy = newMaxCy;
+            oldData.Pos = newPos;
+            oldData.Radius = radius;
+            _entityData[entityId] = oldData;
+
+            AddToCells(entityId, newMinCx, newMaxCx, newMinCy, newMaxCy);
         }
 
         public void Clear()
@@ -128,13 +164,8 @@ namespace HeroArena
         }
 
         // ── Internal helpers ──────────────────────────────────────────────────
-        private void AddToCells(int entityId, Vector2 pos, float radius)
+        private void AddToCells(int entityId, int minCx, int maxCx, int minCy, int maxCy)
         {
-            int minCx = Mathf.FloorToInt((pos.X - radius) / _cellSize);
-            int maxCx = Mathf.FloorToInt((pos.X + radius) / _cellSize);
-            int minCy = Mathf.FloorToInt((pos.Y - radius) / _cellSize);
-            int maxCy = Mathf.FloorToInt((pos.Y + radius) / _cellSize);
-
             for (int cx = minCx; cx <= maxCx; cx++)
             {
                 for (int cy = minCy; cy <= maxCy; cy++)
@@ -150,18 +181,13 @@ namespace HeroArena
             }
         }
 
-        private void RemoveFromCells(int entityId, int cx, int cy, float radius)
+        private void RemoveFromCells(int entityId, int minCx, int maxCx, int minCy, int maxCy)
         {
-            int minCx = cx - Mathf.CeilToInt(radius / _cellSize);
-            int maxCx = cx + Mathf.CeilToInt(radius / _cellSize);
-            int minCy = cy - Mathf.CeilToInt(radius / _cellSize);
-            int maxCy = cy + Mathf.CeilToInt(radius / _cellSize);
-
-            for (int x = minCx; x <= maxCx; x++)
+            for (int cx = minCx; cx <= maxCx; cx++)
             {
-                for (int y = minCy; y <= maxCy; y++)
+                for (int cy = minCy; cy <= maxCy; cy++)
                 {
-                    long key = HashKey(x, y);
+                    long key = HashKey(cx, cy);
                     if (_cells.TryGetValue(key, out var list))
                         list.Remove(entityId);
                 }
