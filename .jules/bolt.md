@@ -9,3 +9,7 @@
 ## 2026-07-10 - Avoid Redundant SpatialHashGrid Updates
 **Learning:** Checking distance traveled (`DistanceSquaredTo`) before updating spatial grid nodes saves substantial time compared to doing unconditional updates in high-frequency loops (like `_PhysicsProcess`).
 **Action:** Always verify if a state change warrants expensive data structure updates.
+
+## 2024-07-10 - Time-Sliced Instantiation in Godot
+**Learning:** Godot's `Instantiate` method can be expensive when called in a tight loop for hundreds or thousands of nodes, causing significant frame time spikes (e.g., ~30ms for 2000 nodes).
+**Action:** Use time-slicing (spreading the instantiation across multiple frames in `_PhysicsProcess` or `_Process`) or object pooling to maintain smooth frame rates.
