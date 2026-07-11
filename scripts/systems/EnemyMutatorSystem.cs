@@ -25,13 +25,18 @@ namespace HeroArena
         public void ApplyMutators(EnemyBase enemy, int threatLevel)
         {
             int mutatorCount = Mathf.Min(threatLevel, AllMutators.Length);
-            var pool = new System.Collections.Generic.List<MutatorType>(AllMutators);
+
+            Span<MutatorType> pool = stackalloc MutatorType[AllMutators.Length];
+            AllMutators.AsSpan().CopyTo(pool);
+            int poolCount = pool.Length;
 
             for (int i = 0; i < mutatorCount; i++)
             {
-                int idx = _rng.RandiRange(0, pool.Count - 1);
+                int idx = _rng.RandiRange(0, poolCount - 1);
                 ApplySingleMutator(enemy, pool[idx], threatLevel);
-                pool.RemoveAt(idx);
+
+                pool[idx] = pool[poolCount - 1];
+                poolCount--;
             }
         }
 
