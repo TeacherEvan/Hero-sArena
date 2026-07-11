@@ -9,6 +9,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="tests/**/*.cs" />
+    <!-- Exclude only the xUnit test project; keep GodotTests (CoreSystemTests scene) in the main build -->
+    <Compile Remove="tests/HeroArena.Tests/**/*.cs" />
   </ItemGroup>
 </Project>

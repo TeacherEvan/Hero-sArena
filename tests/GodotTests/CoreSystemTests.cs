@@ -33,9 +33,12 @@ namespace HeroArena.Tests
             
             if (failed > 0)
             {
-                OS.ExitCode = 1;
+                GetTree().Quit(1); // non-zero exit code so CI detects failure
             }
-            GetTree().Quit();
+            else
+            {
+                GetTree().Quit();
+            }
         }
 
         private void TestSpatialHashGrid()

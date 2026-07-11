@@ -36,6 +36,12 @@ namespace HeroArena
 
         public override void _Ready()
         {
+            if (ProjectileScene == null || DecalScene == null)
+            {
+                GD.PrintErr("ObjectPoolManager: ProjectileScene/DecalScene not assigned; skipping pre-allocation. " +
+                            "Set them on the autoload in project.godot or load a scene that wires them.");
+                return;
+            }
             PreAllocateProjectiles();
             PreAllocateDecals();
         }
