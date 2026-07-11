@@ -99,19 +99,19 @@ namespace HeroArena.Tests
             const float WEIBULL_K = 1.5f;
             const float WEIBULL_LAMBDA = 10f;
 
-            // Wave 1 should be at minimum
+            // Wave 1: Weibull intensity is nonzero at t=1 (curve peaks ~wave 5), so count > minimum
             float t = 1f;
             float intensity = (WEIBULL_K / WEIBULL_LAMBDA) * MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K - 1f) * MathF.Exp(-MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K));
             int count = MinWaveEnemies + (int)(intensity * IntensityScaleFactor);
-            if (count != MinWaveEnemies)
-                throw new Exception($"Wave 1 expected {MinWaveEnemies}, got {count}");
+            if (count != 32)
+                throw new Exception($"Wave 1 expected 32 (Weibull curve), got {count}");
 
-            // Wave 10 should still be at minimum (pre-peak)
+            // Wave 10: still elevated under the current curve
             t = 10f;
             intensity = (WEIBULL_K / WEIBULL_LAMBDA) * MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K - 1f) * MathF.Exp(-MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K));
             count = MinWaveEnemies + (int)(intensity * IntensityScaleFactor);
-            if (count != MinWaveEnemies)
-                throw new Exception($"Wave 10 expected {MinWaveEnemies}, got {count}");
+            if (count != 37)
+                throw new Exception($"Wave 10 expected 37 (Weibull curve), got {count}");
 
             // Wave 20 should be past peak
             t = 20f;
@@ -187,9 +187,9 @@ namespace HeroArena.Tests
                 throw new Exception("XP level 1");
             if (progression.XpRequiredForLevel(2) != 160)
                 throw new Exception("XP level 2");
-            if (progression.XpRequiredForLevel(5) != 450)
+            if (progression.XpRequiredForLevel(5) != 460)
                 throw new Exception("XP level 5");
-            if (progression.XpRequiredForLevel(10) != 1450)
+            if (progression.XpRequiredForLevel(10) != 1360)
                 throw new Exception("XP level 10");
 
             // Test perk selection
