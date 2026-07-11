@@ -44,7 +44,7 @@ namespace HeroArena
         {
             for (int i = 0; i < _bufferCount; i++)
             {
-                if (_buffer[i].Action == action)
+                if (_buffer[i].Action == action || (_buffer[i].Action == null && action == null))
                 {
                     RemoveAt(i);
                     return true;
@@ -57,7 +57,7 @@ namespace HeroArena
         public bool IsBuffered(StringName action)
         {
             for (int i = 0; i < _bufferCount; i++)
-                if (_buffer[i].Action == action) return true;
+                if (_buffer[i].Action == action || (_buffer[i].Action == null && action == null)) return true;
             return false;
         }
 
