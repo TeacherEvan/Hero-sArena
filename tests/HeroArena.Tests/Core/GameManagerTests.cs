@@ -8,6 +8,7 @@ using System.Runtime.Serialization;
 
 namespace HeroArena.Tests.Core;
 
+[Trait("Category", "GodotRuntime")]
 public class GameManagerTests : IDisposable
 {
     private readonly GameManager _gameManager;

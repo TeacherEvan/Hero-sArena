@@ -19,7 +19,7 @@ jobs:
           cache: true
       - run: dotnet restore Hero-sArena.csproj
       - run: dotnet tool restore
-      - run: dotnet roslynator check Hero-sArena.csproj || true
+      - run: dotnet roslynator check Hero-sArena.csproj
 
   typecheck:
     name: Type Check
@@ -61,7 +61,7 @@ jobs:
           dotnet-version: '8.0.x'
           cache: true
       - run: dotnet restore tests/HeroArena.Tests/HeroArena.Tests.csproj
-      - run: dotnet build tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore
+      - run: dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore --filter "Category!=GodotRuntime"
 
   godot-verify:
     name: Godot Verify & Test
@@ -88,7 +88,7 @@ jobs:
         run: godot --headless --quit
 
       - name: Run Godot core system tests
-        run: godot --headless --scene res://tests/GodotTests/CoreSystemTests.tscn
+        run: godot --headless -s res://tests/GodotTests/CoreSystemTests.cs
 
   export:
     name: Export (Linux/Windows/macOS)
