@@ -5,6 +5,7 @@ using HeroArena;
 
 namespace HeroArena.Tests.Core;
 
+[Trait("Category", "GodotRuntime")]
 public class LevelProgressionTests
 {
     private readonly LevelProgression _levelProgression = new();
