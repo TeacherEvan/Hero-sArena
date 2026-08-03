@@ -44,16 +44,14 @@ namespace HeroArena
             if (_hero == null) return;
             float distToHeroSq = DistanceSquaredToHero();
             if (distToHeroSq < FLEE_RADIUS * FLEE_RADIUS)
-                _aiState = HealerState.FleePlayer;
-            else
             {
-                var grid = GameManager.Instance.SpatialGrid;
-                if (grid != null)
-                {
-                    grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count);
-                    _aiState = count > 2 ? HealerState.ChannelAura : HealerState.FindCluster;
-                }
+                _aiState = HealerState.FleePlayer;
+                return;
             }
+            var grid = GameManager.Instance.SpatialGrid;
+            if (grid == null) return;
+            grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count);
+            _aiState = count > 2 ? HealerState.ChannelAura : HealerState.FindCluster;
         }
 
         protected override void Move(float dt)

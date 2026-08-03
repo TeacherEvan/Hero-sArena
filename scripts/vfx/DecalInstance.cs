@@ -8,12 +8,15 @@ namespace HeroArena
     /// </summary>
     public partial class DecalInstance : Sprite2D
     {
-        public int PoolIndex { get; private set; }
-        public bool IsActive { get; private set; } = false;
+            public int PoolIndex { get; private set; }
+            public bool IsActive { get; private set; } = false;
 
-        private float _lifetime = 0f;
-        private float _maxLifetime = 10f;
-        private float _fadeStart = 7f;
+            private float _lifetime = 0f;
+            private float _maxLifetime = 10f;
+            private float _fadeStart = 7f;
+
+            // Cached Color to avoid allocation every frame in _Process
+            private Color _fadeColor = Colors.White;
 
         private const float DefaultMaxLifetime = 10f;
         private const float DefaultFadeStart = 7f;
@@ -57,7 +60,8 @@ namespace HeroArena
             if (_lifetime >= _fadeStart)
             {
                 float t = (_lifetime - _fadeStart) / (_maxLifetime - _fadeStart);
-                Modulate = new Color(1f, 1f, 1f, 1f - t);
+                _fadeColor.A = 1f - t;
+                Modulate = _fadeColor;
             }
         }
     }
