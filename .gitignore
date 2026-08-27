@@ -46,3 +46,6 @@ audit_report.md
 review_findings.md
 fix_summary.md
 investigation_report.md
+# V2 surgical-implementation run output
+docs/.scratch-audit/
+docs/plans/
