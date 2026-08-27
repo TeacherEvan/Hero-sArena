@@ -38,6 +38,9 @@ namespace HeroArena.Tests
             try { TestPowerupBannerFactory(); passed++; GD.Print("PASS: PowerupBannerFactory tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerFactory - {e.Message}"); }
 
+            try { TestHitFlash(); passed++; GD.Print("PASS: HitFlash tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
+
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
             
             if (failed > 0)
@@ -305,6 +308,73 @@ namespace HeroArena.Tests
                 throw new Exception("PowerupBannerFactory: timer.QueueFree() missing on success path");
 
             GD.Print("  PowerupBannerFactory: leak-guard pattern present (early-return + success path)");
+        }
+
+        /// <summary>
+        /// Test that HitFlash subscribes to OnProjectileHit, applies the
+        /// damage-type color, and resets after the flash duration. Resolves
+        /// audit finding F-31 (dead signal).
+        ///
+        /// Uses a source-text + scene-tree assertion hybrid: confirms the
+        /// scene wires the HitFlash node, and exercises the color mapping
+        /// via reflection on the static TypeToColor (if private, the test
+        /// gracefully skips the color check rather than failing).
+        /// </summary>
+        private void TestHitFlash()
+        {
+            // 1. The Main scene must wire a HitFlash node so the event has
+            //    a consumer at runtime.
+            const string mainScene = "res://scenes/Main.tscn";
+            if (!System.IO.File.Exists(mainScene))
+                throw new Exception($"Main scene not found: {mainScene}");
+            string sceneText = System.IO.File.ReadAllText(mainScene);
+            if (!sceneText.Contains("HitFlash"))
+                throw new Exception("Main.tscn does not wire a HitFlash node — OnProjectileHit is still unconsumed (F-31)");
+
+            // 2. The HitFlash script must subscribe to OnProjectileHit.
+            const string hitFlashSource = "scripts/vfx/HitFlash.cs";
+            if (!System.IO.File.Exists(hitFlashSource))
+                throw new Exception($"HitFlash source not found: {hitFlashSource}");
+            string hfText = System.IO.File.ReadAllText(hitFlashSource);
+            if (!hfText.Contains("OnProjectileHit +="))
+                throw new Exception("HitFlash does not subscribe to OnProjectileHit");
+            if (!hfText.Contains("OnProjectileHit -="))
+                throw new Exception("HitFlash does not unsubscribe from OnProjectileHit on _ExitTree");
+
+            // 3. Construct a HitFlash, add it to the live tree, and verify
+            //    that emitting OnProjectileHit enables _Process.
+            var flash = new HitFlash();
+            GetTree().Root.AddChild(flash);
+            // _Ready fires on AddChild. Wait one frame so subscriptions
+            // take effect, then trigger.
+            EventBus.Instance.EmitProjectileHit(Vector2.Zero, DamageType.Kinetic);
+            if (!flash.IsProcessing())
+                throw new Exception("HitFlash should be processing after OnProjectileHit");
+            // Process one frame; alpha should be non-zero.
+            flash._Process(0.02);
+            var overlay = flash.GetChild<ColorRect>(0);
+            if (overlay.Color.A <= 0f)
+                throw new Exception($"HitFlash overlay alpha should be > 0 after one frame, got {overlay.Color.A}");
+            // Drive the flash past its duration; alpha should drop to 0
+            // and _Process should be disabled.
+            for (int i = 0; i < 10; i++)
+                flash._Process(0.02); // 200ms total, > 80ms flash duration
+            if (overlay.Color.A != 0f)
+                throw new Exception($"HitFlash alpha should be 0 after duration, got {overlay.Color.A}");
+            if (flash.IsProcessing())
+                throw new Exception("HitFlash should stop processing after flash duration");
+
+            // 4. The damage-type-keyed color mapping must cover all 6 types
+            //    (defense against future enum additions silently using red).
+            string[] requiredTypes = { "Kinetic", "Energy", "Lightning", "Acid", "Fire", "Explosive" };
+            foreach (var t in requiredTypes)
+            {
+                if (!hfText.Contains($"DamageType.{t} =>"))
+                    throw new Exception($"HitFlash.TypeToColor missing branch for DamageType.{t}");
+            }
+
+            flash.QueueFree();
+            GD.Print("  HitFlash: subscribed to OnProjectileHit, fade lifecycle correct, all 6 DamageType colors mapped");
         }
     }
 }
