@@ -91,7 +91,7 @@ namespace HeroArena
             var timer = new Timer { WaitTime = 5.0, OneShot = true };
             timer.Timeout += () =>
             {
-                if (!IsInstanceValid(lbl)) return;
+                if (!IsInstanceValid(lbl)) { timer.QueueFree(); return; }
                 if (lbl.IsInsideTree()) lbl.GetParent()?.RemoveChild(lbl);
                 lbl.QueueFree();
                 timer.QueueFree();
