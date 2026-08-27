@@ -86,18 +86,12 @@ namespace HeroArena
                 oldest.QueueFree();
             }
 
-            var lbl = new Label { Text = type };
-            PowerupList.AddChild(lbl);
-            var timer = new Timer { WaitTime = 5.0, OneShot = true };
-            timer.Timeout += () =>
-            {
-                if (!IsInstanceValid(lbl)) { timer.QueueFree(); return; }
-                if (lbl.IsInsideTree()) lbl.GetParent()?.RemoveChild(lbl);
-                lbl.QueueFree();
-                timer.QueueFree();
-            };
-            AddChild(timer);
-            timer.Start();
+            // The actual banner+auto-cleanup logic is in PowerupBannerFactory
+            // so it can be tested without an [Export]-wired HUD scene.
+            // BUG-GUARD (regression for c9fed16): the factory's timer callback
+            // must free BOTH the banner and the timer on every return path,
+            // including the early-return when the banner has been evicted.
+            PowerupBannerFactory.Spawn(this, PowerupList, type);
         }
 
         public override void _ExitTree()

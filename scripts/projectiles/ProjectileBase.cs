@@ -50,6 +50,9 @@ namespace HeroArena
             Visible = false;
             SetPhysicsProcess(false);
             Monitoring = false;
+            // Reset per-shot state so a reused projectile doesn't carry the
+            // previous shot's PiercingCount. (Audit finding F-51.)
+            PiercingCount = 0;
         }
 
         public override void _PhysicsProcess(double delta)
