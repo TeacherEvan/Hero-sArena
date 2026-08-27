@@ -26,6 +26,11 @@ namespace HeroArena
         public event Action<Vector2, float>? OnEnvironmentDestroyed;
 
         // ── Projectile / VFX ─────────────────────────────────────────────────
+        // OnProjectileHit: emitted by all projectile-impact and AoE-ability call sites
+        // (ProjectileBase, Atlas.Slam, Synapse.FireChainLaser, Volt.FireArcLightning,
+        // Volt.ActivateStaticField, Exploder.Detonate). No system in scripts/ subscribes
+        // today — the event is reserved as a public hook for VFX/SFX plugins and
+        // post-processing layers (screen flash, audio). See review_findings.md F-31.
         public event Action<Vector2, DamageType>? OnProjectileHit;
         public event Action<Vector2, DecalType, float>? OnDecalRequested;
 

@@ -21,7 +21,6 @@ namespace HeroArena
         {
             MaxHealth = 90f;
             MoveSpeed = 200f;
-            CurrentHealth = MaxHealth;
         }
 
         public override void _PhysicsProcess(double delta)

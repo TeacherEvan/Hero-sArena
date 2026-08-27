@@ -38,6 +38,7 @@ namespace HeroArena
             };
 
             Modulate = Colors.White;
+            _fadeColor = Colors.White; // Reset cached alpha so a reused decal doesn't start faded.
             Visible = true;
             SetProcess(true);
         }

@@ -10,12 +10,10 @@ namespace HeroArena
         private const float BLOCK_REDUCTION = 0.90f;
         private ShielderState _aiState = ShielderState.Spawning;
         private float _bashCooldown = 0f;
-        private Vector2 _facingDir = Vector2.Right; // updated each AI tick
 
         protected override void OnSpawn()
         {
             MaxHealth = 120f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 90f;
             Damage = 25f;
             ExpValue = 25;
@@ -36,9 +34,6 @@ namespace HeroArena
                 : distSq < 200f * 200f ? ShielderState.AdvanceGuarded
                 : ShielderState.Reorient;
 
-            // Keep facing direction updated toward the hero
-            _facingDir = (_hero.GlobalPosition - GlobalPosition).Normalized();
-
             if (_aiState == ShielderState.Bash && _bashCooldown <= 0f)
             {
                 _hero.TakeDamage(Damage, DamageType.Kinetic);
@@ -48,13 +43,13 @@ namespace HeroArena
 
         public override void TakeDamage(float amount, DamageType type = DamageType.Kinetic)
         {
-            if (_hero == null) return;
-            // Block 90% of damage that arrives from the frontal (shielded) arc.
-            // The shielder's shield faces toward the hero; damage is frontal when the
-            // attack originates from roughly the same direction the shielder is facing.
-            Vector2 toHero = (_hero.GlobalPosition - GlobalPosition).Normalized();
-            bool shieldBlocking = toHero.Dot(_facingDir) > 0.5f;
-            float reduced = shieldBlocking ? amount * (1f - BLOCK_REDUCTION) : amount;
+            // Shielder's frontal shield blocks 90% of damage.
+            // The Shielder always faces the hero (it advances head-on), so the dot-product
+            // frontal-arc check is not meaningful — every attack comes from the front.
+            // If a future Shielder variant strafes or sidesteps, reintroduce the arc check
+            // using a stable spawn-time facing direction rather than the per-tick vector
+            // to the hero (which always returned ~1.0 — see fix/audit-medium-cleanup review).
+            float reduced = amount * (1f - BLOCK_REDUCTION);
             base.TakeDamage(reduced, type);
         }
     }

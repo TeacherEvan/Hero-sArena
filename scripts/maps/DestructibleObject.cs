@@ -28,18 +28,23 @@ namespace HeroArena
         private void Destroy()
         {
             IsDestroyed = true;
+            // Disable further damage/monitoring in the same frame so we don't
+            // re-enter the destroy path before QueueFree takes effect.
+            SetProcess(false);
+            SetPhysicsProcess(false);
 
-            // Notify systems
-            EventBus.Instance.EmitEnvironmentDestroyed(GlobalPosition, 64f);
-            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.CraterMark, 64f);
-
-            // Unblock flow field cell
+            // Unblock the flow field first so any listener that re-queries the
+            // pathfinder (e.g. AI rerouting) sees consistent state.
             var ff = GameManager.Instance.FlowField;
             if (ff != null)
             {
                 var cell = ff.WorldToGrid(GlobalPosition);
                 ff.SetBlocked(cell, false);
             }
+
+            // Now notify systems.
+            EventBus.Instance.EmitEnvironmentDestroyed(GlobalPosition, 64f);
+            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.CraterMark, 64f);
 
             QueueFree();
         }

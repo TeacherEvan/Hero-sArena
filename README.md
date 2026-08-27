@@ -42,40 +42,65 @@ The xUnit test project is excluded from the main build via
 ## Testing
 
 There are two test harnesses, and they have different runtime requirements.
+See `AGENTS.md` for the canonical, up-to-date description of the test matrix
+and the bypass tricks involved.
 
 ### 1. xUnit — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`)
 Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-These tests cover pure C# logic. **Caveat / UNVERIFIED-IN-THIS-ENV:**
-tests that construct a Godot `Node` subclass (`GameManagerTests`,
-`LevelProgressionTests`) call into the Godot native runtime and
-**crash the test host** ("Test host process crashed") unless the Godot
-native library is loaded. In a plain `dotnet test` run without the Godot
-engine, the suite aborts. As of this writing, the passing classes are
-`SpatialHashGridTests`, `SpatialHashGridBenchmarkTests`, `HeroBaseTests`,
-`CollateralKarmaTests`, and `ObjectPoolManagerTests` (~17 tests); the
-failing/crashing classes are `GameManagerTests` and `LevelProgressionTests`
-(~11 tests).
+Under the default filter (`Category!=GodotRuntime`), **19 tests pass**
+covering pure C# logic (`SpatialHashGridTests`, `SpatialHashGridBenchmarkTests`,
+`HeroBaseTests`, `ObjectPoolManagerTests`, plus the SpatialHashGrid-remove
+regression test).
 
-The recommended fix is a design decision, not a one-line patch: either
-run the full suite under Godot's own test runner, or extract the pure
-logic out of `Node` subclasses so it is unit-testable headlessly.
+Tests that need the Godot native runtime carry
+`[Trait("Category","GodotRuntime")]` and are filtered out by the default
+command above: `GameManagerTests`, `LevelProgressionTests`.
+`CollateralKarmaTests` uses a `RuntimeHelpers.GetUninitializedObject` bypass
+to run headlessly (see `AGENTS.md` for the trade-off). The Godot headless
+gate below cross-covers its math.
 
 ### 2. Godot headless gate — `tests/GodotTests/CoreSystemTests.cs`
 A Godot script (`Node`) that self-runs assertions for `SpatialHashGrid`,
-`WaveManager`, `FlowFieldPathfinder`, and `LevelProgression`, then
-quits non-zero on failure. Run with the Godot binary:
+`WaveManager`, `FlowFieldPathfinder`, `LevelProgression`, `EntityRegistry`
+(registry regression for the F-1 fix), and `CollateralKarma` (math
+cross-cover), then quits non-zero on failure. Run with the Godot binary:
 ```
 godot --headless -s res://tests/GodotTests/CoreSystemTests.cs
 ```
-**UNVERIFIED-IN-THIS-ENV:** no Godot binary is currently installed in
-this workspace, so this gate cannot be executed here. Its assertions
-were reconciled to shipped logic in recent commits (`ab8e09b`, `1f9d573`).
+**Note:** no Godot binary is currently installed in this workspace, so
+this gate cannot be executed here. The CI `godot-verify` job downloads
+Godot 4.3 headless and runs it on every push and PR.
+
+## CI
+
+`.github/workflows/ci.yml` runs six jobs on every push and PR:
+- `lint` (Roslynator) — must pass
+- `typecheck` — must pass
+- `build` — must pass
+- `test` (xUnit, `Category!=GodotRuntime`) — must pass
+- `godot-verify` (downloads Godot 4.3, runs the headless gate) — must pass
+- `export` (Linux/Windows/macOS) — must pass
+
+As of `a3171a5` (PR #18) and `7968f52` (PR #19), all gates must pass
+on the branch — `continue-on-error: true` was removed from the
+typecheck/build/test jobs.
+
+**Note (2026-08-27):** the GitHub account is currently locked due to a
+billing issue, so CI is not running. Tracked in issue #23. Both audit
+fix PRs are open and ready to merge once CI is restored.
 
 ## Known gaps
-- The Godot-dependent test classes (`GameManagerTests`, `LevelProgressionTests`)
-  are unrunnable under plain `dotnet test` and need the Godot runtime or
-  a refactor (see Testing / Caveat above).
-- `FlowFieldPathfinder` has no unit coverage in either harness.
+- The Godot-dependent xUnit test classes (`GameManagerTests`,
+  `LevelProgressionTests`) are gated behind a trait and run in the
+  Godot headless gate only. The AGENTS.md-preferred fix is to extract
+  the pure logic out of `Node` subclasses so headless `dotnet test`
+  covers them too. Tracked in issue #22.
+- Bench harnesses (`bench_test/`, `FrameTimeBenchmark.cs`,
+  `WaveManagerBenchmark.cs`) do not exercise the production hot path
+  (use `Node2D` mocks, miss the per-frame throttle). Tracked in
+  issue #20.
+- `OnProjectileHit` event has no in-tree consumer; reserved as a public
+  hook for VFX/SFX plugins. Tracked in issue #21.

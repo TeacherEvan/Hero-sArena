@@ -18,9 +18,8 @@ namespace HeroArena
         protected override void OnSpawn()
         {
             MaxHealth = 60f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 120f;
-            Damage = 0f;
+            // Damage = 0: Healer has no attack path. Field set explicitly for clarity.
             ExpValue = 40;
         }
 

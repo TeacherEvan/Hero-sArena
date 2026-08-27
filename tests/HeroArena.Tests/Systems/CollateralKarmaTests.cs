@@ -7,6 +7,13 @@ using HeroArena;
 
 namespace HeroArena.Tests.Systems;
 
+// AGENTS.md note: this test bypasses the Godot Node constructor via
+// RuntimeHelpers.GetUninitializedObject. It works today only because
+// KarmaAmplifier is a pure C# computation and OnEnvironmentDestroyed only
+// mutates a simple int field. If a test ever touches a Godot type, the
+// class should gain a [Trait("Category", "GodotRuntime")] attribute and
+// the Godot headless gate (tests/GodotTests/CoreSystemTests.cs) should
+// grow a TestCollateralKarma method.
 public class CollateralKarmaTests
 {
     private CollateralKarma CreateKarmaSystem(int destructionCount = 0)

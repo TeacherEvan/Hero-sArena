@@ -12,7 +12,6 @@ namespace HeroArena
         protected override void OnSpawn()
         {
             MaxHealth = 80f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 0f; // stationary
             Damage = 60f;
             ExpValue = 30;
@@ -35,7 +34,7 @@ namespace HeroArena
             }
         }
 
-        protected override void Move(float dt) { } // Does not move
+        protected override void Move(float _) { } // Does not move
 
         private void FireMortar()
         {
