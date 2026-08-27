@@ -9,6 +9,8 @@
     <Compile Include="../scripts/core/SpatialHashGrid.cs" />
   </ItemGroup>
   <ItemGroup>
-    <PackageReference Include="GodotSharp" Version="4.2.1" />
+    <!-- F-24: align with main project's Godot 4.3 SDK. The 4.2.1 pin was a version
+         drift unrelated to the audit but worth flagging (see review_findings.md). -->
+    <PackageReference Include="GodotSharp" Version="4.3.0" />
   </ItemGroup>
 </Project>
