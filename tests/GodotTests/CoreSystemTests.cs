@@ -35,6 +35,9 @@ namespace HeroArena.Tests
             try { TestCollateralKarma(); passed++; GD.Print("PASS: CollateralKarma tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma - {e.Message}"); }
 
+            try { TestPowerupBannerFactory(); passed++; GD.Print("PASS: PowerupBannerFactory tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerFactory - {e.Message}"); }
+
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
             
             if (failed > 0)
@@ -246,6 +249,62 @@ namespace HeroArena.Tests
             float a50 = Mathf.Log(Mathf.E + 0.05f * 50);
             if (MathF.Abs(a50 - 1.652f) > 0.005f)
                 throw new Exception($"KarmaAmplifier(50) expected ~1.652, got {a50}");
+        }
+
+        /// <summary>
+        /// Regression guard for the HUD ShowPowerup timer leak. The original
+        /// bug (Sourcery caught on PR #18; c9fed16 was the user-applied fix)
+        /// was a lambda with an early-return on `!IsInstanceValid(lbl)` that
+        /// skipped `timer.QueueFree()`. The banner+factory logic was extracted
+        /// into `PowerupBannerFactory` so it can be reviewed and asserted
+        /// independently of the HUD scene.
+        ///
+        /// Why a source-text test: a behavioral test would need to wire a
+        /// real SceneTree frame loop and time the 0.1s timer fire after a
+        /// `QueueFree()`, which is brittle in the headless gate's _Ready
+        /// context. The actual invariant is structural — every return path
+        /// in the lambda must free the timer — and the cheapest faithful
+        /// assertion is to read the file and grep for the leak-guard pattern.
+        /// A future refactor that breaks the invariant will fail this gate.
+        /// </summary>
+        private void TestPowerupBannerFactory()
+        {
+            // Resolve the source path relative to the project root. The headless
+            // gate runs from res:// so the working directory is the project root.
+            const string relativeSource = "scripts/ui/PowerupBannerFactory.cs";
+            if (!System.IO.File.Exists(relativeSource))
+                throw new Exception($"Source file not found: {relativeSource}");
+
+            string source = System.IO.File.ReadAllText(relativeSource);
+
+            // The lambda must contain BOTH the IsInstanceValid check AND a
+            // timer.QueueFree() in the early-return branch.
+            int idxValid = source.IndexOf("IsInstanceValid(lbl)");
+            if (idxValid < 0)
+                throw new Exception("PowerupBannerFactory: IsInstanceValid(lbl) check missing — early-return leak guard not present");
+
+            // Slice the source from the IsInstanceValid check to the next
+            // standalone "return;" that follows it. The early-return branch
+            // must contain a timer.QueueFree() call.
+            string afterValid = source.Substring(idxValid);
+            int blockEnd = afterValid.IndexOf("return;");
+            if (blockEnd < 0)
+                throw new Exception("PowerupBannerFactory: cannot locate early-return statement after IsInstanceValid check");
+
+            string block = afterValid.Substring(0, blockEnd);
+            if (!block.Contains("timer.QueueFree()"))
+                throw new Exception("PowerupBannerFactory: timer.QueueFree() missing on early-return path — HUD timer leak regression (c9fed16).");
+
+            // Also assert the success path frees the timer. The last
+            // `lbl.QueueFree()` should be followed by a `timer.QueueFree()`.
+            int lastLblQueueFree = source.LastIndexOf("lbl.QueueFree()");
+            if (lastLblQueueFree < 0)
+                throw new Exception("PowerupBannerFactory: lbl.QueueFree() not found");
+            string afterLbl = source.Substring(lastLblQueueFree);
+            if (!afterLbl.Contains("timer.QueueFree()"))
+                throw new Exception("PowerupBannerFactory: timer.QueueFree() missing on success path");
+
+            GD.Print("  PowerupBannerFactory: leak-guard pattern present (early-return + success path)");
         }
     }
 }
