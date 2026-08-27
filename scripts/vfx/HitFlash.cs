@@ -7,7 +7,7 @@ namespace HeroArena
     /// the screen with a ColorRect overlay. Resolves the F-31 dead-signal
     /// finding: OnProjectileHit was emitted by 5+ call sites but had zero
     /// in-tree consumers, so the event did nothing. The HitFlash is the
-    /// minimum useful consumer — a brief red flash on every projectile impact.
+    /// minimum useful consumer — a damage-type-keyed flash on every projectile impact.
     ///
     /// DamageType-keyed color: kinetic=red, energy=cyan, lightning=yellow,
     /// acid=green, fire=orange, explosive=white. Other types fall back to red.
