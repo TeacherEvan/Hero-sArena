@@ -74,8 +74,15 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
             int[] nearby = grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count);
-            // Healing amount per tick
-            // In a full implementation, entity id → EnemyBase lookup would be resolved here
+            float healPerTick = MaxHealth * HEAL_RATE * dt;
+            for (int i = 0; i < count; i++)
+            {
+                if (EnemyBase.TryGetById(nearby[i], out var ally) && ally != null
+                    && ally != this && ally.State != EnemyAIState.Dead)
+                {
+                    ally.SetCurrentHealth(ally.CurrentHealth + healPerTick);
+                }
+            }
         }
     }
 }

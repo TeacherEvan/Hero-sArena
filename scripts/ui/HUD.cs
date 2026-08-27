@@ -20,6 +20,11 @@ namespace HeroArena
         private System.Action<int>? _onLevelUp;
         private System.Action<int>? _onThreatChanged;
 
+        private const int MAX_POWERUP_BANNERS = 5;
+        private long _lastScore = -1;
+        private int _lastEnemyCount = -1;
+        private float _lastMaxHealth = -1f;
+
         public override void _Ready()
         {
             _onHeroDamaged = _ => RefreshHealth();
@@ -37,13 +42,27 @@ namespace HeroArena
         public override void _Process(double delta)
         {
             var gm = GameManager.Instance;
-            ScoreLabel.Text = $"Score: {gm.Score}";
-            EnemyCountLabel.Text = $"Enemies: {gm.ActiveEnemyCount}";
+            if (gm == null || gm.CurrentState != GameState.Playing) return;
+
+            if (gm.Score != _lastScore)
+            {
+                ScoreLabel.Text = $"Score: {gm.Score}";
+                _lastScore = gm.Score;
+            }
+            if (gm.ActiveEnemyCount != _lastEnemyCount)
+            {
+                EnemyCountLabel.Text = $"Enemies: {gm.ActiveEnemyCount}";
+                _lastEnemyCount = gm.ActiveEnemyCount;
+            }
 
             var hero = gm.ActiveHero;
             if (hero != null)
             {
-                HealthBar.MaxValue = hero.MaxHealth;
+                if (!Mathf.IsEqualApprox(hero.MaxHealth, _lastMaxHealth))
+                {
+                    HealthBar.MaxValue = hero.MaxHealth;
+                    _lastMaxHealth = hero.MaxHealth;
+                }
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
             }
@@ -57,11 +76,26 @@ namespace HeroArena
 
         private void ShowPowerup(string type)
         {
+            if (!IsInsideTree()) return;
+
+            // Cap the visible list to MAX_POWERUP_BANNERS (oldest first out)
+            while (PowerupList.GetChildCount() >= MAX_POWERUP_BANNERS)
+            {
+                var oldest = PowerupList.GetChild(0);
+                PowerupList.RemoveChild(oldest);
+                oldest.QueueFree();
+            }
+
             var lbl = new Label { Text = type };
             PowerupList.AddChild(lbl);
-            // Auto-remove after 5 s
             var timer = new Timer { WaitTime = 5.0, OneShot = true };
-            timer.Timeout += () => { lbl.QueueFree(); timer.QueueFree(); };
+            timer.Timeout += () =>
+            {
+                if (!IsInstanceValid(lbl)) { timer.QueueFree(); return; }
+                if (lbl.IsInsideTree()) lbl.GetParent()?.RemoveChild(lbl);
+                lbl.QueueFree();
+                timer.QueueFree();
+            };
             AddChild(timer);
             timer.Start();
         }

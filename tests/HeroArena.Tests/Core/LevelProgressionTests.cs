@@ -55,8 +55,8 @@ public class LevelProgressionTests
     [Theory]
     [InlineData(1, 100)]
     [InlineData(2, 160)] // 100 + 1*50 + 1*10
-    [InlineData(5, 450)] // 100 + 4*50 + 16*10
-    [InlineData(10, 1450)] // 100 + 9*50 + 81*10
+    [InlineData(5, 460)] // 100 + 4*50 + 16*10
+    [InlineData(10, 1360)] // 100 + 9*50 + 81*10
     public void XpRequiredForLevel_QuadraticFormula_ComputesCorrectly(int level, int expected)
     {
         // Act

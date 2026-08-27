@@ -188,8 +188,13 @@ namespace HeroArena
                 for (int cy = minCy; cy <= maxCy; cy++)
                 {
                     long key = HashKey(cx, cy);
-                    if (_cells.TryGetValue(key, out var list))
-                        list.Remove(entityId);
+                    if (!_cells.TryGetValue(key, out var list)) continue;
+                    int idx = list.IndexOf(entityId);
+                    if (idx < 0) continue;
+                    // Swap-with-last: O(1) removal since list order is irrelevant.
+                    int last = list.Count - 1;
+                    if (idx != last) list[idx] = list[last];
+                    list.RemoveAt(last);
                 }
             }
         }

@@ -33,17 +33,27 @@ namespace HeroArena
 
         // Tracks whether each decal index is currently checked-out (active in game world)
         private readonly bool[] _isDecalActiveInPool = new bool[MAX_DECALS];
+        private readonly bool[] _isProjectileActiveInPool = new bool[MAX_PROJECTILES];
+
+        public bool IsReady { get; private set; }
 
         public override void _Ready()
         {
             if (ProjectileScene == null || DecalScene == null)
             {
-                GD.PrintErr("ObjectPoolManager: ProjectileScene/DecalScene not assigned; skipping pre-allocation. " +
-                            "Set them on the autoload in project.godot or load a scene that wires them.");
-                return;
+                throw new InvalidOperationException(
+                    "ObjectPoolManager: ProjectileScene/DecalScene not assigned. " +
+                    "Wire them in project.godot or the scene that instantiates this autoload.");
             }
             PreAllocateProjectiles();
             PreAllocateDecals();
+            IsReady = true;
+        }
+
+        private void RequireReady()
+        {
+            if (!IsReady)
+                throw new InvalidOperationException("ObjectPoolManager used before _Ready completed.");
         }
 
         // ── Pre-allocation ────────────────────────────────────────────────────
@@ -82,22 +92,27 @@ namespace HeroArena
         // ── Projectile API ────────────────────────────────────────────────────
         public ProjectileBase? GetProjectile(Vector2 pos, Vector2 dir, float speed, float damage, DamageType type)
         {
+            RequireReady();
             if (_freeProjectileTop == 0) return null;
             int idx = _freeProjectiles[--_freeProjectileTop];
             var p = _projectiles[idx];
             p.Activate(pos, dir, speed, damage, type, idx);
+            _isProjectileActiveInPool[idx] = true;
             return p;
         }
 
         public void ReturnProjectile(ProjectileBase p)
         {
+            if (!_isProjectileActiveInPool[p.PoolIndex]) return; // already returned
             p.Deactivate();
+            _isProjectileActiveInPool[p.PoolIndex] = false;
             _freeProjectiles[_freeProjectileTop++] = p.PoolIndex;
         }
 
         // ── Decal API ─────────────────────────────────────────────────────────
         public DecalInstance? GetDecal(Vector2 pos, DecalType type, float size)
         {
+            RequireReady();
             int idx;
             if (_freeDecalTop > 0)
             {

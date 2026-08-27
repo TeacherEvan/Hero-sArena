@@ -22,27 +22,24 @@ namespace HeroArena
         protected override void UpdateAI()
         {
             if (_hero == null) return;
-            if (DistanceSquaredToHero() < PROX_TRIGGER * PROX_TRIGGER) Detonate();
+            if (State == EnemyAIState.Dead) return;
+            if (DistanceSquaredToHero() < PROX_TRIGGER * PROX_TRIGGER) Die();
         }
 
         protected override void Die()
         {
+            if (State == EnemyAIState.Dead) return;
             Detonate();
+            base.Die();
         }
 
         private void Detonate()
         {
-            // AoE damage to hero if in radius
             if (_hero != null && GlobalPosition.DistanceSquaredTo(_hero.GlobalPosition) <= DETONATE_RADIUS * DETONATE_RADIUS)
                 _hero.TakeDamage(DETONATE_DAMAGE, DamageType.Explosive);
 
             EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.AcidPool, DETONATE_RADIUS);
             EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Acid);
-
-            State = EnemyAIState.Dead;
-            GameManager.Instance.SpatialGrid?.Remove(_entityId);
-            EventBus.Instance.EmitEnemyKilled(this);
-            QueueFree();
         }
     }
 }

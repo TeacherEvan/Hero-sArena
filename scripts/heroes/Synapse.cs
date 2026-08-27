@@ -1,5 +1,3 @@
-using System;
-
 namespace HeroArena
 {
     /// <summary>
@@ -55,7 +53,6 @@ namespace HeroArena
 
         private void FireChainLaser()
         {
-            // Chain laser hits up to MAX_CHAIN targets via spatial grid
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
 
@@ -64,8 +61,15 @@ namespace HeroArena
             int chained = 0;
             for (int i = 0; i < count && chained < MAX_CHAIN; i++)
             {
-                // Damage resolution done via EnemyBase.TakeDamage once entity lookup is wired
-                chained++;
+                if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
+                    && enemy.State != EnemyAIState.Dead)
+                {
+                    enemy.TakeDamage(dmg, DamageType.Energy);
+                    chained++;
+                }
+            }
+            if (chained > 0)
+            {
                 EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Energy);
             }
         }
