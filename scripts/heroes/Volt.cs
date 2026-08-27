@@ -62,7 +62,15 @@ namespace HeroArena
             int forked = 0;
             for (int i = 0; i < count && forked < MAX_FORKS; i++)
             {
-                forked++;
+                if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
+                    && enemy.State != EnemyAIState.Dead)
+                {
+                    enemy.TakeDamage(dmg, DamageType.Lightning);
+                    forked++;
+                }
+            }
+            if (forked > 0)
+            {
                 EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Lightning);
             }
         }

@@ -80,6 +80,13 @@ namespace HeroArena
             else if (body is HeroBase hero)
             {
                 hero.TakeDamage(Damage, DamageType);
+                EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType);
+                OnHit(body);
+            }
+            else if (body is DestructibleObject dest)
+            {
+                dest.TakeDamage(Damage);
+                EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType);
                 OnHit(body);
             }
         }

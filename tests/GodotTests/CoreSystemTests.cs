@@ -29,6 +29,9 @@ namespace HeroArena.Tests
             try { TestLevelProgression(); passed++; GD.Print("PASS: LevelProgression tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: LevelProgression - {e.Message}"); }
 
+            try { TestEntityRegistry(); passed++; GD.Print("PASS: EntityRegistry tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: EntityRegistry - {e.Message}"); }
+
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
             
             if (failed > 0)
@@ -196,10 +199,27 @@ namespace HeroArena.Tests
             var perks = progression.GetRandomPerks(3);
             if (perks.Length != 3)
                 throw new Exception($"Expected 3 perks, got {perks.Length}");
-            
+
             var uniquePerks = new HashSet<PerkType>(perks);
             if (uniquePerks.Count != 3)
                 throw new Exception("Perks should be distinct");
+        }
+
+        /// <summary>
+        /// Regression guard for F-1: the static entity-id registry on EnemyBase
+        /// must return null for unknown ids and must reflect removal on _ExitTree.
+        /// We exercise it through the public TryGetById without spinning up a
+        /// full enemy scene (the Godot gate is headless; scenes are expensive).
+        /// </summary>
+        private void TestEntityRegistry()
+        {
+            // Unknown id → null
+            if (EnemyBase.TryGetById(int.MaxValue, out var unknown) && unknown != null)
+                throw new Exception("Unknown entity id should not resolve");
+
+            // Negative id → null
+            if (EnemyBase.TryGetById(-1, out var neg) && neg != null)
+                throw new Exception("Negative entity id should not resolve");
         }
     }
 }

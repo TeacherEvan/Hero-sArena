@@ -18,7 +18,6 @@ namespace HeroArena
         private float _tectonicTimer = 0f;
         private float _tectonicCooldown = 0f;
         private bool _tectonicActive = false;
-        private float _reflectDamage = 0f;
 
         protected override void OnReady()
         {
@@ -60,7 +59,6 @@ namespace HeroArena
 
         private void Slam()
         {
-            // Deal AoE kinetic damage to all enemies within radius
             float damage = _levelProg.CalcKineticDamage(SLAM_DAMAGE, Level);
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
@@ -68,8 +66,11 @@ namespace HeroArena
             int[] hits = grid.QueryRadius(GlobalPosition, SLAM_RADIUS, out int count);
             for (int i = 0; i < count; i++)
             {
-                // Entity id resolution handled by EnemyBase registering itself
-                // The ids stored in the grid match enemy node instance IDs
+                if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
+                    && enemy.State != EnemyAIState.Dead)
+                {
+                    enemy.TakeDamage(damage, DamageType.Kinetic);
+                }
             }
 
             EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Kinetic);
@@ -82,7 +83,6 @@ namespace HeroArena
             _tectonicActive = true;
             _tectonicTimer = TECTONIC_DURATION;
             _tectonicCooldown = TECTONIC_COOLDOWN;
-            _reflectDamage = 30f;
             EventBus.Instance.EmitPowerupCollected("TectonicPlating");
         }
 

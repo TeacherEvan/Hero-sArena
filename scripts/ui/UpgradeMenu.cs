@@ -19,8 +19,7 @@ namespace HeroArena
 
         public override void _Ready()
         {
-            _progression = new LevelProgression();
-            AddChild(_progression);
+            _progression = GameManager.Instance.EnsureLevelProgression();
 
             _onLevelUpHandler = _ => ShowMenu();
             EventBus.Instance.OnLevelUp += _onLevelUpHandler;

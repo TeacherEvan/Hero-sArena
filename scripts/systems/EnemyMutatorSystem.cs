@@ -3,7 +3,7 @@ using System;
 
 namespace HeroArena
 {
-    public enum MutatorType { SpeedBoost, HealthBoost, DamageBoost, Shielded, Enraged, Splitting }
+    public enum MutatorType { SpeedBoost, HealthBoost, DamageBoost, Shielded, Enraged }
 
     /// <summary>
     /// Applies stacking random mutators to enemies based on current ThreatLevel.
@@ -11,16 +11,27 @@ namespace HeroArena
     /// </summary>
     public partial class EnemyMutatorSystem : Node
     {
+        public static EnemyMutatorSystem? Instance { get; private set; }
+
         private readonly RandomNumberGenerator _rng = new();
         private static readonly MutatorType[] AllMutators = (MutatorType[])Enum.GetValues(typeof(MutatorType));
 
         public override void _Ready()
         {
+            Instance = this;
             _rng.Randomize();
             EventBus.Instance.OnThreatLevelChanged += OnThreatChanged;
         }
 
-        private void OnThreatChanged(int threatLevel) { /* Re-apply to new spawns via ApplyMutators */ }
+        public override void _ExitTree()
+        {
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnThreatLevelChanged -= OnThreatChanged;
+            if (Instance == this) Instance = null;
+            base._ExitTree();
+        }
+
+        private void OnThreatChanged(int threatLevel) { /* future: re-apply scaling to live enemies */ }
 
         public void ApplyMutators(EnemyBase enemy, int threatLevel)
         {
@@ -55,18 +66,15 @@ namespace HeroArena
                 case MutatorType.DamageBoost:
                     enemy.Damage *= scale;
                     break;
+                case MutatorType.Shielded:
+                    enemy.AddShieldCharges(Mathf.Max(1, threatLevel / 2));
+                    break;
                 case MutatorType.Enraged:
                     enemy.MoveSpeed *= 1.5f;
                     enemy.Damage *= 1.5f;
                     break;
-                // Shielded / Splitting require additional component attachment
+                // Splitting requires a new scene; not implemented yet.
             }
-        }
-
-        public override void _ExitTree()
-        {
-            if (EventBus.Instance != null)
-                EventBus.Instance.OnThreatLevelChanged -= OnThreatChanged;
         }
     }
 }

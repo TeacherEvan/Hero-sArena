@@ -50,6 +50,7 @@ namespace HeroArena
 
         public override void _Ready()
         {
+            if (_workerThread != null) return; // _Ready called twice
             _readBuf = _bufA;
             _writeBuf = _bufB;
 
@@ -62,7 +63,12 @@ namespace HeroArena
         {
             _running = false;
             _wakeEvent.Set();
-            _workerThread?.Join(500);
+            if (_workerThread != null && !_workerThread.Join(TimeSpan.FromMilliseconds(500)))
+            {
+                GD.PushWarning("FlowFieldPathfinder: worker thread did not exit within 500 ms; abandoning.");
+            }
+            _wakeEvent.Dispose();
+            base._ExitTree();
         }
 
         // ── Public API (called from main thread) ──────────────────────────────

@@ -29,6 +29,22 @@ namespace HeroArena
         public CollateralKarma? KarmaSystem { get; set; }
         public HeroBase? ActiveHero { get; set; }
 
+        // Set by MainMenu.StartGame; consumed by MainMenu.OnSceneChanged after
+        // the new scene's _Ready has wired WaveManager/SpatialGrid.
+        public bool PendingStartAfterSceneChange { get; set; } = false;
+
+        private LevelProgression? _levelProgression;
+
+        public LevelProgression EnsureLevelProgression()
+        {
+            if (_levelProgression == null || !IsInstanceValid(_levelProgression))
+            {
+                _levelProgression = new LevelProgression { Name = "LevelProgression" };
+                AddChild(_levelProgression);
+            }
+            return _levelProgression;
+        }
+
         public override void _Ready()
         {
             Instance = this;
@@ -119,6 +135,8 @@ namespace HeroArena
                 EventBus.Instance.OnEnemyKilled -= HandleEnemyKilled;
                 EventBus.Instance.OnEnvironmentDestroyed -= HandleEnvironmentDestroyed;
             }
+            if (Instance == this) Instance = null!;
+            base._ExitTree();
         }
     }
 }

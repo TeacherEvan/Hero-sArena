@@ -35,3 +35,11 @@ desktop.ini
 # NuGet
 *.nupkg
 packages/
+
+# Code-review / plan artifacts (advisory, not project source)
+HERMES_PLAN.html
+HERMES_PLAN.ai.json
+audit_report.md
+review_findings.md
+fix_summary.md
+investigation_report.md

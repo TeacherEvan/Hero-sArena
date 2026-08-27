@@ -43,9 +43,24 @@ namespace HeroArena
 
         private void StartGame()
         {
-            if (GameScene != null)
-                GetTree().ChangeSceneToPacked(GameScene);
-            GameManager.Instance.StartGame();
+            if (GameScene == null) return;
+            // Defer the actual StartGame() until after the new scene is mounted and
+            // its WaveManager / SpatialGrid are reachable. ChangeSceneToPacked runs on
+            // the next frame; CallDeferred puts us one frame later still, which is
+            // when the new scene's _Ready has fired and GameManager.WaveManager
+            // (assigned by the scene) is non-null.
+            GameManager.Instance.PendingStartAfterSceneChange = true;
+            GetTree().ChangeSceneToPacked(GameScene);
+            CallDeferred(MethodName.OnSceneChanged);
+        }
+
+        private void OnSceneChanged()
+        {
+            if (GameManager.Instance.PendingStartAfterSceneChange)
+            {
+                GameManager.Instance.PendingStartAfterSceneChange = false;
+                GameManager.Instance.StartGame();
+            }
         }
 
         private void OpenOptions()

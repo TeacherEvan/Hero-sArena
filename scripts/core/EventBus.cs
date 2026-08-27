@@ -34,6 +34,12 @@ namespace HeroArena
             Instance = this;
         }
 
+        public override void _ExitTree()
+        {
+            if (Instance == this) Instance = null!;
+            base._ExitTree();
+        }
+
         // ── Emitters ─────────────────────────────────────────────────────────
         public void EmitEnemyKilled(EnemyBase enemy) => OnEnemyKilled?.Invoke(enemy);
         public void EmitHeroDamaged(float damage) => OnHeroDamaged?.Invoke(damage);

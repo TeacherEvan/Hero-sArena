@@ -28,6 +28,7 @@ namespace HeroArena
 
         public override void _Ready()
         {
+            _rng.Randomize();
             EventBus.Instance.OnWaveCompleted += OnWaveComplete;
         }
 
@@ -52,6 +53,14 @@ namespace HeroArena
             if (_pendingEnemiesToSpawn > 0)
             {
                 ProcessPendingSpawns();
+            }
+
+            // Emit wave completion once the wave is fully cleared (no pending spawns and no live enemies)
+            if (_waveInProgress && _pendingEnemiesToSpawn == 0
+                && GameManager.Instance != null
+                && GameManager.Instance.ActiveEnemyCount == 0)
+            {
+                EventBus.Instance.EmitWaveCompleted(_currentWave);
             }
         }
 
@@ -89,7 +98,6 @@ namespace HeroArena
         private void ProcessPendingSpawns()
         {
             int toSpawn = Math.Min(_pendingEnemiesToSpawn, MAX_SPAWNS_PER_FRAME);
-            _rng.Randomize();
 
             int spawnedThisFrame = 0;
             for (int i = 0; i < toSpawn; i++)
@@ -111,8 +119,9 @@ namespace HeroArena
         private void SpawnEnemy(PackedScene scene, Vector2 pos)
         {
             var enemy = scene.Instantiate<EnemyBase>();
-            GetTree().CurrentScene.AddChild(enemy);
             enemy.GlobalPosition = pos;
+            GetTree().CurrentScene.AddChild(enemy);
+            EnemyMutatorSystem.Instance?.ApplyMutators(enemy, GameManager.Instance.ThreatLevel);
             GameManager.Instance.IncrementEnemyCount();
         }
 
