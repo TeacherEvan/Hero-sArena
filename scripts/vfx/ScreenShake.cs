@@ -31,6 +31,7 @@ namespace HeroArena
             if (_elapsed >= _duration)
             {
                 Offset = Vector2.Zero;
+                SetProcess(false);
                 return;
             }
 

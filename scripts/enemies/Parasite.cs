@@ -17,7 +17,6 @@ namespace HeroArena
         protected override void OnSpawn()
         {
             MaxHealth = 10f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 180f;
             Damage = 5f;
             ExpValue = 8;

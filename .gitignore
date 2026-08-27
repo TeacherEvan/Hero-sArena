@@ -36,6 +36,9 @@ desktop.ini
 *.nupkg
 packages/
 
+# Godot export output (rebuilt by CI per release)
+build/
+
 # Code-review / plan artifacts (advisory, not project source)
 HERMES_PLAN.html
 HERMES_PLAN.ai.json

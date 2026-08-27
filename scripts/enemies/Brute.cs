@@ -16,7 +16,6 @@ namespace HeroArena
         protected override void OnSpawn()
         {
             MaxHealth = 400f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 70f;
             Damage = 40f;
             ExpValue = 50;
@@ -69,10 +68,6 @@ namespace HeroArena
             MoveAndSlide();
         }
 
-        // Brutes are immune to knockback - override if knockback logic added
-        public override void TakeDamage(float amount, DamageType type = DamageType.Kinetic)
-        {
-            base.TakeDamage(amount, type); // no knockback modifier here
-        }
+        // (Brute has no knockback modifier; base TakeDamage is sufficient.)
     }
 }

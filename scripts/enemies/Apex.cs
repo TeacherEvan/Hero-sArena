@@ -19,11 +19,11 @@ namespace HeroArena
         private float _introTimer = 2f;
         private float _bulletCooldown = 0f;
         private float _meleeTimer = 0f;
+        private bool _enraged = false;
 
         protected override void OnSpawn()
         {
             MaxHealth = 5000f;
-            CurrentHealth = MaxHealth;
             MoveSpeed = 80f;
             Damage = 50f;
             ExpValue = 500;
@@ -88,7 +88,14 @@ namespace HeroArena
 
         private void DoEnrage()
         {
-            MoveSpeed = 160f; // Double speed
+            // Multiply rather than overwrite so the EnemyMutator system's
+            // Enraged mutator (×1.5) is preserved if it had already applied.
+            // Idempotent: only apply the phase transition once.
+            if (!_enraged)
+            {
+                MoveSpeed *= 2f;
+                _enraged = true;
+            }
             DoMelee();
             DoBulletHell();
         }
