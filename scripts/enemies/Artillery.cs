@@ -42,7 +42,7 @@ namespace HeroArena
             var pool = GameManager.Instance.PoolManager;
             if (pool == null) return;
             Vector2 dir = (_hero.GlobalPosition - GlobalPosition).Normalized();
-            pool.GetProjectile(GlobalPosition, dir, 250f, Damage, DamageType.Explosive);
+            pool.GetProjectile(new ProjectileData(GlobalPosition, dir, 250f, Damage, DamageType.Explosive));
         }
     }
 }

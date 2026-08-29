@@ -90,13 +90,13 @@ namespace HeroArena
         }
 
         // ── Projectile API ────────────────────────────────────────────────────
-        public ProjectileBase? GetProjectile(Vector2 pos, Vector2 dir, float speed, float damage, DamageType type)
+        public ProjectileBase? GetProjectile(ProjectileData data)
         {
             RequireReady();
             if (_freeProjectileTop == 0) return null;
             int idx = _freeProjectiles[--_freeProjectileTop];
             var p = _projectiles[idx];
-            p.Activate(pos, dir, speed, damage, type, idx);
+            p.Activate(data, idx);
             _isProjectileActiveInPool[idx] = true;
             return p;
         }
