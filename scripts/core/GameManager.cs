@@ -69,12 +69,21 @@ namespace HeroArena
             WaveManager?.BeginNextWave();
         }
 
+        protected virtual void SetTreePaused(bool paused)
+        {
+            var tree = GetTree();
+            if (tree != null)
+            {
+                tree.Paused = paused;
+            }
+        }
+
         public void PauseGame()
         {
             if (CurrentState == GameState.Playing)
             {
                 SetState(GameState.Paused);
-                GetTree().Paused = true;
+                SetTreePaused(true);
             }
         }
 
@@ -83,7 +92,7 @@ namespace HeroArena
             if (CurrentState == GameState.Paused)
             {
                 SetState(GameState.Playing);
-                GetTree().Paused = false;
+                SetTreePaused(false);
             }
         }
 
