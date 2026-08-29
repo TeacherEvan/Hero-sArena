@@ -11,6 +11,7 @@ namespace HeroArena
     {
         private readonly int _cellSize;
         private readonly Dictionary<long, List<int>> _cells = new();
+        private readonly Stack<List<int>> _listPool = new();
 
         // Per-entity tracking so we can remove/update efficiently
         private struct EntityData
@@ -96,6 +97,11 @@ namespace HeroArena
 
         public void Clear()
         {
+            foreach (var list in _cells.Values)
+            {
+                list.Clear();
+                _listPool.Push(list);
+            }
             _cells.Clear();
             _entityData.Clear();
             _queryStamps.Clear();
@@ -173,7 +179,7 @@ namespace HeroArena
                     long key = HashKey(cx, cy);
                     if (!_cells.TryGetValue(key, out var list))
                     {
-                        list = new List<int>(8);
+                        list = _listPool.Count > 0 ? _listPool.Pop() : new List<int>(8);
                         _cells[key] = list;
                     }
                     list.Add(entityId);
@@ -195,6 +201,12 @@ namespace HeroArena
                     int last = list.Count - 1;
                     if (idx != last) list[idx] = list[last];
                     list.RemoveAt(last);
+
+                    if (list.Count == 0)
+                    {
+                        _cells.Remove(key);
+                        _listPool.Push(list);
+                    }
                 }
             }
         }
