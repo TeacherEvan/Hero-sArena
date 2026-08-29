@@ -64,30 +64,37 @@ namespace HeroArena
             }
         }
 
-        private static string PerkDisplayName(PerkType perk) => perk switch
+        private static readonly string[] _perkNames = new string[]
         {
-            PerkType.DamageUp => "+15% Damage",
-            PerkType.SpeedUp => "+10% Move Speed",
-            PerkType.HealthRegen => "Health Regeneration",
-            PerkType.MaxHealthUp => "+15% Max Health",
-            PerkType.AttackSpeedUp => "+15% Attack Speed",
-            PerkType.PiercingShots => "Piercing Shots",
-            PerkType.ExplosiveRounds => "Explosive Rounds",
-            PerkType.LifeSteal => "Life Steal",
-            PerkType.ShieldBurst => "Shield Burst",
-            PerkType.DodgeCooldownReduce => "-25% Dodge Cooldown",
-            PerkType.CritChanceUp => "+10% Crit Chance",
-            PerkType.AoERadiusUp => "+20% AoE Radius",
-            PerkType.ProjectileCount => "+1 Projectile",
-            PerkType.SlowOnHit => "Slow on Hit",
-            PerkType.BurnOnHit => "Burn on Hit",
-            PerkType.FrostAura => "Frost Aura",
-            PerkType.ThornArmor => "Thorn Armor",
-            PerkType.DoubleJump => "Double Dodge",
-            PerkType.EnergyDamageUp => "+15% Energy Damage",
-            PerkType.KineticDamageUp => "+15% Kinetic Damage",
-            _ => perk.ToString()
+            "+15% Damage",
+            "+10% Move Speed",
+            "Health Regeneration",
+            "+15% Max Health",
+            "+15% Attack Speed",
+            "Piercing Shots",
+            "Explosive Rounds",
+            "Life Steal",
+            "Shield Burst",
+            "-25% Dodge Cooldown",
+            "+10% Crit Chance",
+            "+20% AoE Radius",
+            "+1 Projectile",
+            "Slow on Hit",
+            "Burn on Hit",
+            "Frost Aura",
+            "Thorn Armor",
+            "Double Dodge",
+            "+15% Energy Damage",
+            "+15% Kinetic Damage"
         };
+
+        private static string PerkDisplayName(PerkType perk)
+        {
+            int index = (int)perk;
+            if ((uint)index < (uint)_perkNames.Length)
+                return _perkNames[index];
+            return perk.ToString();
+        }
 
         public override void _ExitTree()
         {

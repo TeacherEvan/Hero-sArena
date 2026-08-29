@@ -66,7 +66,8 @@ namespace HeroArena
             if (pool == null) return;
             Vector2 dir = GetAimDirection();
             float dmg = _levelProg.CalcKineticDamage(BLADE_DAMAGE, Level);
-            var p = pool.GetProjectile(GlobalPosition, dir, BLADE_SPEED, dmg, DamageType.Kinetic);
+            var data = new ProjectileData(GlobalPosition, dir, BLADE_SPEED, dmg, DamageType.Kinetic);
+            var p = pool.GetProjectile(data);
             if (p != null) p.PiercingCount = 3;
         }
 

@@ -35,24 +35,44 @@ namespace HeroArena
             switch (_aiState)
             {
                 case BurrowerState.SubmergedTrack:
-                    if (distSq < ERUPT_RANGE * ERUPT_RANGE) _aiState = BurrowerState.Erupt;
+                    DoSubmergedTrack(distSq);
                     break;
                 case BurrowerState.Erupt:
-                    // After erupting, immediately attack
-                    _aiState = BurrowerState.Attack;
+                    DoErupt();
                     break;
                 case BurrowerState.Attack:
-                    if (distSq < ATTACK_RANGE * ATTACK_RANGE)
-                    {
-                        _hero.TakeDamage(Damage, DamageType.Kinetic);
-                        _aiState = BurrowerState.Submerge;
-                        _submergeCooldown = SUBMERGE_COOLDOWN;
-                    }
+                    DoAttack(distSq);
                     break;
                 case BurrowerState.Submerge:
-                    if (_submergeCooldown <= 0f) _aiState = BurrowerState.SubmergedTrack;
+                    DoSubmerge();
                     break;
             }
+        }
+
+        private void DoSubmergedTrack(float distSq)
+        {
+            if (distSq < ERUPT_RANGE * ERUPT_RANGE) _aiState = BurrowerState.Erupt;
+        }
+
+        private void DoErupt()
+        {
+            // After erupting, immediately attack
+            _aiState = BurrowerState.Attack;
+        }
+
+        private void DoAttack(float distSq)
+        {
+            if (distSq < ATTACK_RANGE * ATTACK_RANGE)
+            {
+                _hero.TakeDamage(Damage, DamageType.Kinetic);
+                _aiState = BurrowerState.Submerge;
+                _submergeCooldown = SUBMERGE_COOLDOWN;
+            }
+        }
+
+        private void DoSubmerge()
+        {
+            if (_submergeCooldown <= 0f) _aiState = BurrowerState.SubmergedTrack;
         }
 
         protected override void Move(float dt)

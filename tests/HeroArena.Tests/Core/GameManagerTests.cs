@@ -17,17 +17,25 @@ public class GameManagerTests : IDisposable
     public GameManagerTests()
     {
         // Setup dependencies
-        _eventBus = new EventBus();
-        _eventBus._Ready(); // Initialize the singleton
+#pragma warning disable SYSLIB0050
+        _eventBus = (EventBus)FormatterServices.GetUninitializedObject(typeof(EventBus));
+#pragma warning restore SYSLIB0050
+        typeof(EventBus).GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.SetValue(null, _eventBus);
 
-        _gameManager = new GameManager();
-        _gameManager._Ready();
+#pragma warning disable SYSLIB0050
+        _gameManager = (GameManager)FormatterServices.GetUninitializedObject(typeof(GameManager));
+#pragma warning restore SYSLIB0050
+
+        // Initialize necessary properties manually for tests
+        typeof(GameManager).GetProperty("Score", BindingFlags.Public | BindingFlags.Instance)!.SetValue(_gameManager, 0L);
+        typeof(GameManager).GetProperty("ActiveEnemyCount", BindingFlags.Public | BindingFlags.Instance)!.SetValue(_gameManager, 0);
+        typeof(GameManager).GetProperty("ThreatLevel", BindingFlags.Public | BindingFlags.Instance)!.SetValue(_gameManager, 0);
     }
 
     public void Dispose()
     {
         // Clean up events to avoid leaking between tests
-        _gameManager._ExitTree();
+        typeof(EventBus).GetProperty("Instance", BindingFlags.Public | BindingFlags.Static)!.SetValue(null, null);
     }
 
     [Fact]

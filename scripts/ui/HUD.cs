@@ -25,8 +25,19 @@ namespace HeroArena
         private int _lastEnemyCount = -1;
         private float _lastMaxHealth = -1f;
 
+        private readonly Label[] _powerupLabels = new Label[MAX_POWERUP_BANNERS];
+        private readonly float[] _powerupTimers = new float[MAX_POWERUP_BANNERS];
+
         public override void _Ready()
         {
+            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
+            {
+                var lbl = new Label { Visible = false };
+                PowerupList.AddChild(lbl);
+                _powerupLabels[i] = lbl;
+                _powerupTimers[i] = 0f;
+            }
+
             _onHeroDamaged = _ => RefreshHealth();
             _onWaveStarted = w => { WaveLabel.Text = $"Wave {w}"; };
             _onLevelUp = l => { LevelLabel.Text = $"Lv {l}"; };
@@ -66,6 +77,18 @@ namespace HeroArena
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
             }
+
+            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
+            {
+                if (_powerupTimers[i] > 0f)
+                {
+                    _powerupTimers[i] -= (float)delta;
+                    if (_powerupTimers[i] <= 0f)
+                    {
+                        _powerupLabels[i].Visible = false;
+                    }
+                }
+            }
         }
 
         private void RefreshHealth()
@@ -78,20 +101,29 @@ namespace HeroArena
         {
             if (!IsInsideTree()) return;
 
-            // Cap the visible list to MAX_POWERUP_BANNERS (oldest first out)
-            while (PowerupList.GetChildCount() >= MAX_POWERUP_BANNERS)
+            // Find an inactive label, or the oldest active label (the one with the smallest timer > 0)
+            int targetIdx = 0;
+            float minTime = float.MaxValue;
+
+            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
             {
-                var oldest = PowerupList.GetChild(0);
-                PowerupList.RemoveChild(oldest);
-                oldest.QueueFree();
+                if (_powerupTimers[i] <= 0f)
+                {
+                    targetIdx = i;
+                    break;
+                }
+                if (_powerupTimers[i] < minTime)
+                {
+                    minTime = _powerupTimers[i];
+                    targetIdx = i;
+                }
             }
 
-            // The actual banner+auto-cleanup logic is in PowerupBannerFactory
-            // so it can be tested without an [Export]-wired HUD scene.
-            // BUG-GUARD (regression for c9fed16): the factory's timer callback
-            // must free BOTH the banner and the timer on every return path,
-            // including the early-return when the banner has been evicted.
-            PowerupBannerFactory.Spawn(this, PowerupList, type);
+            var lbl = _powerupLabels[targetIdx];
+            lbl.Text = type;
+            lbl.Visible = true;
+            _powerupTimers[targetIdx] = 5f;
+            PowerupList.MoveChild(lbl, -1);
         }
 
         public override void _ExitTree()
