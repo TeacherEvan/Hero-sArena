@@ -39,7 +39,8 @@ namespace HeroArena
             float t = 1f - (_elapsed / _duration);
             float nx = _noise.GetNoise2D(_elapsed * 100f, 0f);
             float ny = _noise.GetNoise2D(0f, _elapsed * 100f);
-            Offset = new Vector2(nx, ny) * _intensity * t;
+            float factor = _intensity * t;
+            Offset = new Vector2(nx * factor, ny * factor);
         }
     }
 }
