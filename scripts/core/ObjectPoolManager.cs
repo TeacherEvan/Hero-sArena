@@ -110,6 +110,26 @@ namespace HeroArena
         }
 
         // ── Decal API ─────────────────────────────────────────────────────────
+        private int EvictOldestActiveDecal()
+        {
+            // Evict the oldest *still-active* decal from the circular order buffer
+            int idx = -1;
+            while (_activeDecalCount > 0 && idx < 0)
+            {
+                int candidate = _activeDecalOrder[_decalEvictHead];
+                _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
+                _activeDecalCount--;
+                if (_isDecalActiveInPool[candidate])
+                {
+                    idx = candidate;
+                    _decals[idx].Deactivate();
+                    _isDecalActiveInPool[idx] = false;
+                }
+                // else: already returned via ReturnDecal; skip
+            }
+            return idx;
+        }
+
         public DecalInstance? GetDecal(Vector2 pos, DecalType type, float size)
         {
             RequireReady();
@@ -120,21 +140,7 @@ namespace HeroArena
             }
             else
             {
-                // Evict the oldest *still-active* decal from the circular order buffer
-                idx = -1;
-                while (_activeDecalCount > 0 && idx < 0)
-                {
-                    int candidate = _activeDecalOrder[_decalEvictHead];
-                    _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
-                    _activeDecalCount--;
-                    if (_isDecalActiveInPool[candidate])
-                    {
-                        idx = candidate;
-                        _decals[idx].Deactivate();
-                        _isDecalActiveInPool[idx] = false;
-                    }
-                    // else: already returned via ReturnDecal; skip
-                }
+                idx = EvictOldestActiveDecal();
                 if (idx < 0) return null; // pool exhausted (shouldn't happen with 10k)
             }
 
