@@ -113,28 +113,15 @@ namespace HeroArena
         public DecalInstance? GetDecal(Vector2 pos, DecalType type, float size)
         {
             RequireReady();
-            int idx;
+            int idx = -1;
+
             if (_freeDecalTop > 0)
             {
                 idx = _freeDecals[--_freeDecalTop];
             }
             else
             {
-                // Evict the oldest *still-active* decal from the circular order buffer
-                idx = -1;
-                while (_activeDecalCount > 0 && idx < 0)
-                {
-                    int candidate = _activeDecalOrder[_decalEvictHead];
-                    _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
-                    _activeDecalCount--;
-                    if (_isDecalActiveInPool[candidate])
-                    {
-                        idx = candidate;
-                        _decals[idx].Deactivate();
-                        _isDecalActiveInPool[idx] = false;
-                    }
-                    // else: already returned via ReturnDecal; skip
-                }
+                idx = EvictOldestDecal();
                 if (idx < 0) return null; // pool exhausted (shouldn't happen with 10k)
             }
 
@@ -156,6 +143,27 @@ namespace HeroArena
             d.Deactivate();
             _isDecalActiveInPool[d.PoolIndex] = false;
             _freeDecals[_freeDecalTop++] = d.PoolIndex;
+        }
+
+        private int EvictOldestDecal()
+        {
+            // Evict the oldest *still-active* decal from the circular order buffer
+            while (_activeDecalCount > 0)
+            {
+                int candidate = _activeDecalOrder[_decalEvictHead];
+                _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
+                _activeDecalCount--;
+
+                if (_isDecalActiveInPool[candidate])
+                {
+                    _decals[candidate].Deactivate();
+                    _isDecalActiveInPool[candidate] = false;
+                    return candidate;
+                }
+                // else: already returned via ReturnDecal; skip
+            }
+
+            return -1;
         }
     }
 }
