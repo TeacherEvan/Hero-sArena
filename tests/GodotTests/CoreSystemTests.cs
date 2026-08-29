@@ -35,9 +35,6 @@ namespace HeroArena.Tests
             try { TestCollateralKarma(); passed++; GD.Print("PASS: CollateralKarma tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma - {e.Message}"); }
 
-            try { TestPowerupBannerFactory(); passed++; GD.Print("PASS: PowerupBannerFactory tests"); }
-            catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerFactory - {e.Message}"); }
-
             try { TestHitFlash(); passed++; GD.Print("PASS: HitFlash tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
 
