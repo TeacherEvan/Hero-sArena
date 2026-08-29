@@ -34,7 +34,7 @@ namespace HeroArena
             }
         }
 
-        protected override void Move(float _) { } // Does not move
+        protected override void Move(float _) { /* Does not move */ }
 
         private void FireMortar()
         {
