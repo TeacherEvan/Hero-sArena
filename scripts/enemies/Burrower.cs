@@ -64,7 +64,7 @@ namespace HeroArena
         {
             if (distSq < ATTACK_RANGE * ATTACK_RANGE)
             {
-                _hero.TakeDamage(Damage, DamageType.Kinetic);
+                _hero?.TakeDamage(Damage, DamageType.Kinetic);
                 _aiState = BurrowerState.Submerge;
                 _submergeCooldown = SUBMERGE_COOLDOWN;
             }
@@ -77,10 +77,10 @@ namespace HeroArena
 
         protected override void Move(float dt)
         {
-            if (State == EnemyAIState.Dead || _hero == null) return;
+            if (State == EnemyAIState.Dead || _hero is not { } hero) return;
             if (_aiState == BurrowerState.Submerge) return;
             // Burrowers ignore flow field - direct tracking underground
-            Vector2 dir = (_hero.GlobalPosition - GlobalPosition).Normalized();
+            Vector2 dir = (hero.GlobalPosition - GlobalPosition).Normalized();
             Velocity = dir * MoveSpeed;
             MoveAndSlide();
         }
