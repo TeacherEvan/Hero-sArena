@@ -17,3 +17,7 @@
 ## 2024-03-24 - SpatialHashGrid Allocation Bottleneck
 **Learning:** The spatial hash grid implementation eagerly removes and re-inserts entities into cell lists on every frame, even when they haven't crossed cell boundaries. In a game with many moving objects, this causes excessive O(N) list operations and heap allocations, creating a severe bottleneck during high-action scenes. The previous grid logic also had a dormant bug: bounding boxes computed during `Remove` didn't exactly match `Insert` bounds.
 **Action:** When working with spatial partitions or grid systems, always cache the exact bounding cells and implement a fast-path for the `Update` loop to skip operations if the entity is within the exact same grid bounds as the previous frame.
+
+## $(date +%Y-%m-%d) - Optimize QueueFree via Object Pooling
+**Learning:** Calling `QueueFree()` dynamically on hundreds of objects (like map-placed destructibles) causes GC spikes and memory overhead when the engine cleans them up.
+**Action:** Instead of `QueueFree()`, map-placed nodes can be effectively returned to an `ObjectPoolManager`. By setting `ProcessMode = ProcessModeEnum.Disabled` (which disables rendering, processing, and physics) and tracking their pool index, they can be safely recycled. For pre-placed nodes not originally spawned from the pool, they can simply be hidden and ignored without explicitly deallocating them, letting the map handle their cleanup naturally.
