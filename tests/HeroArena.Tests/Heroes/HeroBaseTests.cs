@@ -17,8 +17,11 @@ public partial class DummyHero : HeroBase
     protected override void LevelUp()
     {
         var levelProp = typeof(HeroBase).GetProperty("Level");
-        int current = (int)levelProp.GetValue(this)!;
-        levelProp.SetValue(this, current + 1);
+        if (levelProp != null)
+        {
+            int current = (int)(levelProp.GetValue(this) ?? 1);
+            levelProp.SetValue(this, current + 1);
+        }
     }
 }
 
