@@ -124,13 +124,13 @@ namespace HeroArena
         }
 
         // ── Projectile API ────────────────────────────────────────────────────
-        public ProjectileBase? GetProjectile(Vector2 pos, Vector2 dir, float speed, float damage, DamageType type)
+        public ProjectileBase? GetProjectile(ProjectileData data)
         {
             RequireReady();
             if (_freeProjectileTop == 0) return null;
             int idx = _freeProjectiles[--_freeProjectileTop];
             var p = _projectiles[idx];
-            p.Activate(pos, dir, speed, damage, type, idx);
+            p.Activate(data, idx);
             _isProjectileActiveInPool[idx] = true;
             return p;
         }
@@ -144,31 +144,38 @@ namespace HeroArena
         }
 
         // ── Decal API ─────────────────────────────────────────────────────────
+        private int EvictOldestActiveDecal()
+        {
+            // Evict the oldest *still-active* decal from the circular order buffer
+            int idx = -1;
+            while (_activeDecalCount > 0 && idx < 0)
+            {
+                int candidate = _activeDecalOrder[_decalEvictHead];
+                _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
+                _activeDecalCount--;
+                if (_isDecalActiveInPool[candidate])
+                {
+                    idx = candidate;
+                    _decals[idx].Deactivate();
+                    _isDecalActiveInPool[idx] = false;
+                }
+                // else: already returned via ReturnDecal; skip
+            }
+            return idx;
+        }
+
         public DecalInstance? GetDecal(Vector2 pos, DecalType type, float size)
         {
             RequireReady();
-            int idx;
+            int idx = -1;
+
             if (_freeDecalTop > 0)
             {
                 idx = _freeDecals[--_freeDecalTop];
             }
             else
             {
-                // Evict the oldest *still-active* decal from the circular order buffer
-                idx = -1;
-                while (_activeDecalCount > 0 && idx < 0)
-                {
-                    int candidate = _activeDecalOrder[_decalEvictHead];
-                    _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
-                    _activeDecalCount--;
-                    if (_isDecalActiveInPool[candidate])
-                    {
-                        idx = candidate;
-                        _decals[idx].Deactivate();
-                        _isDecalActiveInPool[idx] = false;
-                    }
-                    // else: already returned via ReturnDecal; skip
-                }
+                idx = EvictOldestDecal();
                 if (idx < 0) return null; // pool exhausted (shouldn't happen with 10k)
             }
 

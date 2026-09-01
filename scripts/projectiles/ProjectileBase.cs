@@ -28,13 +28,13 @@ namespace HeroArena
             SetPhysicsProcess(false);
         }
 
-        public void Activate(Vector2 pos, Vector2 dir, float speed, float damage, DamageType type, int poolIndex)
+        public void Activate(ProjectileData data, int poolIndex)
         {
-            GlobalPosition = pos;
-            Direction = dir.Normalized();
-            Speed = speed;
-            Damage = damage;
-            DamageType = type;
+            GlobalPosition = data.Position;
+            Direction = data.Direction.Normalized();
+            Speed = data.Speed;
+            Damage = data.Damage;
+            DamageType = data.Type;
             PoolIndex = poolIndex;
             _lifetime = 0f;
             IsActive = true;
