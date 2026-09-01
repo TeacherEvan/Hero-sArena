@@ -10,12 +10,32 @@ namespace HeroArena
     {
         [Export] public float Health { get; set; } = 100f;
         public bool IsDestroyed { get; private set; } = false;
+        public int PoolIndex { get; private set; } = -1;
+        public bool IsActive { get; private set; } = true;
 
         private float _currentHealth;
 
         public override void _Ready()
         {
             _currentHealth = Health;
+        }
+
+        public void Activate(Vector2 pos, int poolIndex)
+        {
+            GlobalPosition = pos;
+            PoolIndex = poolIndex;
+            IsActive = true;
+            IsDestroyed = false;
+            _currentHealth = Health;
+            Visible = true;
+            ProcessMode = ProcessModeEnum.Inherit;
+        }
+
+        public void Deactivate()
+        {
+            IsActive = false;
+            Visible = false;
+            ProcessMode = ProcessModeEnum.Disabled;
         }
 
         public void TakeDamage(float amount)
@@ -28,10 +48,8 @@ namespace HeroArena
         private void Destroy()
         {
             IsDestroyed = true;
-            // Disable further damage/monitoring in the same frame so we don't
-            // re-enter the destroy path before QueueFree takes effect.
-            SetProcess(false);
-            SetPhysicsProcess(false);
+            // Immediately hide and disable the object to avoid QueueFree overhead.
+            Deactivate();
 
             // Unblock the flow field first so any listener that re-queries the
             // pathfinder (e.g. AI rerouting) sees consistent state.
@@ -46,7 +64,12 @@ namespace HeroArena
             EventBus.Instance.EmitEnvironmentDestroyed(GlobalPosition, 64f);
             EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.CraterMark, 64f);
 
-            QueueFree();
+            // If this object came from the global pool (dynamically spawned), return it.
+            // If it was map-placed, the pool manager will just ignore it (it's already deactivated).
+            if (GameManager.Instance.PoolManager != null)
+            {
+                GameManager.Instance.PoolManager.ReturnDestructible(this);
+            }
         }
     }
 }
