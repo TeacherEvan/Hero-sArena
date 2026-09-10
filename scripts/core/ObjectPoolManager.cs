@@ -175,7 +175,7 @@ namespace HeroArena
             }
             else
             {
-                idx = EvictOldestDecal();
+                idx = EvictOldestActiveDecal();
                 if (idx < 0) return null; // pool exhausted (shouldn't happen with 10k)
             }
 
