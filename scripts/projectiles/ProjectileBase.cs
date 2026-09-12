@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 
 namespace HeroArena
 {
@@ -19,6 +20,10 @@ namespace HeroArena
         public int PoolIndex { get; private set; }
 
         private float _lifetime = 0f;
+
+        // Per-type texture cache (loaded once)
+        private static readonly Dictionary<DamageType, Texture2D> _textures = new();
+        private static bool _texturesLoaded = false;
 
         public override void _Ready()
         {
@@ -42,6 +47,22 @@ namespace HeroArena
             SetPhysicsProcess(true);
             // Re-enable collision monitoring
             Monitoring = true;
+
+            // Load per-type texture on first activation
+            if (!_texturesLoaded)
+            {
+                foreach (var kvp in ProjectileSprites.Paths)
+                {
+                    _textures[kvp.Key] = GD.Load<Texture2D>(kvp.Value);
+                }
+                _texturesLoaded = true;
+            }
+
+            if (_textures.TryGetValue(DamageType, out var tex))
+            {
+                var sprite = GetNode<Sprite2D>("Sprite2D");
+                sprite.Texture = tex;
+            }
         }
 
         public void Deactivate()
