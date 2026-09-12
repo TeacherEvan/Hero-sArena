@@ -50,6 +50,19 @@ namespace HeroArena
             Instance = this;
             EventBus.Instance.OnEnemyKilled += HandleEnemyKilled;
             EventBus.Instance.OnEnvironmentDestroyed += HandleEnvironmentDestroyed;
+
+            // Assign ObjectPoolManager exports so pooling works
+            var pool = GetNodeOrNull<ObjectPoolManager>("/root/ObjectPoolManager");
+            if (pool != null)
+            {
+                pool.ProjectileScene = GD.Load<PackedScene>("res://scenes/projectiles/Projectile_standard_png.tscn");
+                pool.DecalScene = GD.Load<PackedScene>("res://scenes/vfx/Decal.tscn");
+                pool.DestructibleScene = GD.Load<PackedScene>("res://scenes/maps/Destructible.tscn");
+            }
+            else
+            {
+                GD.PrintErr("GameManager: ObjectPoolManager autoload not found at /root/ObjectPoolManager");
+            }
         }
 
         public override void _PhysicsProcess(double delta)
