@@ -1,4 +1,5 @@
 using Godot;
+using System.Collections.Generic;
 
 namespace HeroArena
 {
@@ -8,15 +9,19 @@ namespace HeroArena
     /// </summary>
     public partial class DecalInstance : Sprite2D
     {
-            public int PoolIndex { get; private set; }
-            public bool IsActive { get; private set; } = false;
+        public int PoolIndex { get; private set; }
+        public bool IsActive { get; private set; } = false;
 
-            private float _lifetime = 0f;
-            private float _maxLifetime = 10f;
-            private float _fadeStart = 7f;
+        private float _lifetime = 0f;
+        private float _maxLifetime = 10f;
+        private float _fadeStart = 7f;
 
-            // Cached Color to avoid allocation every frame in _Process
-            private Color _fadeColor = Colors.White;
+        // Cached Color to avoid allocation every frame in _Process
+        private Color _fadeColor = Colors.White;
+
+        // Per-type texture cache (loaded once)
+        private static readonly Dictionary<DecalType, Texture2D> _textures = new();
+        private static bool _texturesLoaded = false;
 
         private const float DefaultMaxLifetime = 10f;
         private const float DefaultFadeStart = 7f;
@@ -41,6 +46,21 @@ namespace HeroArena
             _fadeColor = Colors.White; // Reset cached alpha so a reused decal doesn't start faded.
             Visible = true;
             SetProcess(true);
+
+            // Load per-type texture on first activation
+            if (!_texturesLoaded)
+            {
+                foreach (var kvp in DecalSprites.Paths)
+                {
+                    _textures[kvp.Key] = GD.Load<Texture2D>(kvp.Value);
+                }
+                _texturesLoaded = true;
+            }
+
+            if (_textures.TryGetValue(type, out var tex))
+            {
+                Texture = tex;
+            }
         }
 
         public void Deactivate()
