@@ -1,0 +1,9 @@
+[gd_scene load_steps=2 format=3 uid="uid://decal"]
+[ext_resource type="Script" path="res://scripts/vfx/DecalInstance.cs" id="1"]
+
+[sub_resource type="AtlasTexture" id="1"]
+path = "res://decals/blood.png"
+
+[node name="Decal" type="Sprite2D"]
+script = ExtResource("1")
+texture = SubResource("1")

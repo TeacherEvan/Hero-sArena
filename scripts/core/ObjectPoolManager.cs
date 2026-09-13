@@ -7,6 +7,9 @@ namespace HeroArena
     /// <summary>
     /// Pre-allocates ALL projectiles and decals at startup.
     /// Zero runtime instantiation during gameplay.
+    ///
+    /// Scene exports default to the Phase-1 sprite scenes via AssetPaths.
+    /// They can be overridden in the editor or by the hosting scene.
     /// </summary>
     public partial class ObjectPoolManager : Node
     {
@@ -14,9 +17,9 @@ namespace HeroArena
         public const int MAX_DECALS = 10000;
         public const int MAX_DESTRUCTIBLES = 1000;
 
-        [Export] public PackedScene ProjectileScene { get; set; } = null!;
-        [Export] public PackedScene DecalScene { get; set; } = null!;
-        [Export] public PackedScene DestructibleScene { get; set; } = null!;
+        [Export] public PackedScene ProjectileScene { get; set; }
+        [Export] public PackedScene DecalScene { get; set; }
+        [Export] public PackedScene DestructibleScene { get; set; }
 
         private readonly ProjectileBase[] _projectiles = new ProjectileBase[MAX_PROJECTILES];
         private readonly DecalInstance[] _decals = new DecalInstance[MAX_DECALS];

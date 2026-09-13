@@ -5,11 +5,14 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
 ## Stack
 - Godot 4.3 + C# (.NET 8). `dotnet` 8 in CI; local SDK may be newer (10) — do not pin to 10.
 - Root namespace `HeroArena`. Nullable enabled.
+- Godot SDK: `Godot.NET.Sdk/4.3.0` (no `.sln` file; single csproj).
+- Lint: Roslynator via `dotnet tool run roslynator` (config in `.config/dotnet-tools.json`).
 
 ## Repo layout
 - Game code: `scripts/**/*.cs` (Godot `Node` subclasses + a few pure C# classes).
 - Autoloads (project.godot): `EventBus`, `GameManager`, `ObjectPoolManager`.
 - Benchmarks: `bench_test/`, `FrameTimeBenchmark.cs`, `WaveManagerBenchmark.cs` (NOT part of shipped build).
+- Exports: `export_presets.cfg` presets "Linux/X11", "Windows Desktop", "macOS".
 
 ## Testing — TWO harnesses, different runtimes (READ CAREFULLY)
 1. **xUnit** — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`).
@@ -35,12 +38,18 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
    - Covers SpatialHashGrid, WaveManager, FlowFieldPathfinder, LevelProgression,
      EntityRegistry (F-1 regression), CollateralKarma (cross-cover).
 
-## CI (` .github/workflows/ci.yml`)
+## CI (`.github/workflows/ci.yml`)
 - Must use `${{ github.workspace }}` — NEVER hardcode local absolute paths.
-- The `test` job must actually RUN `dotnet test`, not just build.
-- Godot jobs must download Godot 4.3 headless and run the headless gate.
-- Export presets live in `export_presets.cfg`; preset names must match the
-  `--export-release` args exactly ("Linux/X11", "Windows Desktop", "macOS").
+- Jobs (run in order): `lint` → `typecheck` → `build` → `test` → `godot-verify` → `export` → `quality-gates`
+- Exact commands used in CI:
+  - Lint: `dotnet roslynator analyze Hero-sArena.csproj`
+  - Typecheck: `dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true`
+  - Build: `dotnet build Hero-sArena.csproj --configuration Release --no-restore`
+  - Test: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore --filter "Category!=GodotRuntime"`
+  - Godot verify: download Godot 4.3 headless, then `godot --headless -s res://tests/GodotTests/CoreSystemTests.cs`
+  - Export: `godot --headless --export-release "<preset>" <output_path>` (presets must match export_presets.cfg exactly)
+  - Quality gates: `find scripts -name "*.cs" -exec grep -n -i "TODO\|FIXME" {} \;`
+- **Note:** GitHub account currently locked (billing); CI not running. Tracked in issue #23.
 
 ## Agent-branch hygiene
 - Jules branches: `bolt/`, `palette/`, `sentinel/`. Memory in `.jules/` (not .gitignore).
