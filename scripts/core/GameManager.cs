@@ -55,7 +55,7 @@ namespace HeroArena
             var pool = GetNodeOrNull<ObjectPoolManager>("/root/ObjectPoolManager");
             if (pool != null)
             {
-                pool.ProjectileScene = GD.Load<PackedScene>("res://scenes/projectiles/Projectile_standard_png.tscn");
+                pool.ProjectileScene = GD.Load<PackedScene>("res://scenes/projectiles/Projectile.tscn");
                 pool.DecalScene = GD.Load<PackedScene>("res://scenes/vfx/Decal.tscn");
                 pool.DestructibleScene = GD.Load<PackedScene>("res://scenes/maps/Destructible.tscn");
             }
