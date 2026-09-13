@@ -33,14 +33,14 @@
 - Consumes: `AssetPaths.ProjectileSprites.DefaultPath`, `AssetPaths.DecalSprites.DefaultPath`, existing `PoolManager` property
 - Produces: `ObjectPoolManager.ProjectileScene`, `ObjectPoolManager.DecalScene`, `ObjectPoolManager.DestructibleScene` set to valid `PackedScene` instances
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```csharp
 // No unit test for autoload wiring — integration test is "build runs and pool doesn't throw"
 // Manual verification: dotnet build passes, then check log for "ObjectPoolManager: ProjectileScene/DecalScene not assigned" absence
 ```
 
-- [ ] **Step 2: Run build to verify current state**
+- [x] **Step 2: Run build to verify current state**
 
 Run:
 ```bash
@@ -48,7 +48,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors, 3 nullable warnings)
 
-- [ ] **Step 3: Implement GameManager._Ready() pool assignment**
+- [x] **Step 3: Implement GameManager._Ready() pool assignment**
 
 ```csharp
 public override void _Ready()
@@ -72,7 +72,7 @@ public override void _Ready()
 }
 ```
 
-- [ ] **Step 4: Run build to verify it compiles**
+- [x] **Step 4: Run build to verify it compiles**
 
 Run:
 ```bash
@@ -80,7 +80,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors)
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add scripts/core/GameManager.cs
@@ -98,14 +98,14 @@ git commit -m "feat: assign ObjectPoolManager scene exports in GameManager._Read
 - Consumes: `AssetPaths.DecalSprites.Paths` dictionary, `DecalType` enum
 - Produces: `DecalInstance.Texture` set to correct decal texture per activation
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```csharp
 // No unit test — integration verification: decal spawned via DecalSystem shows correct texture per type
 // Manual: run game, trigger different decal types, verify visual difference
 ```
 
-- [ ] **Step 2: Add static texture cache and load in Activate()**
+- [x] **Step 2: Add static texture cache and load in Activate()**
 
 ```csharp
 // At top of class (after line 19, before const fields):
@@ -128,7 +128,7 @@ if (_textures.TryGetValue(type, out var tex))
 }
 ```
 
-- [ ] **Step 3: Run build to verify it compiles**
+- [x] **Step 3: Run build to verify it compiles**
 
 Run:
 ```bash
@@ -136,7 +136,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/vfx/DecalInstance.cs
@@ -154,14 +154,14 @@ git commit -m "feat: per-type decal texture loading in DecalInstance.Activate"
 - Consumes: `AssetPaths.ProjectileSprites.Paths` dictionary, `DamageType` enum
 - Produces: `Sprite2D.Texture` set to correct projectile texture per activation
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 ```csharp
 // No unit test — integration verification: projectile fired by different heroes shows correct texture
 // Manual: run game, fire each hero's weapon, verify visual difference
 ```
 
-- [ ] **Step 2: Add static texture cache and load in Activate()**
+- [x] **Step 2: Add static texture cache and load in Activate()**
 
 ```csharp
 // At top of class (after line 20, before const MAX_LIFETIME):
@@ -185,7 +185,7 @@ if (_textures.TryGetValue(DamageType, out var tex))
 }
 ```
 
-- [ ] **Step 3: Run build to verify it compiles**
+- [x] **Step 3: Run build to verify it compiles**
 
 Run:
 ```bash
@@ -193,7 +193,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors)
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add scripts/projectiles/ProjectileBase.cs
@@ -212,7 +212,7 @@ git commit -m "feat: per-type projectile texture loading in ProjectileBase.Activ
 - Consumes: Completed Tasks 1-3
 - Produces: Clean scene folder, verified build
 
-- [ ] **Step 1: Run build to verify Tasks 1-3 work together**
+- [x] **Step 1: Run build to verify Tasks 1-3 work together**
 
 Run:
 ```bash
@@ -220,7 +220,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors)
 
-- [ ] **Step 2: Delete redundant projectile scenes**
+- [x] **Step 2: Delete redundant projectile scenes**
 
 ```bash
 cd /home/leandi-duplessis/github/workspaces/Hero-sArena
@@ -237,14 +237,14 @@ git rm scenes/projectiles/Projectile_zephyr_wind_png.tscn
 # Keep Projectile_standard_png.tscn as the single pooled scene
 ```
 
-- [ ] **Step 3: Rename remaining scene for clarity (optional)**
+- [x] **Step 3: Rename remaining scene for clarity (optional)**
 
 ```bash
 git mv scenes/projectiles/Projectile_standard_png.tscn scenes/projectiles/Projectile.tscn
 # Update any references in code (none expected — pool loads by path string)
 ```
 
-- [ ] **Step 4: Run final build verification**
+- [x] **Step 4: Run final build verification**
 
 Run:
 ```bash
@@ -252,7 +252,7 @@ DOTNET_ROOT=/home/leandi-duplessis/.dotnet8 /home/leandi-duplessis/.dotnet8/dotn
 ```
 Expected: PASS (0 errors)
 
-- [ ] **Step 5: Commit cleanup**
+- [x] **Step 5: Commit cleanup**
 
 ```bash
 git add -A
@@ -277,4 +277,9 @@ git commit -m "cleanup: remove redundant per-type projectile scenes, use single 
 
 **2. Inline Execution** - Execute tasks in this session using executing-plans, batch execution with checkpoints
 
-**Which approach?**
+**Which approach?** — EXECUTED INLINE (2026-09-13). All four tasks verified against live source; Tasks 1-3 were already merged, Task 4 (scene cleanup) executed in this run.
+
+### Execution Log
+
+- **Tasks 1-3**: Verified already implemented in source (`GameManager._Ready`, `DecalInstance.Activate`, `ProjectileBase.Activate` all match plan code). Build passes 0 errors / 3 nullable warnings.
+- **Task 4**: Deleted 11 redundant projectile scenes (10 per-type + placeholder `Projectile.tscn`). Kept `Projectile_standard_png.tscn` as the single pooled scene (rename skipped — code references it by path string; renaming would require a code edit for no clarity gain). Build re-verified green.
