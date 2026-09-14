@@ -17,9 +17,9 @@ namespace HeroArena
         public const int MAX_DECALS = 10000;
         public const int MAX_DESTRUCTIBLES = 1000;
 
-        [Export] public PackedScene ProjectileScene { get; set; }
-        [Export] public PackedScene DecalScene { get; set; }
-        [Export] public PackedScene DestructibleScene { get; set; }
+        [Export] public PackedScene ProjectileScene { get; set; } = null!;
+        [Export] public PackedScene DecalScene { get; set; } = null!;
+        [Export] public PackedScene DestructibleScene { get; set; } = null!;
 
         private readonly ProjectileBase[] _projectiles = new ProjectileBase[MAX_PROJECTILES];
         private readonly DecalInstance[] _decals = new DecalInstance[MAX_DECALS];
