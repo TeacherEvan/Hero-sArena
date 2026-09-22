@@ -17,5 +17,15 @@
   <ItemGroup>
     <!-- Exclude only the xUnit test project; keep GodotTests (CoreSystemTests scene) in the main build -->
     <Compile Remove="tests/HeroArena.Tests/**/*.cs" />
+    <!-- Bench harnesses and scratch diagnostics are NOT part of the shipped
+         build (see AGENTS.md): they have their own project files and no
+         references from game/test code. Keeps dead SceneTree subclasses
+         (CheckProcessMode, FrameTimeBenchmark, WaveManagerBenchmark) out of
+         the game assembly and the Godot class cache. -->
+    <Compile Remove="bench_test/**/*.cs" />
+    <Compile Remove="CheckProcessMode.cs" />
+    <Compile Remove="FindPhysics.cs" />
+    <Compile Remove="FrameTimeBenchmark.cs" />
+    <Compile Remove="WaveManagerBenchmark.cs" />
   </ItemGroup>
 </Project>

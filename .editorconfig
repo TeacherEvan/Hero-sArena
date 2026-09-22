@@ -1,0 +1,16 @@
+root = true
+
+[*]
+charset = utf-8
+end_of_line = lf
+insert_final_newline = true
+trim_trailing_whitespace = true
+
+[*.cs]
+# Repo convention (AGENTS.md): root namespace HeroArena, block-scoped
+# namespaces everywhere. These IDE suggestions contradict that convention,
+# so they are silenced project-wide. Quality rules (CA*) and Roslynator
+# (RCS*) hints stay visible; the enforced gate is
+# `dotnet tool run roslynator analyze` in CI.
+dotnet_diagnostic.IDE0161.severity = none
+dotnet_diagnostic.IDE0130.severity = none
