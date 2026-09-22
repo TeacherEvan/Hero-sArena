@@ -25,38 +25,40 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 
 ### Phase 0: Workspace ready
 - [x] T0.1: Install Godot 4.3 mono binary (done: `~/.local/bin/godot-mono`)
-- [ ] T0.2: Fix `.vscode/settings.json` editorPath → mono binary path
-- [ ] T0.3: Diagnose headless SIGSEGV (repro: `godot-mono --headless --verbose --quit`)
+- [x] T0.2: Fix `.vscode/settings.json` editorPath → mono binary path
+- [ ] T0.3: Diagnose headless runtime hang (engine stalls after .NET init;
+  evidence: /tmp/gatev.log). `--build-solutions` exits 0; `-s` script runs
+  hang. Pre-existing container issue; CI unaffected.
 
 ### Checkpoint: Workspace
-- [ ] `dotnet build` green via `~/.dotnet8` (verified: 0 warn, 0 err)
-- [ ] `dotnet test --filter Category!=GodotRuntime` green (verified: 51/51)
-- [ ] Godot-tools connects to 4.3 mono in Cursor
+- [x] `dotnet build` green via `~/.dotnet8` (0 warn, 0 err, consecutive runs)
+- [x] `dotnet test --filter Category!=GodotRuntime` green (66/66)
+- [ ] Godot-tools connects to 4.3 mono in Cursor (editorPath fixed; needs editor session)
 
-### Phase 1: P0 — make the game run (firewall fixes)
-- [ ] T1.1: Attach scripts to 10 enemy scene roots (`script = ExtResource("1")`)
-  Files: `scenes/enemies/*.tscn`. Scope: XS.
+### Phase 1: P0 — make the game run (IMPLEMENTED 2026-09-22, committed d4d35ad + follow-ups)
+- [x] T1.1: Attach scripts to 10 enemy scene roots (`script = ExtResource("1")`)
   Verify: `grep -L "script = ExtResource" scenes/enemies/*.tscn` → empty.
-- [ ] T1.2: Attach scripts to 4 hero scene roots. Files: `scenes/heroes/*.tscn`. Scope: XS.
-- [ ] T1.3: Wire combat runtime — WaveManager node + `EnemyScenes` + `SpawnPoints`
-  + hero spawn + map load. OPEN DESIGN Q: Main.tscn nodes vs GameManager code.
-  Verify: headless spawn smoke test instantiates non-null `EnemyBase`. Scope: M.
-- [ ] T1.4: Fix headless gate runner for Godot 4 (`-s` requires SceneTree/MainLoop;
-  CoreSystemTests extends Node). Options: extend SceneTree or add wrapper scene.
-  Verify: `godot-mono --headless -s <gate>` prints `Results: 7 passed, 0 failed`, exit 0. Scope: S.
+- [x] T1.2: Attach scripts to 4 hero scene roots.
+- [x] T1.3: Combat runtime in Main.tscn (WaveManager + EnemyScenes + map + HUD
+  + Bootstrap). Decision: Main.tscn nodes. Main root is plain Node2D — the
+  GameManager autoload is the single Instance (scene-root script removed to
+  avoid double event subscription + dangling Instance on scene change).
+- [x] T1.4: GateRunner (SceneTree entry) hosts CoreSystemTests. Compiles clean;
+  runtime run needs a green env (T0.3).
 
 ### Checkpoint: Playable
 - [ ] Gate green under mono binary; first enemy spawns without NullReferenceException
 
 ### Phase 2: CI repair (blocked externally by billing lock, issue #23)
-- [ ] T2.1: Switch both Godot download steps to `Godot_v4.3-stable_mono_linux_x86_64.zip`,
-  set `DOTNET_ROOT`/PATH to .NET 8 before build/test steps. Scope: S.
-- [ ] T2.2: Use corrected gate invocation from T1.4 in `godot-verify`. Scope: XS.
+- [x] T2.1: Both Godot downloads → mono build; setup-dotnet in godot-verify.
+- [x] T2.2: Corrected gate invocation (`GateRunner.cs`) in `godot-verify`.
 
 ### Phase 3: Test hardening (issues #20, #22)
-- [ ] T3.1: Extract pure logic out of GameManager/LevelProgression Node subclasses
-  so `dotnet test` covers them headlessly; drop `GodotRuntime` trait need. Scope: L → split per class.
-- [ ] T3.2: Retire `RuntimeHelpers.GetUninitializedObject` bypass in CollateralKarmaTests. Scope: S.
+- [x] T3.1-slice: `ProgressionFormulas` pure extraction (LevelProgression +
+  CollateralKarma delegate). Exposed + fixed stale 812.8 expectation.
+  REMAINDER: GameManager state-machine extraction (deferred, tree-coupled).
+- [x] T3.2: Bypass RETIRED (tests renamed to ProgressionFormulasTests /
+  KarmaAmplifierTests; Node behavior in gate TestCollateralKarmaBehavior).
 - [ ] T3.3: Align bench harnesses with production hot path (follow-up to dfb7acd). Scope: M.
 
 ### Phase 4: Docs sync

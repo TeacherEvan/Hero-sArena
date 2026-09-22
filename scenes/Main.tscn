@@ -1,14 +1,32 @@
-[gd_scene load_steps=4 format=3 uid="uid://main"]
+[gd_scene load_steps=17 format=3 uid="uid://main"]
 
-[ext_resource type="Script" path="res://scripts/core/GameManager.cs" id="1"]
 [ext_resource type="Script" path="res://scripts/vfx/ScreenShake.cs" id="2"]
 [ext_resource type="Script" path="res://scripts/vfx/HitFlash.cs" id="3"]
+[ext_resource type="Script" path="res://scripts/core/WaveManager.cs" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Drone.tscn" id="5"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Brute.tscn" id="6"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Sprinter.tscn" id="7"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Artillery.tscn" id="8"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Shielder.tscn" id="9"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Healer.tscn" id="10"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Exploder.tscn" id="11"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Burrower.tscn" id="12"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Parasite.tscn" id="13"]
+[ext_resource type="PackedScene" path="res://scenes/enemies/Apex.tscn" id="14"]
+[ext_resource type="PackedScene" path="res://scenes/maps/RuinedMetropolis.tscn" id="15"]
+[ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="16"]
+[ext_resource type="Script" path="res://scripts/core/MainBootstrap.cs" id="17"]
 
 [node name="Main" type="Node2D"]
-script = ExtResource("1")
 
 [node name="Camera" type="Camera2D" parent="."]
 script = ExtResource("2")
+
+[node name="Map" parent="." instance=ExtResource("15")]
+
+[node name="WaveManager" type="Node" parent="."]
+script = ExtResource("4")
+EnemyScenes = Array[PackedScene]([ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14")])
 
 [node name="DecalLayer" type="Node2D" parent="."]
 
@@ -16,7 +34,12 @@ script = ExtResource("2")
 
 [node name="EntitiesLayer" type="Node2D" parent="."]
 
+[node name="HUD" parent="." instance=ExtResource("16")]
+
 [node name="UI" type="CanvasLayer" parent="."]
 
 [node name="HitFlash" type="CanvasLayer" parent="."]
 script = ExtResource("3")
+
+[node name="Bootstrap" type="Node" parent="."]
+script = ExtResource("17")
