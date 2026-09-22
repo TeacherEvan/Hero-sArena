@@ -45,7 +45,7 @@ namespace HeroArena.Tests
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
 
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
-            
+
             if (failed > 0)
             {
                 GetTree().Quit(1); // non-zero exit code so CI detects failure
@@ -59,7 +59,7 @@ namespace HeroArena.Tests
         private void TestSpatialHashGrid()
         {
             var grid = new SpatialHashGrid(64, 64);
-            
+
             // Test insert and query
             grid.Insert(1, new Vector2(100, 100), 10f);
             var results = grid.QueryRadius(new Vector2(100, 100), 15f, out int count);
@@ -139,15 +139,15 @@ namespace HeroArena.Tests
         private void TestFlowFieldPathfinder()
         {
             var pathfinder = new FlowFieldPathfinder();
-            
+
             // Test WorldToGrid/GridToWorld round trip
             var worldPos = new Vector2(500, 300);
             var gridPos = pathfinder.WorldToGrid(worldPos);
             var backToWorld = pathfinder.GridToWorld(gridPos);
-            
+
             var expectedX = gridPos.X * 16f + 8f;
             var expectedY = gridPos.Y * 16f + 8f;
-            
+
             if (MathF.Abs(backToWorld.X - expectedX) > 0.1f || MathF.Abs(backToWorld.Y - expectedY) > 0.1f)
                 throw new Exception($"GridToWorld mismatch: ({backToWorld.X}, {backToWorld.Y}) vs ({expectedX}, {expectedY})");
 
@@ -169,12 +169,12 @@ namespace HeroArena.Tests
         private void TestLevelProgression()
         {
             var progression = new LevelProgression();
-            
+
             // Test kinetic damage
             float kinetic = progression.CalcKineticDamage(100f, 1);
             if (MathF.Abs(kinetic - 115f) > 0.001f)
                 throw new Exception($"Kinetic damage level 1: expected 115, got {kinetic}");
-            
+
             kinetic = progression.CalcKineticDamage(100f, 5);
             if (MathF.Abs(kinetic - 175f) > 0.001f)
                 throw new Exception($"Kinetic damage level 5: expected 175, got {kinetic}");
