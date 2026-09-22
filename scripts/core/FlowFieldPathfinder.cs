@@ -62,12 +62,18 @@ namespace HeroArena
         public override void _ExitTree()
         {
             _running = false;
-            _wakeEvent.Set();
+            try { _wakeEvent.Set(); } catch (ObjectDisposedException) { }
             if (_workerThread != null && !_workerThread.Join(TimeSpan.FromMilliseconds(500)))
             {
+                // Worker still inside ComputeFlowField (slow device): it exits
+                // on its own via _running/ObjectDisposed guards; do NOT dispose
+                // the event out from under it — the finalizer reclaims it.
                 GD.PushWarning("FlowFieldPathfinder: worker thread did not exit within 500 ms; abandoning.");
             }
-            _wakeEvent.Dispose();
+            else
+            {
+                _wakeEvent.Dispose();
+            }
             base._ExitTree();
         }
 
@@ -116,7 +122,8 @@ namespace HeroArena
         {
             while (_running)
             {
-                _wakeEvent.WaitOne(250); // wake on signal OR every 250 ms (4 Hz)
+                try { _wakeEvent.WaitOne(250); } // wake on signal OR every 250 ms (4 Hz)
+                catch (ObjectDisposedException) { break; } // torn down mid-wait on slow devices
                 if (!_running) break;
                 Vector2 target;
                 lock (_targetLock) { target = _targetWorldPos; }

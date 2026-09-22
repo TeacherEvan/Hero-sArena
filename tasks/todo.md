@@ -41,6 +41,13 @@
 - fix/evictoldest-decal-rename-regression: stale base (11 behind), its fix already in
   main (fb99aad) → do NOT merge, prune candidate. Deletion requires push approval.
 
+## Post-merge review (2026-09-22, d4d35ad) — PR #43
+- [x] Main.tscn was absent from d4d35ad → restored with plain Node2D root
+      (kills autoload/scene GameManager duality: double subs + dangling Instance)
+- [x] project.godot engine pollution → reverted
+- [x] plan.md checkboxes synced; dead using removed
+- [x] Branch `fix/review-followups-main-wiring` pushed, PR #43 open (awaits human merge + green CI)
+
 ## Verification evidence (2026-09-22)
 - `dotnet build` Release: 0 warnings, 0 errors (consecutive incremental builds)
 - `dotnet test --filter Category!=GodotRuntime`: 66/66 pass (was 51)
