@@ -1,5 +1,5 @@
 using Godot;
-using System.Collections.Generic;
+using System;
 using System.Linq;
 
 namespace HeroArena
@@ -14,6 +14,13 @@ namespace HeroArena
     /// </summary>
     public partial class MainBootstrap : Node
     {
+        // Input actions are set up in code (not project.godot) so the map
+        // survives engine rewrites of the config file. One-shot per run so
+        // scene reloads never stack duplicate events.
+        private static bool _inputReady;
+
+        private Camera2D? _camera;
+
         public override void _Ready()
         {
             var gm = GameManager.Instance;
@@ -23,9 +30,53 @@ namespace HeroArena
                 return;
             }
 
+            EnsureInputMap();
             EnsureSystems(gm);
             WireWaveManager(gm);
             SpawnHero(gm);
+            _camera = GetParent().GetNodeOrNull<Camera2D>("Camera");
+            // Direct boot (run/main_scene) has no menu to call StartGame; the
+            // menu sets PendingStartAfterSceneChange and starts it later, so
+            // only auto-start when nobody else will. Exactly one path fires.
+            if (!gm.PendingStartAfterSceneChange && gm.CurrentState == GameState.MainMenu)
+                gm.StartGame();
+        }
+
+        public override void _Process(double delta)
+        {
+            var hero = GameManager.Instance?.ActiveHero;
+            if (hero == null || _camera == null || !IsInstanceValid(_camera)) return;
+            // Smooth camera follow so the hero never walks out of view.
+            float t = 1f - MathF.Pow(0.001f, (float)delta);
+            _camera.GlobalPosition = _camera.GlobalPosition.Lerp(hero.GlobalPosition, t);
+        }
+
+        private void EnsureInputMap()
+        {
+            if (_inputReady) return;
+            _inputReady = true;
+            AddKeyAction("move_left", Key.A, Key.Left);
+            AddKeyAction("move_right", Key.D, Key.Right);
+            AddKeyAction("move_up", Key.W, Key.Up);
+            AddKeyAction("move_down", Key.S, Key.Down);
+            AddMouseAction("attack", MouseButton.Left);
+            AddKeyAction("ability", Key.E);
+            AddMouseAction("ability", MouseButton.Right);
+            AddKeyAction("dodge", Key.Space, Key.Shift);
+        }
+
+        private static void AddKeyAction(string action, params Key[] keys)
+        {
+            if (!InputMap.HasAction(action)) InputMap.AddAction(action);
+            foreach (var k in keys)
+                InputMap.ActionAddEvent(action, new InputEventKey { PhysicalKeycode = k });
+        }
+
+        private static void AddMouseAction(string action, params MouseButton[] buttons)
+        {
+            if (!InputMap.HasAction(action)) InputMap.AddAction(action);
+            foreach (var b in buttons)
+                InputMap.ActionAddEvent(action, new InputEventMouseButton { ButtonIndex = b });
         }
 
         private void EnsureSystems(GameManager gm)
