@@ -29,6 +29,10 @@ namespace HeroArena
         public override void _Ready()
         {
             _rng.Randomize();
+            // Self-register so the spawner works no matter which scene hosts us.
+            // (MainBootstrap also wires this; last write wins and both agree.)
+            if (GameManager.Instance != null)
+                GameManager.Instance.WaveManager = this;
             EventBus.Instance.OnWaveCompleted += OnWaveComplete;
         }
 

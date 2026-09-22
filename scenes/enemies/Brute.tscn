@@ -7,7 +7,7 @@ radius = 20.0
 path = "res://enemies/brute.png"
 
 [node name="Brute" type="CharacterBody2D"]
-# Note: script set by spawner; class name handled by Godot autoload registry
+script = ExtResource("1")
 
 [node name="Sprite2D" type="Sprite2D" parent="."]
 texture = SubResource("2")

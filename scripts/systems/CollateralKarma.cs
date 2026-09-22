@@ -9,7 +9,7 @@ namespace HeroArena
     public partial class CollateralKarma : Node
     {
         public int DestructionCount { get; private set; } = 0;
-        public float KarmaAmplifier => Mathf.Log(Mathf.E + 0.05f * DestructionCount);
+        public float KarmaAmplifier => ProgressionFormulas.CalcKarmaAmplifier(DestructionCount);
 
         public override void _Ready()
         {

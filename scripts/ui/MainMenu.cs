@@ -50,6 +50,7 @@ namespace HeroArena
             // when the new scene's _Ready has fired and GameManager.WaveManager
             // (assigned by the scene) is non-null.
             GameManager.Instance.PendingStartAfterSceneChange = true;
+            GameManager.Instance.PendingHeroClass = _selectedHero;
             GetTree().ChangeSceneToPacked(GameScene);
             CallDeferred(MethodName.OnSceneChanged);
         }

@@ -1,0 +1,49 @@
+# TODO — Production readiness (tracks tasks/plan.md)
+
+## Phase 0: Workspace ready
+- [x] T0.1 Godot 4.3 mono binary at `~/.local/bin/godot-mono`
+- [x] T0.2 Fix `.vscode/settings.json` godotTools editorPath
+- [ ] T0.3 Diagnose headless runtime hang (engine stalls after .NET init; evidence: /tmp/gatev.log).
+      Pre-existing container issue. CI unaffected. `--build-solutions` works (exit 0).
+
+## Phase 1: P0 — game runs (IMPLEMENTED 2026-09-22)
+- [x] T1.1 Attach scripts to 10 enemy scene roots
+- [x] T1.2 Attach scripts to 4 hero scene roots
+- [x] T1.3 Combat runtime: WaveManager + EnemyScenes (Apex last) + map + HUD in Main.tscn;
+      MainBootstrap; PendingHeroClass handoff; menu exports; WaveManager self-register
+- [x] T1.4 GateRunner + header + ci.yml `-s` path (compiles; runtime run needs green env)
+
+## Build-system fix
+- [x] CS0579 incremental-break fixed (GenerateAssemblyInfo/TargetFramework false).
+      Pre-existing, reproduced on clean HEAD.
+
+## Phase 2: CI repair (blocked: billing lock #23)
+- [x] T2.1 Mono Godot in both download jobs + setup-dotnet in godot-verify (ci.yml valid, 7 jobs)
+- [ ] Unblocked externally only by billing; then watch first green run
+
+## Phase 3: Test hardening
+- [x] T3.1-slice: ProgressionFormulas pure extraction; LevelProgression + CollateralKarma delegate.
+      Exposed + fixed a stale 812.8 expectation (true 5^1.3*100 = 810.3).
+- [x] T3.2: bypass RETIRED (LevelProgressionTests→ProgressionFormulasTests,
+      CollateralKarmaTests→KarmaAmplifierTests); Node behavior moved to gate
+      (TestCollateralKarmaBehavior, needs CI run).
+- [ ] T3.1-rest: GameManager state-machine extraction (deferred, tree-coupled)
+- [ ] T3.3: bench hot-path alignment (#20)
+- [ ] Lint gate red on 17 pre-existing infos (exit 1, predates session; +4 by-design
+      wrapper infos). Needs policy call: info-cleanup pass or warn-level config.
+
+## Phase 4: Docs sync
+- [x] T4.1 README (66 tests, PRs merged, mono requirement, GateRunner cmd, toolchain, gaps)
+- [x] T4.2 AGENTS.md (stack/toolchain, testing matrix, CI cmds, gaps, audit history)
+
+## Phase 5: Branch hygiene (read-only checks done 2026-09-22)
+- code-health/burrower-ai-refactor-*: SUPERSEDED (ancestor of main) → prune candidate
+- fix/evictoldest-decal-rename-regression: stale base (11 behind), its fix already in
+  main (fb99aad) → do NOT merge, prune candidate. Deletion requires push approval.
+
+## Verification evidence (2026-09-22)
+- `dotnet build` Release: 0 warnings, 0 errors (consecutive incremental builds)
+- `dotnet test --filter Category!=GodotRuntime`: 66/66 pass (was 51)
+- Roslynator: 17 infos, none in new files (ProgressionFormulas/MainBootstrap/GateRunner clean)
+- `godot-mono --headless --build-solutions --quit`: exit 0
+- ci.yml: valid YAML, 7 jobs intact

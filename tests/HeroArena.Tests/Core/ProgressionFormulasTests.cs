@@ -5,11 +5,12 @@ using HeroArena;
 
 namespace HeroArena.Tests.Core;
 
-[Trait("Category", "GodotRuntime")]
-public class LevelProgressionTests
+// Pure-formula tests: ProgressionFormulas has no Godot dependency, so this
+// class needs no GodotRuntime trait and runs in the headless dotnet gate.
+// The LevelProgression Node wrapper delegates here 1:1 (covered in-engine
+// by CoreSystemTests.TestLevelProgression).
+public class ProgressionFormulasTests
 {
-    private readonly LevelProgression _levelProgression = new();
-
     [Theory]
     [InlineData(1, 100f, 115f)]
     [InlineData(2, 100f, 130f)]
@@ -17,36 +18,29 @@ public class LevelProgressionTests
     [InlineData(10, 100f, 250f)]
     public void CalcKineticDamage_LinearScaling_ComputesCorrectly(int level, float baseDamage, float expected)
     {
-        // Act
-        var result = _levelProgression.CalcKineticDamage(baseDamage, level);
-
-        // Assert
-        result.Should().BeApproximately(expected, 0.001f);
+        ProgressionFormulas.CalcKineticDamage(baseDamage, level)
+            .Should().BeApproximately(expected, 0.001f);
     }
 
     [Theory]
     [InlineData(1, 100f, 100f)] // 1^1.3 = 1
     [InlineData(2, 100f, 246.2f)] // 2^1.3 * 100
-    [InlineData(5, 100f, 812.8f)] // 5^1.3 * 100
+    [InlineData(5, 100f, 810.3f)] // 5^1.3 * 100 (old LevelProgressionTests said 812.8; wrong, never ran)
     [InlineData(10, 100f, 1995.3f)] // 10^1.3 * 100
     public void CalcEnergyDamage_PowerLaw_ComputesCorrectly(int level, float baseDamage, float expected)
     {
-        // Act
-        var result = _levelProgression.CalcEnergyDamage(baseDamage, level);
-
-        // Assert - allow slightly wider tolerance for floating point
-        result.Should().BeApproximately(expected, 1f);
+        // Slightly wider tolerance for floating point
+        ProgressionFormulas.CalcEnergyDamage(baseDamage, level)
+            .Should().BeApproximately(expected, 1f);
     }
 
     [Fact]
     public void CalcKarmaAmplifier_LogarithmicGrowth_IncreasesWithDestruction()
     {
-        // Act
-        var result0 = _levelProgression.CalcKarmaAmplifier(0);
-        var result10 = _levelProgression.CalcKarmaAmplifier(10);
-        var result100 = _levelProgression.CalcKarmaAmplifier(100);
+        var result0 = ProgressionFormulas.CalcKarmaAmplifier(0);
+        var result10 = ProgressionFormulas.CalcKarmaAmplifier(10);
+        var result100 = ProgressionFormulas.CalcKarmaAmplifier(100);
 
-        // Assert
         result0.Should().Be(MathF.Log(MathF.E)); // ln(e + 0) = 1
         result10.Should().BeGreaterThan(result0);
         result100.Should().BeGreaterThan(result10);
@@ -59,20 +53,14 @@ public class LevelProgressionTests
     [InlineData(10, 1360)] // 100 + 9*50 + 81*10
     public void XpRequiredForLevel_QuadraticFormula_ComputesCorrectly(int level, int expected)
     {
-        // Act
-        var result = _levelProgression.XpRequiredForLevel(level);
-
-        // Assert
-        result.Should().Be(expected);
+        ProgressionFormulas.XpRequiredForLevel(level).Should().Be(expected);
     }
 
     [Fact]
     public void GetRandomPerks_ReturnsDistinctPerks_CountMatchesRequest()
     {
-        // Act
-        var perks = _levelProgression.GetRandomPerks(3);
+        var perks = ProgressionFormulas.GetRandomPerks(3);
 
-        // Assert
         perks.Should().HaveCount(3);
         perks.Should().OnlyHaveUniqueItems();
         perks.Should().AllSatisfy(p => Enum.IsDefined(typeof(PerkType), p).Should().BeTrue());
@@ -81,10 +69,17 @@ public class LevelProgressionTests
     [Fact]
     public void GetRandomPerks_WhenCountExceedsAvailable_ReturnsAllAvailable()
     {
-        // This acts as a boundary test - if we somehow request more than available
-        var perks = _levelProgression.GetRandomPerks(50);
+        var perks = ProgressionFormulas.GetRandomPerks(50);
 
-        // Should return at most all available perks
         perks.Length.Should().BeLessOrEqualTo(Enum.GetValues(typeof(PerkType)).Length);
+    }
+
+    [Fact]
+    public void GetRandomPerks_SameSeed_ReproducesSequence()
+    {
+        var a = ProgressionFormulas.GetRandomPerks(3, new Random(42));
+        var b = ProgressionFormulas.GetRandomPerks(3, new Random(42));
+
+        a.Should().Equal(b);
     }
 }

@@ -6,6 +6,12 @@
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <Nullable>enable</Nullable>
     <RootNamespace>HeroArena</RootNamespace>
+    <!-- Godot.NET.Sdk supplies its own generated AssemblyInfo/TargetFramework
+         files under .godot/mono/temp/obj. Leaving the .NET SDK's generation
+         on compiles them twice on incremental builds (CS0579); the Godot
+         copies already carry the same attributes, so nothing is lost. -->
+    <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
+    <GenerateTargetFrameworkAttribute>false</GenerateTargetFrameworkAttribute>
   </PropertyGroup>
 
   <ItemGroup>

@@ -39,6 +39,13 @@ dotnet build Hero-sArena.csproj
 The xUnit test project is excluded from the main build via
 `<Compile Remove="tests/HeroArena.Tests/**/*.cs" />` in `Hero-sArena.csproj`.
 
+Local toolchain notes: use the .NET 8 SDK at `~/.dotnet8`
+(`DOTNET_ROOT=~/.dotnet8`; the snap `dotnet` shim is broken and
+`~/.dotnet` is v10 — do not use it). `Hero-sArena.csproj` sets
+`GenerateAssemblyInfo=false` / `GenerateTargetFrameworkAttribute=false`
+because `Godot.NET.Sdk` supplies both generated files; leaving the SDK
+defaults on breaks incremental builds with CS0579 duplicates.
+
 ## Testing
 
 There are two test harnesses, and they have different runtime requirements.
@@ -50,29 +57,37 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **19 tests pass**
-covering pure C# logic (`SpatialHashGridTests`, `SpatialHashGridBenchmarkTests`,
-`HeroBaseTests`, `ObjectPoolManagerTests`, plus the SpatialHashGrid-remove
-regression test).
+Under the default filter (`Category!=GodotRuntime`), **66 tests pass**
+covering pure C# logic (`SpatialHashGridTests`,
+`SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
+`ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
+`EventBusTests`, plus regression tests).
 
 Tests that need the Godot native runtime carry
 `[Trait("Category","GodotRuntime")]` and are filtered out by the default
-command above: `GameManagerTests`, `LevelProgressionTests`.
-`CollateralKarmaTests` uses a `RuntimeHelpers.GetUninitializedObject` bypass
-to run headlessly (see `AGENTS.md` for the trade-off). The Godot headless
-gate below cross-covers its math.
+command above: `GameManagerTests`, `GameManagerTests_State`,
+`InputBufferTests`. The former `LevelProgressionTests` /
+`CollateralKarmaTests` (which needed a `RuntimeHelpers` bypass to
+instantiate `Node`s) were retired: the math lives in the pure
+`ProgressionFormulas` class, tested directly. The Godot headless gate
+below cross-covers the `Node` wrappers.
 
-### 2. Godot headless gate — `tests/GodotTests/CoreSystemTests.cs`
+### 2. Godot headless gate — `tests/GodotTests/` (`GateRunner.cs` + `CoreSystemTests.cs`)
 A Godot script (`Node`) that self-runs assertions for `SpatialHashGrid`,
 `WaveManager`, `FlowFieldPathfinder`, `LevelProgression`, `EntityRegistry`
-(registry regression for the F-1 fix), and `CollateralKarma` (math
-cross-cover), then quits non-zero on failure. Run with the Godot binary:
+(registry regression for the F-1 fix), `CollateralKarma` (math
+cross-cover + Node behavior), `PowerupBannerFactory` (timer-leak guard),
+and `HitFlash` (F-31 consumer), then quits non-zero on failure.
+Godot 4 requires `-s` scripts to inherit `SceneTree`/`MainLoop`, so the
+entry point is `GateRunner`, which hosts the tests node. Run with a
+**.NET/mono-enabled** Godot 4.3 binary (the standard headless binary
+cannot load `.cs` scripts):
 ```
-godot --headless -s res://tests/GodotTests/CoreSystemTests.cs
+godot --headless -s res://tests/GodotTests/GateRunner.cs
 ```
-**Note:** no Godot binary is currently installed in this workspace, so
-this gate cannot be executed here. The CI `godot-verify` job downloads
-Godot 4.3 headless and runs it on every push and PR.
+**Note:** this workspace provides `~/.local/bin/godot-mono`
+(`4.3.stable.mono`). The CI `godot-verify` job downloads the same mono
+build on every push and PR.
 
 ## CI
 
@@ -89,18 +104,21 @@ on the branch — `continue-on-error: true` was removed from the
 typecheck/build/test jobs.
 
 **Note (2026-08-27):** the GitHub account is currently locked due to a
-billing issue, so CI is not running. Tracked in issue #23. Both audit
-fix PRs are open and ready to merge once CI is restored.
+billing issue, so CI is not running. Tracked in issue #23. The audit
+fix PRs (#18, #19) are merged; local gates (`dotnet build`, `dotnet test`,
+Roslynator, mono headless) mirror CI meanwhile.
 
 ## Known gaps
 - The Godot-dependent xUnit test classes (`GameManagerTests`,
-  `LevelProgressionTests`) are gated behind a trait and run in the
-  Godot headless gate only. The AGENTS.md-preferred fix is to extract
-  the pure logic out of `Node` subclasses so headless `dotnet test`
-  covers them too. Tracked in issue #22.
+  `GameManagerTests_State`, `InputBufferTests`) are gated behind a
+  trait and run in the Godot headless gate only. `LevelProgression` /
+  `CollateralKarma` were extracted to the pure `ProgressionFormulas`
+  class (same fix still wanted for `GameManager`). Tracked in
+  issue #22.
 - Bench harnesses (`bench_test/`, `FrameTimeBenchmark.cs`,
   `WaveManagerBenchmark.cs`) do not exercise the production hot path
   (use `Node2D` mocks, miss the per-frame throttle). Tracked in
   issue #20.
-- `OnProjectileHit` event has no in-tree consumer; reserved as a public
-  hook for VFX/SFX plugins. Tracked in issue #21.
+- `OnProjectileHit` is consumed by `HitFlash` (F-31 fix); audio cues
+  and post-processing shaders can subscribe as VFX/SFX plugins.
+  Tracked in issue #21.

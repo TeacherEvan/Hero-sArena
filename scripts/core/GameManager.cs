@@ -33,6 +33,11 @@ namespace HeroArena
         // the new scene's _Ready has wired WaveManager/SpatialGrid.
         public bool PendingStartAfterSceneChange { get; set; } = false;
 
+        // Set by MainMenu.StartGame from the hero picker; consumed by
+        // MainBootstrap when the game scene loads. Defaults to Atlas so a
+        // direct boot into Main.tscn still spawns a playable hero.
+        public HeroClass PendingHeroClass { get; set; } = HeroClass.Atlas;
+
         private LevelProgression? _levelProgression;
 
         public LevelProgression EnsureLevelProgression()

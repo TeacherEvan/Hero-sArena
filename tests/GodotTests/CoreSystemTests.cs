@@ -6,7 +6,10 @@ namespace HeroArena.Tests
 {
     /// <summary>
     /// Godot headless test runner for core systems that require Godot types.
-    /// Run with: godot --headless -s res://tests/GodotTests/CoreSystemTests.cs
+    /// Cannot be run via `-s` directly (Godot 4 requires the entry script to
+    /// inherit SceneTree/MainLoop); run through GateRunner instead:
+    /// godot --headless -s res://tests/GodotTests/GateRunner.cs
+    /// (requires a .NET/mono-enabled Godot 4.3 build).
     /// </summary>
     [GlobalClass]
     public partial class CoreSystemTests : Node
@@ -34,6 +37,9 @@ namespace HeroArena.Tests
 
             try { TestCollateralKarma(); passed++; GD.Print("PASS: CollateralKarma tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma - {e.Message}"); }
+
+            try { TestCollateralKarmaBehavior(); passed++; GD.Print("PASS: CollateralKarma behavior tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma behavior - {e.Message}"); }
 
             try { TestHitFlash(); passed++; GD.Print("PASS: HitFlash tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
@@ -249,6 +255,27 @@ namespace HeroArena.Tests
             float a50 = Mathf.Log(Mathf.E + 0.05f * 50);
             if (MathF.Abs(a50 - 1.652f) > 0.005f)
                 throw new Exception($"KarmaAmplifier(50) expected ~1.652, got {a50}");
+        }
+
+        /// <summary>
+        /// Node-level behavior retired from xUnit (which needed the
+        /// RuntimeHelpers.GetUninitializedObject bypass to instantiate the
+        /// Node headlessly): a live CollateralKarma subscribes to
+        /// OnEnvironmentDestroyed, counts destructions, and its amplifier
+        /// delegates to ProgressionFormulas.
+        /// </summary>
+        private void TestCollateralKarmaBehavior()
+        {
+            var karma = new CollateralKarma();
+            GetTree().Root.AddChild(karma);
+            if (karma.DestructionCount != 0)
+                throw new Exception($"Initial DestructionCount expected 0, got {karma.DestructionCount}");
+            EventBus.Instance.EmitEnvironmentDestroyed(Vector2.Zero, 10f);
+            if (karma.DestructionCount != 1)
+                throw new Exception($"DestructionCount expected 1 after event, got {karma.DestructionCount}");
+            if (MathF.Abs(karma.KarmaAmplifier - ProgressionFormulas.CalcKarmaAmplifier(1)) > 0.0001f)
+                throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");
+            karma.QueueFree();
         }
 
         /// <summary>
