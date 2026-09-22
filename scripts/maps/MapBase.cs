@@ -3,8 +3,10 @@ using System.Collections.Generic;
 
 namespace HeroArena
 {
-    /// <summary>Abstract base for all arena maps.</summary>
-    public abstract partial class MapBase : Node2D
+    /// <summary>Base for all arena maps. Concrete (not abstract) so map scenes
+    /// can attach it directly; override <see cref="OnMapReady"/> per map when
+    /// map-specific setup is needed.</summary>
+    public partial class MapBase : Node2D
     {
         [Export] public TileMapLayer? TileMap { get; set; }
         [Export] public Vector2[] SpawnPoints { get; set; } = System.Array.Empty<Vector2>();
