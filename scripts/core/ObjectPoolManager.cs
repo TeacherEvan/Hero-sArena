@@ -87,8 +87,12 @@ namespace HeroArena
             for (int i = 0; i < MAX_PROJECTILES; i++)
             {
                 var p = ProjectileScene.Instantiate<ProjectileBase>();
-                parent.AddChild(p);
+                // Deactivate BEFORE AddChild: entering the tree with Area2D monitoring
+                // enabled registers each instance in the 2D physics space, and toggling
+                // that after entry costs O(n) per instance — the original super-linear
+                // pre-warm that stalled boot (minutes-to-hours for 16k nodes).
                 p.Deactivate();
+                parent.AddChild(p);
                 _projectiles[i] = p;
                 _freeProjectiles[_freeProjectileTop++] = i;
             }
@@ -103,8 +107,9 @@ namespace HeroArena
             for (int i = 0; i < MAX_DECALS; i++)
             {
                 var d = DecalScene.Instantiate<DecalInstance>();
-                parent.AddChild(d);
+                // Deactivate BEFORE AddChild, same pattern as PreAllocateProjectiles.
                 d.Deactivate();
+                parent.AddChild(d);
                 _decals[i] = d;
                 _freeDecals[_freeDecalTop++] = i;
             }
@@ -119,8 +124,9 @@ namespace HeroArena
             for (int i = 0; i < MAX_DESTRUCTIBLES; i++)
             {
                 var d = DestructibleScene.Instantiate<DestructibleObject>();
-                parent.AddChild(d);
+                // Deactivate BEFORE AddChild, same pattern as PreAllocateProjectiles.
                 d.Deactivate();
+                parent.AddChild(d);
                 _destructibles[i] = d;
                 _freeDestructibles[_freeDestructibleTop++] = i;
             }

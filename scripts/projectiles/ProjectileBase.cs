@@ -19,6 +19,10 @@ namespace HeroArena
         public int PiercingCount { get; set; } = 0;
         public int PoolIndex { get; private set; }
 
+        // Collision shape parked while pooled so idle pool members stay out of the
+        // physics broadphase (see Deactivate/Activate).
+        private CollisionShape2D? _shape;
+
         private float _lifetime = 0f;
 
         // Per-type texture cache (loaded once)
@@ -45,8 +49,10 @@ namespace HeroArena
             IsActive = true;
             Visible = true;
             SetPhysicsProcess(true);
-            // Re-enable collision monitoring
+            // Re-enable collision monitoring and the parked collision shape.
             Monitoring = true;
+            Monitorable = true;
+            if (_shape != null) _shape.Disabled = false;
 
             // Load per-type texture on first activation
             if (!_texturesLoaded)
@@ -71,6 +77,12 @@ namespace HeroArena
             Visible = false;
             SetPhysicsProcess(false);
             Monitoring = false;
+            Monitorable = false;
+            // Park the collision shape: registered shapes put every pooled instance
+            // into the physics broadphase, which made pre-allocation super-linear
+            // and stalled the first frames after boot.
+            _shape ??= GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+            if (_shape != null) _shape.Disabled = true;
             // Reset per-shot state so a reused projectile doesn't carry the
             // previous shot's PiercingCount. (Audit finding F-51.)
             PiercingCount = 0;
