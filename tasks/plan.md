@@ -150,12 +150,24 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
   `TestGameManagerDelegation` gate check (detached-Node, no EventBus
   touch). Preserved quirks, now pinned: StartGame does NOT reset
   ActiveEnemyCount; game-over leaves stragglers counted across restart.
-  Bypass sites now 11 across 6 suites (recounted straight from grep; the
-  recorded "14 in 7" was inaccurate). Gates: build 0/0, tests
-  121/121 filtered, 126/126 unfiltered.
+  Bypass sites now 7 across 4 suites (recounted twice: the recorded
+  "14 in 7", then "11 in 6", both inflated by doc-comment mentions);
+  gates: build 0/0, tests 121/121 filtered, 126/126 unfiltered. INPUT
+  BUFFER DONE SAME DAY — see next bullet.
 - [x] T3.3: bench hot-path alignment (#20) — see T3.3 note above
 - [x] Commit T3.2c/T4.3/T5.2 follow-up corrections (PR #50, 6668bc5)
-- [ ] Lint policy call: now 15 pre-existing infos (14× CA1822 + 1× CA1016),
+- [x] T3.1b (2026-10-16, same day): InputBuffer extraction —
+  `scripts/core/InputBufferState.cs` (pure: membership, 6-frame expiry
+  window, fixed capacity, refill-after-consume) + delegating `InputBuffer`
+  Node (StringName boundary + tick→expire ordering kept).
+  `InputBufferTests` (last trait'd suite, 5 tests, 2 bypass sites)
+  RETIRED into `InputBufferStateTests` (9 tests, untagged) +
+  `TestInputBufferDelegation` gate check. NO `[Trait]` suites remain —
+  the default filter equals unfiltered now (131/131). Bypass sites 7 in 4
+  suites (HeroBaseTests 4, FlowFieldPathfinderTests 1, EventBusTests 1,
+  EnemyMutatorSystemTests 1). Roslynator 16 infos (15× CA1822 + CA1016;
+  the +1 is the second new gate check, same unrunnable-category).
+- [ ] Lint policy call: now 16 pre-existing infos (15× CA1822 + 1× CA1016),
   exit 1; needs user policy decision (options in the phase-3 note above).
 - [ ] Merge or resolve the in-tree theme-feature WIP (VisualTheme/HUD/
   MainMenu/UpgradeMenu/MainBootstrap/icon.svg) — a separate writer is

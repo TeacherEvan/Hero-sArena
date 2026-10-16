@@ -105,9 +105,11 @@ review (2026-10-16) found and fixed:
 - [x] T3.1-rest (2026-10-16): GameManager state extracted to the pure
       `GameManagerState`; GameManagerTests/GameManagerTests_State retired
       into headless `GameManagerStateTests` + gate delegation check.
-      Counts 121 filtered / 126 unfiltered. Last tagged suite:
-      InputBufferTests (5 tests, 2 bypass sites). Full note: plan.md
-      Next-section T3.1-rest entry.
+      INPUT BUFFER same day: pure `InputBufferState` +
+      `InputBufferStateTests` (9 headless tests) + gate check; the last
+      `[Trait]` suite is gone, so filtered = unfiltered = 131/131.
+      Bypass sites recounted: 7 in 4 suites. Last tagged suite: none —
+      issue #22's CI-nowhere gap is CLOSED.
 - [ ] T3.3: bench hot-path alignment (#20)
 - [ ] Lint gate red on pre-existing infos — 2026-10 re-count: **14 infos
       (exit 1)**: 13× CA1822 + 1× CA1016 (was 17). None in the new pure files.
@@ -152,6 +154,27 @@ review (2026-10-16) found and fixed:
 - [x] NOTE: scenes/Main.tscn was externally reverted 3x — cause found:
       editor reload prompts answered incorrectly (acknowledged).
       Rule: single writer per file; restore project.godot after engine runs.
+
+## Verification evidence (2026-10-16 — T3.1-rest closure: GameManager + InputBuffer)
+
+- `dotnet build` Release: 0 warnings, 0 errors
+- `dotnet test --filter Category!=GodotRuntime`: 131/131 — EQUAL to
+  unfiltered for the first time (131/131): no `[Trait]`-skipped suites
+  remain, so the CI-nowhere gap (issue #22) is closed
+- Retired: InputBufferTests (last trait'd suite, 5 bypass tests,
+  2 sites) → InputBufferStateTests (9 untagged) + gate
+  TestInputBufferDelegation; GameManagerTests/_State →
+  GameManagerStateTests + gate TestGameManagerDelegation
+- Bypass call sites recounted twice with comment mentions excluded:
+  **7 in 4 suites** (HeroBaseTests 4, FlowFieldPathfinderTests 1,
+  EventBusTests 1, EnemyMutatorSystemTests 1) — "14 in 7" and "11 in 6"
+  were both comment-inflated
+- Roslynator: exit 1, 16 infos (15× CA1822 + 1× CA1016); the two new
+  CA1822s are the two new gate checks (same unrunnable-gate category);
+  nothing new in shipped files
+- Secret bug found & fixed during the round: a drafting error put a
+  nonexistent `GameState.Menuless` and a wrong long-overflow value in
+  draft tests — caught by the compile/test gates before any commit
 
 ## Verification evidence (2026-10-16 — T3.1-rest GameManager extraction)
 

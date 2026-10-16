@@ -70,8 +70,9 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **121 tests pass**
-covering pure C# logic (`SpatialHashGridTests`,
+Under the default filter, **131 tests pass** — with no suite filtered
+out anymore (see below). They cover pure C# logic
+(`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
 `EventBusTests`, plus regression tests), including the systems that used to
@@ -79,23 +80,25 @@ have no headless coverage: `EntityRegistryTests` (F-1 registry regression),
 `HitFlashPaletteTests` (F-31 damage-type colors + fade curve),
 `DestructionTrackerTests` (CollateralKarma counting state),
 `PowerupBannerSlotsTests` (HUD banner selection rule),
-`WaveFormulasTests` (Weibull wave-intensity curve), and
+`WaveFormulasTests` (Weibull wave-intensity curve),
 `GameManagerStateTests` (the run state machine: transitions, guards, score
-and threat math — the T3.1-rest extraction). Each of these was
+and threat math), and
+`InputBufferStateTests` (the 6-frame input buffer: membership, expiry
+window, refill-slot semantics — the T3.1-rest closure). Each of these was
 extracted from the `Node` wrapper into a Godot-free class that the wrapper
 delegates to, mirroring the `ProgressionFormulas` pattern.
 
-`InputBufferTests` carries `[Trait("Category","GodotRuntime")]` and is
-filtered out by the default command above. **On this machine the tag is
-stale**: those 5 tests use a `FormatterServices.GetUninitializedObject`
-bypass (which `AGENTS.md` records as deprecated, with 11 legacy sites
-listed across 6 suites) and pass headlessly when run unfiltered — but the
-bypass must be removed (extract InputBuffer state like the others) before
-the trait can be dropped. The former `LevelProgressionTests` /
-`CollateralKarmaTests` and the `GameManagerTests` /
-`GameManagerTests_State` suites were retired the same way: the state and
-math live in the pure classes, tested directly, and the surviving
-Node-behavior checks moved to the Godot headless gate.
+**No suite is filtered out anymore**: the last one carrying
+`[Trait("Category","GodotRuntime")]` (`InputBufferTests`, 5
+bypass-built tests) retired on 2026-10-16 with the `InputBufferState`
+extraction, alongside `GameManagerTests` / `GameManagerTests_State`
+→ `GameManagerStateTests`. The former `LevelProgressionTests` /
+`CollateralKarmaTests` retired the same way. Residual deprecated
+`FormatterServices.GetUninitializedObject` construction fixtures remain
+in 4 suites (7 call sites — see `AGENTS.md`), but they all run in the
+default command, and the surviving Node-behavior checks
+(`TestGameManagerDelegation`, `TestInputBufferDelegation`) moved to the
+Godot headless gate.
 
 ### 2. Godot headless gate — `tests/GodotTests/` (`CoreSystemTests.tscn` + `CoreSystemTests.cs`)
 A Godot `Node` that self-runs assertions for `SpatialHashGrid`,
@@ -148,20 +151,20 @@ fix PRs (#18, #19) are merged; local gates (`dotnet build`, `dotnet test`,
 Roslynator) mirror CI meanwhile — the Godot gate does not (see above).
 
 ## Known gaps
-- `InputBufferTests` is the only xUnit class still carrying
-  `[Trait("Category","GodotRuntime")]`, so the default xUnit command
-  filters it out — and it is not wired into the Godot gate either, so in
-  CI it currently runs nowhere. It passes when xUnit is run unfiltered
-  locally, via the deprecated `FormatterServices.GetUninitializedObject`
-  construction bypass (see `AGENTS.md`); the bypass must be removed
-  (extract InputBuffer state, as was done for
-  `ProgressionFormulas`/`EntityRegistry`/`GameManagerState`) before the
-  trait can go. The GameManager suites retired out of this gap on
-  2026-10-16: the run state machine now lives in the pure
-  `GameManagerState` class (transitions, guards, score/threat math), the
-  game-manager `Node` delegates 1:1, and a
-  `TestGameManagerDelegation` check guards the wiring in the headless
-  gate. Tracked in issue #22.
+- Closed (2026-10-16): **no xUnit class carries
+  `[Trait("Category","GodotRuntime")]` anymore**, so nothing is filtered
+  out of the default command, and nothing runs nowhere in CI. The frame
+  buffer became the pure `InputBufferState` (the `InputBuffer` Node keeps
+  the StringName boundary and tick→expire ordering;
+  `TestInputBufferDelegation` guards it in the headless gate) and the run
+  state machine became the pure `GameManagerState`
+  (`TestGameManagerDelegation` likewise). Residual deprecated
+  `FormatterServices.GetUninitializedObject` construction fixtures still
+  exist in 4 suites (7 call sites — `HeroBaseTests`,
+  `FlowFieldPathfinderTests`, `EventBusTests`,
+  `EnemyMutatorSystemTests`), but they headlessly PASS inside the default
+  command; extract those states the same way as they surface. Tracked in
+  issue #22.
 - Bench harnesses were realigned with the production hot path (dfb7acd,
   issue #20 closed): the SceneTree benches report max per-frame wall time
   and model the 60Hz drain of the `MAX_SPAWNS_PER_FRAME` throttle, and the

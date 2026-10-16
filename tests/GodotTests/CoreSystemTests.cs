@@ -21,11 +21,13 @@ namespace HeroArena.Tests
     ///   - Powerup banner selection      → PowerupBannerSlotsTests
     ///   - Weibull wave intensity        → WaveFormulasTests
     ///   - Run-state machine (T3.1-rest) → GameManagerStateTests
+    ///   - Frame input buffer  (T3.1-rest) → InputBufferStateTests
     /// The pure-math checks that remain below (SpatialHashGrid, WaveManager,
     /// FlowFieldPathfinder, LevelProgression, CollateralKarma) are now
     /// in-engine cross-covers of headlessly-tested logic, kept as a second
     /// harness for the day the engine runs. Only TestEntityRegistry,
     /// TestCollateralKarmaBehavior, TestGameManagerDelegation,
+    /// TestInputBufferDelegation, TestPowerupBannerDelegation and
     /// TestPowerupBannerDelegation and TestHitFlash are genuinely
     /// SceneTree-dependent.
     ///
@@ -65,6 +67,9 @@ namespace HeroArena.Tests
 
             try { TestGameManagerDelegation(); passed++; GD.Print("PASS: GameManager delegation tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: GameManager delegation - {e.Message}"); }
+
+            try { TestInputBufferDelegation(); passed++; GD.Print("PASS: InputBuffer delegation tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: InputBuffer delegation - {e.Message}"); }
 
             try { TestPowerupBannerDelegation(); passed++; GD.Print("PASS: PowerupBannerSlots delegation tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerSlots delegation - {e.Message}"); }
@@ -312,6 +317,36 @@ namespace HeroArena.Tests
             if (MathF.Abs(karma.KarmaAmplifier - ProgressionFormulas.CalcKarmaAmplifier(1)) > 0.0001f)
                 throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");
             karma.QueueFree();
+        }
+
+        /// <summary>
+        /// Guards the InputBuffer → InputBufferState delegation (T3.1-rest):
+        /// the Node itself must own the StringName→string boundary and the
+        /// tick→expire ordering. A detached instance (never added to a tree,
+        /// so the engine never ticks it) drives _PhysicsProcess manually:
+        /// BufferAction(StringName) → expire after 6 ->drop ticks →
+        /// ConsumeAction false. BufferFrame-1 boundary and pure-queue
+        /// mechanics are asserted headlessly in InputBufferStateTests.
+        /// </summary>
+        private void TestInputBufferDelegation()
+        {
+            var buffer = new InputBuffer();
+            var action = new StringName("attack");
+
+            buffer.BufferAction(action);
+            if (!buffer.IsBuffered(action))
+                throw new Exception("InputBuffer: BufferAction did not register via InputBufferState");
+
+            // Tick + ProcessBuffer 5 times: still inside the window.
+            for (int i = 0; i < InputBufferState.BufferFrames - 1; i++)
+                buffer._PhysicsProcess(1.0 / 60.0);
+            if (!buffer.IsBuffered(action))
+                throw new Exception("InputBuffer: entry expired before BufferFrames elapses");
+
+            // 6th tick: expiry sweeps it.
+            buffer._PhysicsProcess(1.0 / 60.0);
+            if (buffer.IsBuffered(action))
+                throw new Exception("InputBuffer: entry should expire after BufferFrames ticks");
         }
 
         /// <summary>
