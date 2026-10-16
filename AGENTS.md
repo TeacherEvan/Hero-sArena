@@ -26,8 +26,8 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
 ## Testing — TWO harnesses, different runtimes (READ CAREFULLY)
 1. **xUnit** — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`).
     - Run locally: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj`
-      (prefix `DOTNET_ROOT=~/.dotnet8`; 105 tests pass under the default filter;
-      122 pass unfiltered).
+      (prefix `DOTNET_ROOT=~/.dotnet8`; 121 tests pass under the default filter;
+      126 pass unfiltered).
     - Headless coverage: tests that merely *construct* a Godot `Node`
       subclass pass (GodotSharp types are plain managed objects; fixtures
       built on `FormatterServices.GetUninitializedObject` work, though that
@@ -37,7 +37,7 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
       PASS: SpatialHashGridTests, SpatialHashGridBenchmarkTests, HeroBaseTests,
              ObjectPoolManagerTests, ProgressionFormulasTests, KarmaAmplifierTests,
              EnemyMutatorSystemTests, EventBusTests, WaveFormulasTests, EntityRegistryTests,
-             HitFlashPaletteTests, DestructionTrackerTests,
+             HitFlashPaletteTests, DestructionTrackerTests, GameManagerStateTests,
              PowerupBannerSlotsTests.
     - Godot-free classes extracted from `Node` wrappers so the suite can cover
       what used to be gate-only (each `Node` delegates 1:1):
@@ -45,26 +45,29 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
       `scripts/core/HitFlashPalette.cs` (F-31 colors + fade),
       `scripts/core/DestructionTracker.cs` (CollateralKarma counting),
       `scripts/core/PowerupBannerSlots.cs` (HUD banner selection),
-      `scripts/core/WaveFormulas.cs` (Weibull wave-intensity curve).
-    - PASS under `[Trait("Category","GodotRuntime")]` filter exclusion (so under
-      `dotnet test --filter "Category!=GodotRuntime"` they are skipped):
-      `GameManagerTests`, `GameManagerTests_State`, `InputBufferTests`. **The
-      trait is now STALE here**: those 17 tests pass headlessly when run
-      unfiltered, but they still construct `Node`s via the
-      `FormatterServices.GetUninitializedObject` bypass that this file records
-      as DEPRECATED — remove the bypass first, then drop the trait.
+      `scripts/core/WaveFormulas.cs` (Weibull wave-intensity curve),
+      `scripts/core/GameManagerState.cs` (run transitions/threat/score, T3.1-rest).
+    - REMAINING under `[Trait("Category","GodotRuntime")]` (skipped by the
+      default filter): `InputBufferTests` only — 5 tests that pass unfiltered
+      via the bypass. Extract InputBuffer state to drop the trait, as done
+      for GameManager (GameManagerTests + GameManagerTests_State retired
+      2026-10-16 into GameManagerStateTests + a gate delegation check).
     - RETIRED: `LevelProgressionTests` → `ProgressionFormulasTests` and
       `CollateralKarmaTests` (with its `RuntimeHelpers.GetUninitializedObject`
-      bypass) → `KarmaAmplifierTests`. Pure math lives in
-      `scripts/core/ProgressionFormulas.cs`; the `Node` wrappers delegate 1:1.
+      bypass) → `KarmaAmplifierTests`. `GameManagerTests` /
+      `GameManagerTests_State` (incl. `GameManagerThreatLevelTests` and
+      `TestableGameManager`) → `GameManagerStateTests` + a
+      `TestGameManagerDelegation` gate check. Pure math lives in
+      `scripts/core/ProgressionFormulas.cs`.
       Do NOT add new tests on Godot `Node` types via the bypass trick; extract
       pure logic or add `[Trait("Category","GodotRuntime")]` and grow the
       Godot headless gate instead.
-      NOTE: the bypass is deprecated, not gone — 14 call sites remain in 7
-      construction-only suites (`HeroBaseTests`, `EnemyMutatorSystemTests`,
-      `EventBusTests`, `FlowFieldPathfinderTests`, `GameManagerTests`,
-      `GameManagerTests_State`, `InputBufferTests`). All pass headlessly;
-      none should be extended. Remove them as each suite is extracted.
+      NOTE: the bypass is deprecated, not gone — **11 call sites remain in 6
+      construction-only suites** (`HeroBaseTests` 4, `FlowFieldPathfinderTests` 2,
+      `InputBufferTests` 2, `EventBusTests` 1, `EnemyMutatorSystemTests` 1,
+      `KarmaAmplifierTests` 1 — recounted 2026-10-16; the prior "14 in 7" figure
+      was inaccurate). All pass headlessly; none should be extended. Remove
+      them as each suite is extracted.
     - The xUnit project is EXCLUDED from the main build via
       `<Compile Remove="tests/HeroArena.Tests/**/*.cs" />` in `Hero-sArena.csproj`.
   2. **Godot headless gate** — `tests/GodotTests/CoreSystemTests.tscn`
@@ -136,20 +139,26 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
   `godot-verify` in CI would hang/fail, and nothing else executes the
   gate's content. Repair the toolchain (or replace the engine build)
   before relying on the gate for anything.
-- `GameManagerTests` / `GameManagerTests_State` / `InputBufferTests` carry
-  `[Trait("Category","GodotRuntime")]` and still instantiate `Node`s with the
-  DEPRECATED `FormatterServices.GetUninitializedObject` bypass (14 legacy
-  construction-only sites total — see the testing section), even though they
-  pass headlessly in this environment. Remove the bypass first (extract state,
-  as done for ProgressionFormulas/EntityRegistry/…), then drop the trait.
+- `InputBufferTests` carries `[Trait("Category","GodotRuntime")]` and still
+  instantiates `Node`s with the DEPRECATED
+  `FormatterServices.GetUninitializedObject` bypass (11 legacy
+  construction-only sites across 6 suites total — see the testing section;
+  the GameManager suites were extracted out of this list on 2026-10-16),
+  even though it passes headlessly in this environment. Remove the bypass
+  first (extract InputBuffer state, as done for ProgressionFormulas/
+  EntityRegistry/…/GameManagerState), then drop the trait.
 - `LevelProgression` / `CollateralKarma` math is DONE (pure
   `ProgressionFormulas` + delegating Nodes), and the former gate-only systems
-  (EntityRegistry, HitFlash, DestructionTracker, PowerupBannerSlots, WaveFormulas) are DONE.
+  (EntityRegistry, HitFlash, DestructionTracker, PowerupBannerSlots,
+  WaveFormulas) are DONE — and since 2026-10-16 so is the GameManager
+  run-state machine (`GameManagerState` + delegating Node; its old
+  reflection-built suites are retired, replaced by GameManagerStateTests
+  headlessly plus `TestGameManagerDelegation` in the gate).
 - The `RuntimeHelpers.GetUninitializedObject` bypass is DEPRECATED and
   must not be extended: the retired pattern was `CollateralKarmaTests` →
   `KarmaAmplifierTests`, and any NEW test that needs a `Node` subclass
   adds `[Trait("Category","GodotRuntime")]` and lives in the Godot
-  headless gate. (14 construction-only call sites remain in existing
+  headless gate. (11 construction-only call sites remain in existing
   suites — see the testing section.)
 - README documents the test reality; keep it in sync.
 - CI has never run (GitHub account locked, billing, issue #23). Proven

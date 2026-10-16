@@ -20,12 +20,14 @@ namespace HeroArena.Tests
     ///   - CollateralKarma counting      → DestructionTrackerTests
     ///   - Powerup banner selection      → PowerupBannerSlotsTests
     ///   - Weibull wave intensity        → WaveFormulasTests
+    ///   - Run-state machine (T3.1-rest) → GameManagerStateTests
     /// The pure-math checks that remain below (SpatialHashGrid, WaveManager,
     /// FlowFieldPathfinder, LevelProgression, CollateralKarma) are now
     /// in-engine cross-covers of headlessly-tested logic, kept as a second
     /// harness for the day the engine runs. Only TestEntityRegistry,
-    /// TestCollateralKarmaBehavior, TestPowerupBannerDelegation and
-    /// TestHitFlash are genuinely SceneTree-dependent.
+    /// TestCollateralKarmaBehavior, TestGameManagerDelegation,
+    /// TestPowerupBannerDelegation and TestHitFlash are genuinely
+    /// SceneTree-dependent.
     ///
     /// Note: the retired `GateRunner.cs` SceneTree wrapper used `-s` mode,
     /// which cannot run C# scripts on this machine. The scene entry above
@@ -60,6 +62,9 @@ namespace HeroArena.Tests
 
             try { TestCollateralKarmaBehavior(); passed++; GD.Print("PASS: CollateralKarma behavior tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma behavior - {e.Message}"); }
+
+            try { TestGameManagerDelegation(); passed++; GD.Print("PASS: GameManager delegation tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: GameManager delegation - {e.Message}"); }
 
             try { TestPowerupBannerDelegation(); passed++; GD.Print("PASS: PowerupBannerSlots delegation tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerSlots delegation - {e.Message}"); }
@@ -307,6 +312,65 @@ namespace HeroArena.Tests
             if (MathF.Abs(karma.KarmaAmplifier - ProgressionFormulas.CalcKarmaAmplifier(1)) > 0.0001f)
                 throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");
             karma.QueueFree();
+        }
+
+        /// <summary>
+        /// Guards the GameManager → GameManagerState delegation (T3.1-rest):
+        /// the Node's public API must still drive the extracted state machine.
+        /// A detached GameManager (never added to the tree, so _Ready/_ExitTree
+        /// never fire and EventBus is untouched) exercises StartGame's reset
+        /// set, the pause/resume guard chain, game-over, and the enemy count
+        /// quirk.
+        /// - StartGame: CurrentState=Playing + per-run metrics reset — but NOT
+        ///   ActiveEnemyCount (preserved quirk, pinned headlessly in
+        ///   GameManagerStateTests).
+        /// - PauseGame/ResumeGame: the GameState guard transitions; the
+        ///   SceneTree.Paused side effect needs an in-tree node, so the
+        ///   GetTree() null-guard skips it here (it is exercised in the real
+        ///   playable-boot flow).
+        /// - Game-over mid-run leaves enemies counted; StartGame resets the
+        ///   dirty metrics while keeping the count.
+        /// The pure primitives themselves are asserted in
+        /// GameManagerStateTests (xUnit, headless).
+        /// </summary>
+        private void TestGameManagerDelegation()
+        {
+            var gm = new GameManager();
+
+            // StartGame: reset set + Playing kick.
+            gm.StartGame();
+            if (gm.CurrentState != GameState.Playing)
+                throw new Exception($"StartGame: expected Playing, got {gm.CurrentState}");
+            if (gm.Score != 0 || gm.KillCount != 0 || gm.ThreatLevel != 0)
+                throw new Exception("StartGame: run metrics not reset on a fresh manager");
+
+            // Dirty a run: score up, enemies counted, then bail out.
+            gm.IncrementEnemyCount();
+            gm.IncrementEnemyCount();
+            gm.AddScore(7);
+            gm.TriggerGameOver();
+            if (gm.CurrentState != GameState.GameOver)
+                throw new Exception($"TriggerGameOver: expected GameOver, got {gm.CurrentState}");
+
+            // Restart: dirty metrics reset, straggler enemies preserved.
+            gm.StartGame();
+            if (gm.CurrentState != GameState.Playing)
+                throw new Exception($"StartGame after GameOver: expected Playing, got {gm.CurrentState}");
+            if (gm.Score != 0 || gm.KillCount != 0)
+                throw new Exception("StartGame: dirty run metrics were not reset");
+            if (gm.ActiveEnemyCount != 2)
+                throw new Exception("StartGame must NOT reset ActiveEnemyCount (preserved quirk)");
+
+            // Pause/resume guard chain (detached: SetTreePaused no-ops on the
+            // GetTree() null guard; nothing to assert there).
+            gm.PauseGame();
+            if (gm.CurrentState != GameState.Paused)
+                throw new Exception($"PauseGame: expected Paused, got {gm.CurrentState}");
+            gm.ResumeGame();
+            if (gm.CurrentState != GameState.Playing)
+                throw new Exception($"ResumeGame: expected Playing, got {gm.CurrentState}");
+
+            GD.Print("  GameManager: state transitions and reset-set delegate to GameManagerState");
         }
 
         /// <summary>

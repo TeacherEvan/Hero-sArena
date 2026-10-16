@@ -75,6 +75,8 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 - [x] T3.1-slice: `ProgressionFormulas` pure extraction (LevelProgression +
   CollateralKarma delegate). Exposed + fixed stale 812.8 expectation.
   REMAINDER: GameManager state-machine extraction (deferred, tree-coupled).
+  DONE 2026-10-16 — see the Next-section T3.1-rest entry; InputBuffer
+  remains the last tagged suite.
 - [x] T3.2: Bypass RETIRED (tests renamed to ProgressionFormulasTests /
   KarmaAmplifierTests; Node behavior in gate TestCollateralKarmaBehavior).
 - [x] T3.2b (2026-10): Godot-free extractions — EntityRegistry (F-1,
@@ -112,6 +114,9 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
   Not mechanically fixable — LevelProgression delegates have instance call
   sites in Synapse.cs/Volt.cs; the rest live in unrunnable gate/scene scripts
   (T0.3); CA1016 unfixable by design. Needs user policy decision.
+  POLICY-CALL UPDATE (2026-10-16): count is now 15 (14× CA1822 + 1× CA1016);
+  T3.1-rest's TestGameManagerDelegation added one in the same
+  unrunnable-gate category.
 
 ### Phase 4: Docs sync
 
@@ -134,11 +139,24 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 
 ### Next
 
-- [ ] T3.1-rest: GameManager state-machine extraction
+- [x] T3.1-rest (2026-10-16): GameManager state-machine extraction —
+  `scripts/core/GameManagerState.cs` (pure: transitions, guards, score,
+  threat steps, kill math; trivially Godot-free) + delegating
+  `GameManager` Node (keeps EventBus emits, `SetTreePaused`, the
+  WaveManager kick, and the EnsureLevelProgression/Instance wiring).
+  `GameManagerTests` + `GameManagerTests_State` (incl.
+  `GameManagerThreatLevelTests`, `TestableGameManager`) RETIRED into
+  `GameManagerStateTests` (17 tests, untagged, headless) + a
+  `TestGameManagerDelegation` gate check (detached-Node, no EventBus
+  touch). Preserved quirks, now pinned: StartGame does NOT reset
+  ActiveEnemyCount; game-over leaves stragglers counted across restart.
+  Bypass sites now 11 across 6 suites (recounted straight from grep; the
+  recorded "14 in 7" was inaccurate). Gates: build 0/0, tests
+  121/121 filtered, 126/126 unfiltered.
 - [x] T3.3: bench hot-path alignment (#20) — see T3.3 note above
 - [x] Commit T3.2c/T4.3/T5.2 follow-up corrections (PR #50, 6668bc5)
-- [ ] Lint policy call: 14 pre-existing infos (13× CA1822 + 1× CA1016), exit 1.
-  Needs user policy decision (options listed in the phase-3 note above).
+- [ ] Lint policy call: now 15 pre-existing infos (14× CA1822 + 1× CA1016),
+  exit 1; needs user policy decision (options in the phase-3 note above).
 - [ ] Merge or resolve the in-tree theme-feature WIP (VisualTheme/HUD/
   MainMenu/UpgradeMenu/MainBootstrap/icon.svg) — a separate writer is
   iterating on it in this workspace; see the quarantine note in todo.md.

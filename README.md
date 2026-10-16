@@ -36,6 +36,19 @@ Open `project.godot` in the Godot 4.3 editor, or build the C# project:
 ```
 dotnet build Hero-sArena.csproj
 ```
+
+## Installing (one click → "Play HeroArena" desktop icon)
+Run the included GUI installer:
+
+```
+./install.sh
+```
+
+It opens a single window: **Install** → choose basic settings (install location, desktop icon, applications-menu entry, launch after install) → **Install**. When it finishes you get a **"Play HeroArena"** icon on your desktop and in your applications menu. Double-click it to play.
+
+- Installer: `install.sh` (uses `zenity`; requires the pre-built `build/linux/Hero-sArena.x86_64` + `.pck`)
+- Uninstall: `./install.sh --uninstall` (removes the game and all icons cleanly)
+- Install log: `~/.local/share/HeroArena/install.log`
 The xUnit test project is excluded from the main build via
 `<Compile Remove="tests/HeroArena.Tests/**/*.cs" />` in `Hero-sArena.csproj`.
 
@@ -57,7 +70,7 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **105 tests pass**
+Under the default filter (`Category!=GodotRuntime`), **121 tests pass**
 covering pure C# logic (`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
@@ -65,20 +78,24 @@ covering pure C# logic (`SpatialHashGridTests`,
 have no headless coverage: `EntityRegistryTests` (F-1 registry regression),
 `HitFlashPaletteTests` (F-31 damage-type colors + fade curve),
 `DestructionTrackerTests` (CollateralKarma counting state),
-`PowerupBannerSlotsTests` (HUD banner selection rule), and
-`WaveFormulasTests` (Weibull wave-intensity curve). Each of these was
+`PowerupBannerSlotsTests` (HUD banner selection rule),
+`WaveFormulasTests` (Weibull wave-intensity curve), and
+`GameManagerStateTests` (the run state machine: transitions, guards, score
+and threat math — the T3.1-rest extraction). Each of these was
 extracted from the `Node` wrapper into a Godot-free class that the wrapper
 delegates to, mirroring the `ProgressionFormulas` pattern.
 
-`GameManagerTests`, `GameManagerTests_State`, and `InputBufferTests` carry
-`[Trait("Category","GodotRuntime")]` and are filtered out by the default
-command above. **On this machine the tag is stale**: those 17 tests use a
-`FormatterServices.GetUninitializedObject` bypass (which `AGENTS.md` records
-as deprecated, with 14 legacy sites listed) and pass headlessly when run
-unfiltered — but the bypass must be removed before the trait can be dropped.
-The former `LevelProgressionTests` /
-`CollateralKarmaTests` were retired: the math lives in the pure
-`ProgressionFormulas` class, tested directly.
+`InputBufferTests` carries `[Trait("Category","GodotRuntime")]` and is
+filtered out by the default command above. **On this machine the tag is
+stale**: those 5 tests use a `FormatterServices.GetUninitializedObject`
+bypass (which `AGENTS.md` records as deprecated, with 11 legacy sites
+listed across 6 suites) and pass headlessly when run unfiltered — but the
+bypass must be removed (extract InputBuffer state like the others) before
+the trait can be dropped. The former `LevelProgressionTests` /
+`CollateralKarmaTests` and the `GameManagerTests` /
+`GameManagerTests_State` suites were retired the same way: the state and
+math live in the pure classes, tested directly, and the surviving
+Node-behavior checks moved to the Godot headless gate.
 
 ### 2. Godot headless gate — `tests/GodotTests/` (`CoreSystemTests.tscn` + `CoreSystemTests.cs`)
 A Godot `Node` that self-runs assertions for `SpatialHashGrid`,
@@ -131,18 +148,20 @@ fix PRs (#18, #19) are merged; local gates (`dotnet build`, `dotnet test`,
 Roslynator) mirror CI meanwhile — the Godot gate does not (see above).
 
 ## Known gaps
-- The Godot-dependent xUnit test classes (`GameManagerTests`,
-  `GameManagerTests_State`, `InputBufferTests`) carry
+- `InputBufferTests` is the only xUnit class still carrying
   `[Trait("Category","GodotRuntime")]`, so the default xUnit command
-  filters them out — and they are not wired into the Godot gate either,
-  so in CI they currently run nowhere. They do pass when xUnit is run
-  unfiltered locally, via the deprecated
-  `FormatterServices.GetUninitializedObject` construction bypass (see
-  `AGENTS.md`); the bypass must be removed (extract state, as was done
-  for `ProgressionFormulas`/`EntityRegistry`/…) before the trait can go.
-  `LevelProgression` / `CollateralKarma` were extracted to the pure
-  `ProgressionFormulas` class (same fix still wanted for `GameManager`).
-  Tracked in issue #22.
+  filters it out — and it is not wired into the Godot gate either, so in
+  CI it currently runs nowhere. It passes when xUnit is run unfiltered
+  locally, via the deprecated `FormatterServices.GetUninitializedObject`
+  construction bypass (see `AGENTS.md`); the bypass must be removed
+  (extract InputBuffer state, as was done for
+  `ProgressionFormulas`/`EntityRegistry`/`GameManagerState`) before the
+  trait can go. The GameManager suites retired out of this gap on
+  2026-10-16: the run state machine now lives in the pure
+  `GameManagerState` class (transitions, guards, score/threat math), the
+  game-manager `Node` delegates 1:1, and a
+  `TestGameManagerDelegation` check guards the wiring in the headless
+  gate. Tracked in issue #22.
 - Bench harnesses were realigned with the production hot path (dfb7acd,
   issue #20 closed): the SceneTree benches report max per-frame wall time
   and model the 60Hz drain of the `MAX_SPAWNS_PER_FRAME` throttle, and the
