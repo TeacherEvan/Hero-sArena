@@ -1,12 +1,18 @@
 using Godot;
 using System;
-using System.Threading;
 
 namespace HeroArena
 {
     /// <summary>
-    /// Flow-field pathfinder on a 128×128 grid running on a dedicated worker thread.
-    /// Updates at ~4 Hz (every 250 ms). Thread-safe reads via double-buffering.
+    /// Flow-field pathfinder on a 128×128 grid. Runs the BFS on the main thread
+    /// via <see cref="_Process"/> at ~4 Hz (every 250 ms). Double-buffered reads
+    /// keep <see cref="GetFlowDirection"/> lock-free.
+    ///
+    /// <see cref="System.Threading.Thread"/> is intentionally avoided: Godot 4 C#
+    /// hosts CoreCLR via hostfxr, and background threads created with
+    /// <see cref="System.Threading.Thread"/> are not registered with Godot's
+    /// thread system, which causes "Caller thread can't call this function in
+    /// this node" errors and can crash the engine during scene teardown.
     /// </summary>
     public partial class FlowFieldPathfinder : Node
     {
@@ -33,12 +39,7 @@ namespace HeroArena
         private byte[] _writeBuf = Array.Empty<byte>();
 
         private readonly bool[] _blocked = new bool[CELL_COUNT];
-        private readonly object _targetLock = new();
         private Vector2 _targetWorldPos = Vector2.Zero;
-
-        private Thread? _workerThread;
-        private volatile bool _running;
-        private readonly AutoResetEvent _wakeEvent = new(false);
 
         // BFS queue pre-allocated
         private readonly int[] _bfsQueue = new int[CELL_COUNT];
@@ -48,40 +49,33 @@ namespace HeroArena
         private static readonly int[] DirDy  = {  0, -1, -1, -1,  0,  1,  1,  1 };
         private static readonly byte[] OppDir = {  5,  6,  7,  8,  1,  2,  3,  4 };
 
+        // ~4 Hz update cadence (250 ms)
+        private const float UpdateInterval = 0.25f;
+        private float _accumulator;
+
         public override void _Ready()
         {
-            if (_workerThread != null) return; // _Ready called twice
             _readBuf = _bufA;
             _writeBuf = _bufB;
-
-            _running = true;
-            _workerThread = new Thread(WorkerLoop) { IsBackground = true, Name = "FlowField" };
-            _workerThread.Start();
+            // Prime an initial flow field so GetFlowDirection returns valid
+            // directions immediately instead of zeros until the first tick.
+            ComputeFlowField(_targetWorldPos);
+            SwapBuffers();
         }
 
-        public override void _ExitTree()
+        public override void _Process(double delta)
         {
-            _running = false;
-            try { _wakeEvent.Set(); } catch (ObjectDisposedException) { }
-            if (_workerThread != null && !_workerThread.Join(TimeSpan.FromMilliseconds(500)))
-            {
-                // Worker still inside ComputeFlowField (slow device): it exits
-                // on its own via _running/ObjectDisposed guards; do NOT dispose
-                // the event out from under it — the finalizer reclaims it.
-                GD.PushWarning("FlowFieldPathfinder: worker thread did not exit within 500 ms; abandoning.");
-            }
-            else
-            {
-                _wakeEvent.Dispose();
-            }
-            base._ExitTree();
+            _accumulator += (float)delta;
+            if (_accumulator < UpdateInterval) return;
+            _accumulator -= UpdateInterval;
+            ComputeFlowField(_targetWorldPos);
+            SwapBuffers();
         }
 
         // ── Public API (called from main thread) ──────────────────────────────
         public void UpdateTargetPosition(Vector2 worldPos)
         {
-            lock (_targetLock) { _targetWorldPos = worldPos; }
-            _wakeEvent.Set();
+            _targetWorldPos = worldPos;
         }
 
         /// <summary>Returns flow direction vector for a world-space position.</summary>
@@ -90,8 +84,7 @@ namespace HeroArena
             var cell = WorldToGrid(worldPos);
             if (cell.X < 0 || cell.X >= GRID_W || cell.Y < 0 || cell.Y >= GRID_H)
                 return Vector2.Zero;
-            // Volatile.Read ensures we see the latest buffer after SwapBuffers
-            byte[] buf = System.Threading.Volatile.Read(ref _readBuf);
+            byte[] buf = _readBuf;
             byte dir = buf[cell.Y * GRID_W + cell.X];
             return DirVectors[dir < DirVectors.Length ? dir : 0];
         }
@@ -115,21 +108,6 @@ namespace HeroArena
         {
             if (cell.X < 0 || cell.X >= GRID_W || cell.Y < 0 || cell.Y >= GRID_H) return;
             _blocked[cell.Y * GRID_W + cell.X] = blocked;
-        }
-
-        // ── Worker thread ─────────────────────────────────────────────────────
-        private void WorkerLoop()
-        {
-            while (_running)
-            {
-                try { _wakeEvent.WaitOne(250); } // wake on signal OR every 250 ms (4 Hz)
-                catch (ObjectDisposedException) { break; } // torn down mid-wait on slow devices
-                if (!_running) break;
-                Vector2 target;
-                lock (_targetLock) { target = _targetWorldPos; }
-                ComputeFlowField(target);
-                SwapBuffers();
-            }
         }
 
         private void ComputeFlowField(Vector2 targetWorld)
@@ -177,11 +155,8 @@ namespace HeroArena
 
         private void SwapBuffers()
         {
-            // Use Volatile.Write to ensure the write buffer is fully visible to readers
-            // before _readBuf is updated. Reference assignments are atomic on all CLR
-            // platforms, but Volatile ensures ordering guarantees.
             var tmp = _writeBuf;
-            System.Threading.Volatile.Write(ref _readBuf, tmp);
+            _readBuf = tmp;
             _writeBuf = _bufA == tmp ? _bufB : _bufA;
         }
     }

@@ -27,7 +27,6 @@ public class FlowFieldPathfinderTests
         typeof(FlowFieldPathfinder).GetField("_readBuf", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(pathfinder, bufA);
         typeof(FlowFieldPathfinder).GetField("_writeBuf", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(pathfinder, bufB);
         typeof(FlowFieldPathfinder).GetField("_blocked", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(pathfinder, new bool[FlowFieldPathfinder.CELL_COUNT]);
-        typeof(FlowFieldPathfinder).GetField("_targetLock", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(pathfinder, new object());
         typeof(FlowFieldPathfinder).GetField("_bfsQueue", BindingFlags.NonPublic | BindingFlags.Instance)!.SetValue(pathfinder, new int[FlowFieldPathfinder.CELL_COUNT]);
 
         // Properties
