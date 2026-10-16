@@ -40,7 +40,8 @@ namespace HeroArena
 
         private void OnProjectileHit(Vector2 pos, DamageType type)
         {
-            _overlay.Color = HitFlashPalette.ColorFor(type);
+            var (r, g, b) = HitFlashPalette.ColorFor(type);
+            _overlay.Color = new Color(r, g, b);
             _remaining = HitFlashPalette.Duration;
             SetProcess(true);
         }

@@ -26,9 +26,14 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
 ## Testing — TWO harnesses, different runtimes (READ CAREFULLY)
 1. **xUnit** — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`).
     - Run locally: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj`
-      (prefix `DOTNET_ROOT=~/.dotnet8`; 106 tests pass under the default filter;
-      123 pass unfiltered).
-    - Works headlessly ONLY for tests that do NOT construct a Godot `Node` subclass.
+      (prefix `DOTNET_ROOT=~/.dotnet8`; 104 tests pass under the default filter;
+      121 pass unfiltered).
+    - Headless coverage: tests that merely *construct* a Godot `Node`
+      subclass pass (GodotSharp types are plain managed objects; fixtures
+      built on `FormatterServices.GetUninitializedObject` work, though that
+      bypass is deprecated — see below). Tests that need `_Ready`,
+      `_ExitTree`, or SceneTree callbacks do not run headlessly and belong
+      in the Godot gate.
       PASS: SpatialHashGridTests, SpatialHashGridBenchmarkTests, HeroBaseTests,
              ObjectPoolManagerTests, ProgressionFormulasTests, KarmaAmplifierTests,
              EnemyMutatorSystemTests, EventBusTests, WaveFormulasTests, EntityRegistryTests,
@@ -47,7 +52,7 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
       trait is now STALE here**: those 17 tests pass headlessly when run
       unfiltered, but they still construct `Node`s via the
       `FormatterServices.GetUninitializedObject` bypass that this file records
-      as RETIRED — remove the bypass first, then drop the trait.
+      as DEPRECATED — remove the bypass first, then drop the trait.
     - RETIRED: `LevelProgressionTests` → `ProgressionFormulasTests` and
       `CollateralKarmaTests` (with its `RuntimeHelpers.GetUninitializedObject`
       bypass) → `KarmaAmplifierTests`. Pure math lives in
@@ -55,6 +60,11 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
       Do NOT add new tests on Godot `Node` types via the bypass trick; extract
       pure logic or add `[Trait("Category","GodotRuntime")]` and grow the
       Godot headless gate instead.
+      NOTE: the bypass is deprecated, not gone — 14 call sites remain in 7
+      construction-only suites (`HeroBaseTests`, `EnemyMutatorSystemTests`,
+      `EventBusTests`, `FlowFieldPathfinderTests`, `GameManagerTests`,
+      `GameManagerTests_State`, `InputBufferTests`). All pass headlessly;
+      none should be extended. Remove them as each suite is extracted.
     - The xUnit project is EXCLUDED from the main build via
       `<Compile Remove="tests/HeroArena.Tests/**/*.cs" />` in `Hero-sArena.csproj`.
   2. **Godot headless gate** — `tests/GodotTests/CoreSystemTests.tscn`
@@ -104,7 +114,11 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
      (standard binary cannot load C#), then `DOTNET_ROOT=… godot --headless res://tests/GodotTests/CoreSystemTests.tscn`
      (see the gate note above: unrunnable in this workspace today).
   - Export: `godot --headless --export-release "<preset>" <output_path>` (presets must match export_presets.cfg exactly)
-  - Quality gates: `find scripts -name "*.cs" -exec grep -n -i "TODO\|FIXME" {} \;`
+  - Quality gates: must FAIL on any `TODO|FIXME` in `scripts/*.cs`, e.g.
+    `grep -rni --include="*.cs" -E "TODO|FIXME" scripts/` (grep's exit
+    code). The previous form — `find scripts -name "*.cs" -exec grep ...`
+    — evaluated `find`'s exit code, NOT grep's, so it passed vacuously
+    even with TODO/FIXME markers present.
 - **Note:** GitHub account currently locked (billing); CI not running. Tracked in issue #23.
 
 ## Agent-branch hygiene
@@ -115,26 +129,33 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
 - Do not re-fix already-merged work.
 
 ## Known production gaps (do not reintroduce)
-- The Godot headless gate cannot run in this workspace (self-forks and
-  SIGSEGVs in `libcoreclr.so`) — so `godot-verify` in CI would hang/fail, and
-  nothing else checks the gate's content. Repair the toolchain (or replace the
-  engine build) before relying on the gate for anything.
+- The Godot headless gate cannot run in this workspace (the mono binary
+  hangs in unmanaged code before any C# `_Ready` fires — full evidence in
+  the testing section above; an older "self-fork + SIGSEGV in
+  libcoreclr.so" diagnosis was WRONG and has been corrected there). So
+  `godot-verify` in CI would hang/fail, and nothing else executes the
+  gate's content. Repair the toolchain (or replace the engine build)
+  before relying on the gate for anything.
 - `GameManagerTests` / `GameManagerTests_State` / `InputBufferTests` carry
   `[Trait("Category","GodotRuntime")]` and still instantiate `Node`s with the
-  RETIRED `FormatterServices.GetUninitializedObject` bypass, even though they
+  DEPRECATED `FormatterServices.GetUninitializedObject` bypass (14 legacy
+  construction-only sites total — see the testing section), even though they
   pass headlessly in this environment. Remove the bypass first (extract state,
   as done for ProgressionFormulas/EntityRegistry/…), then drop the trait.
 - `LevelProgression` / `CollateralKarma` math is DONE (pure
   `ProgressionFormulas` + delegating Nodes), and the former gate-only systems
   (EntityRegistry, HitFlash, DestructionTracker, PowerupBannerSlots, WaveFormulas) are DONE.
-- The `RuntimeHelpers.GetUninitializedObject` bypass is RETIRED
-  (`CollateralKarmaTests` → `KarmaAmplifierTests`). Never reintroduce
-  it: any new test that needs a `Node` subclass adds
-  `[Trait("Category","GodotRuntime")]` and lives in the Godot headless
-  gate.
+- The `RuntimeHelpers.GetUninitializedObject` bypass is DEPRECATED and
+  must not be extended: the retired pattern was `CollateralKarmaTests` →
+  `KarmaAmplifierTests`, and any NEW test that needs a `Node` subclass
+  adds `[Trait("Category","GodotRuntime")]` and lives in the Godot
+  headless gate. (14 construction-only call sites remain in existing
+  suites — see the testing section.)
 - README documents the test reality; keep it in sync.
-- CI has never run (GitHub account locked, billing, issue #23), so no command
-  beyond local `dotnet test` / `dotnet build` has been proven green.
+- CI has never run (GitHub account locked, billing, issue #23). Proven
+  green locally as of 2026-10-16: `dotnet build` (Debug and Release),
+  `dotnet test` (filtered and unfiltered), and
+  `dotnet roslynator analyze` — nothing beyond that.
 - Known intermittent (2026-10): exactly one `dotnet test` failure has been
   observed twice, both times on the very first run immediately after a fresh
   build (`Failed: 1, Passed: N-1`), with no failing test name printed and no

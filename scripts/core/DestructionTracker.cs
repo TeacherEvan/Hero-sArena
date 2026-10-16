@@ -15,7 +15,5 @@ namespace HeroArena
 
         /// <summary>Records one environmental destruction.</summary>
         public void Record() => DestructionCount++;
-
-        public void Reset() => DestructionCount = 0;
     }
 }

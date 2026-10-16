@@ -1,5 +1,3 @@
-using Godot;
-
 namespace HeroArena
 {
     /// <summary>
@@ -7,6 +5,8 @@ namespace HeroArena
     /// Extracted from the HitFlash CanvasLayer (the F-31 consumer) so the
     /// xUnit suite can assert all 6 DamageType branches and the fade math
     /// headlessly; HitFlash delegates here and adds only the overlay wiring.
+    /// Godot-free (returns an RGB triple, not a Color) to match the
+    /// ProgressionFormulas precedent; the Node wrapper converts to Color.
     ///
     /// kinetic = red, energy = cyan, lightning = yellow,
     /// acid = green, fire = orange, explosive = white.
@@ -17,15 +17,15 @@ namespace HeroArena
         public const float Duration = 0.08f;
         public const float MaxAlpha = 0.25f;
 
-        public static Color ColorFor(DamageType type) => type switch
+        public static (float R, float G, float B) ColorFor(DamageType type) => type switch
         {
-            DamageType.Kinetic => new Color(1f, 0.2f, 0.2f),
-            DamageType.Energy => new Color(0.3f, 0.8f, 1f),
-            DamageType.Lightning => new Color(1f, 1f, 0.3f),
-            DamageType.Acid => new Color(0.4f, 1f, 0.4f),
-            DamageType.Fire => new Color(1f, 0.5f, 0.1f),
-            DamageType.Explosive => new Color(1f, 1f, 1f),
-            _ => new Color(1f, 0f, 0f),
+            DamageType.Kinetic => (1f, 0.2f, 0.2f),
+            DamageType.Energy => (0.3f, 0.8f, 1f),
+            DamageType.Lightning => (1f, 1f, 0.3f),
+            DamageType.Acid => (0.4f, 1f, 0.4f),
+            DamageType.Fire => (1f, 0.5f, 0.1f),
+            DamageType.Explosive => (1f, 1f, 1f),
+            _ => (1f, 0f, 0f),
         };
 
         /// <summary>

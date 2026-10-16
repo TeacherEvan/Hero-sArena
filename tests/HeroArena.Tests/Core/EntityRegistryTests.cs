@@ -1,4 +1,3 @@
-using System.Collections.Generic;
 using Xunit;
 using FluentAssertions;
 using HeroArena;
@@ -7,8 +6,10 @@ namespace HeroArena.Tests.Core;
 
 // F-1 regression guard, formerly Godot-gated: EnemyBase's static entity-id
 // registry. The dictionary lives in the Godot-free EntityRegistry<T>, so the
-// registry semantics are coverable headlessly. Unknown ids and negative ids
-// must never resolve, and removal (the _ExitTree path) must be reflected.
+// registry semantics are coverable headlessly: unknown ids and negative ids
+// must never resolve, and registration/removal must be reflected
+// immediately. EnemyBase's _ExitTree → Remove wiring itself is SceneTree-
+// dependent and is exercised (actually or by construction) in the Godot gate.
 public class EntityRegistryTests
 {
     [Fact]
@@ -81,29 +82,5 @@ public class EntityRegistryTests
 
         registry.Get(5).Should().Be("new");
         registry.Count.Should().Be(1);
-    }
-
-    [Fact]
-    public void Enumerate_Ids_ReflectsRegistration()
-    {
-        var registry = new EntityRegistry<string>();
-        registry.Register(1, "a");
-        registry.Register(2, "b");
-
-        HashSet<int> ids = new(registry.Ids);
-
-        ids.Should().BeEquivalentTo(new[] { 1, 2 });
-    }
-
-    [Fact]
-    public void Clear_DropsEverything()
-    {
-        var registry = new EntityRegistry<string>();
-        registry.Register(1, "a");
-
-        registry.Clear();
-
-        registry.Count.Should().Be(0);
-        registry.TryGet(1, out string? found).Should().BeFalse();
     }
 }

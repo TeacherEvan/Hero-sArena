@@ -32,10 +32,32 @@
 - [x] CS0579 incremental-break fixed (GenerateAssemblyInfo/TargetFramework false).
       Pre-existing, reproduced on clean HEAD.
 
-## Godot-free extractions (2026-10 — gates green, uncommitted in tree)
+## Godot-free extractions (2026-10 — merged as PR #49, 8b15e15)
 
 Pure classes extracted from `Node` wrappers so xUnit covers what used to be
-gate-only; each Node delegates 1:1 (pattern per AGENTS.md):
+gate-only; each Node delegates 1:1 (pattern per AGENTS.md). Post-merge code
+review (2026-10-16) found and fixed:
+- **`TestPowerupBannerFactory` was never invoked from the gate `_Ready`** —
+  the HUD-delegation guard sat dead in the scene; the never-passing
+  never-existing-file grep it replaced would have been *no loss at all*
+  because the replacement never ran either. Wired into `_Ready` with the
+  PASS/FAIL harness pattern (method since renamed
+  `TestPowerupBannerDelegation`).
+- `HitFlashPalette.ColorFor` returned `Godot.Color` — not Godot-free.
+  Now returns an RGB triple; `HitFlash` converts.
+- `WaveFormulas` clamp comment falsely claimed to mirror `Mathf.Clamp`
+  (Godot actually throws when max < min). Documented as a deliberate
+  divergence; pinned by `ArenaPastCapacity_YieldsNonPositiveCount_NeverThrows`.
+- Formatting collapse + stale `TypeToColor` reflection docstring in
+  CoreSystemTests; overclaiming F-1 docstring.
+- ci.yml `godot-verify` ran the engine with no `DOTNET_ROOT`, unlike the
+  documented invocation.
+- Dead shipped API removed: `EntityRegistry.Clear()`, `EntityRegistry.Ids`,
+  `DestructionTracker.Reset()` (test-only); their tests dropped.
+- AGENTS.md/README stale claims corrected (test counts, vacuous
+  quality-gate command, "headless ONLY without Node construction",
+  RETIRED-vs-14-live-bypass-sites, wrong self-fork/SIGSEGV diagnosis,
+  README six→seven jobs).
 
 - [x] `scripts/core/EntityRegistry.cs` + EntityRegistryTests — F-1 regression
       (EnemyBase.TryGetById now delegates to `EntityRegistry<EnemyBase>`)
@@ -56,6 +78,14 @@ gate-only; each Node delegates 1:1 (pattern per AGENTS.md):
 
 - [x] T2.1 Mono Godot in both download jobs + setup-dotnet in godot-verify
       (ci.yml valid, 7 jobs)
+- [x] T2.3 (2026-10-16, post-merge review): export job repaired — it had NO
+      setup-dotnet (Godot mono must run `dotnet build` on the C# solution
+      before exporting) and no DOTNET_ROOT for the mono engine; both added.
+      Also fixed export-template extraction: the .tpz archive has a
+      `templates/` root, and the previous in-place unzip nested the files at
+      `4.3.stable/templates/` where Godot never looks — export would have
+      failed with "no export template found". Now unzips at the parent and
+      renames `templates → 4.3.stable`.
 - [ ] Unblocked externally only by billing; then watch first green run
 
 ## Phase 3: Test hardening
@@ -112,14 +142,15 @@ gate-only; each Node delegates 1:1 (pattern per AGENTS.md):
       editor reload prompts answered incorrectly (acknowledged).
       Rule: single writer per file; restore project.godot after engine runs.
 
-## Verification evidence (2026-10, working tree — extraction refactor)
+## Verification evidence (2026-10 — extraction refactor + post-merge fixes)
 
 - `dotnet build` Release: 0 warnings, 0 errors
-- `dotnet test --filter Category!=GodotRuntime`: 106/106 pass (unfiltered:
-  123/123 — the 17 GodotRuntime-tagged tests run headlessly via the
+- `dotnet test --filter Category!=GodotRuntime`: 104/104 pass (unfiltered:
+  121/121 — the 17 GodotRuntime-tagged tests run headlessly via the
   GetUninitializedObject bypass noted in AGENTS.md)
 - Roslynator: exit 1, 14 infos (13× CA1822 + 1× CA1016), none in new files;
   see the policy-call note above
 - `godot-mono --headless --build-solutions --quit`: exit 0
 - ci.yml: GateRunner references gone; gate entry is the
-  `CoreSystemTests.tscn` scene (mono binary in download jobs)
+  `CoreSystemTests.tscn` scene (mono binary in download jobs);
+  godot-verify now exports `DOTNET_ROOT` for the gate run
