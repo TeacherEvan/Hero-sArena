@@ -3,23 +3,27 @@ using System;
 
 namespace HeroArena
 {
-    public enum GameState { MainMenu, Playing, Paused, GameOver, LevelUp }
-
     /// <summary>
     /// Central game manager singleton (Autoload). Tracks state, score, and wave data.
+    /// The run state machine (transitions, guards, score/threat math, counters)
+    /// lives in the Godot-free <see cref="GameManagerState"/> (plan T3.1-rest);
+    /// this Node keeps only the engine wiring and delegates 1:1.
     /// </summary>
     public partial class GameManager : Node
     {
         public static GameManager Instance { get; private set; } = null!;
 
-        // ── Public state ──────────────────────────────────────────────────────
-        public GameState CurrentState { get; private set; } = GameState.MainMenu;
-        public int CurrentWave { get; private set; } = 0;
-        public long Score { get; private set; } = 0;
-        public int ThreatLevel { get; private set; } = 0;
-        public int KillCount { get; private set; } = 0;
-        public int DestructionCount { get; private set; } = 0;
-        public int ActiveEnemyCount { get; private set; } = 0;
+        // ── Extracted state machine ──────────────────────────────────────────
+        private readonly GameManagerState _state = new();
+
+        // ── Public state (delegates 1:1 to GameManagerState) ─────────────────
+        public GameState CurrentState => _state.CurrentState;
+        public int CurrentWave => _state.CurrentWave;
+        public long Score => _state.Score;
+        public int ThreatLevel => _state.ThreatLevel;
+        public int KillCount => _state.KillCount;
+        public int DestructionCount => _state.DestructionCount;
+        public int ActiveEnemyCount => _state.ActiveEnemyCount;
 
         // ── System references (assigned in _Ready or by scene) ────────────────
         public WaveManager? WaveManager { get; set; }
@@ -75,15 +79,10 @@ namespace HeroArena
             if (CurrentState != GameState.Playing) return;
         }
 
-        // ── Public API ────────────────────────────────────────────────────────
+        // ── Public API (each 1:1 over GameManagerState) ───────────────────────
         public void StartGame()
         {
-            CurrentWave = 0;
-            Score = 0;
-            ThreatLevel = 0;
-            KillCount = 0;
-            DestructionCount = 0;
-            SetState(GameState.Playing);
+            _state.StartGame();
             WaveManager?.BeginNextWave();
         }
 
@@ -98,61 +97,45 @@ namespace HeroArena
 
         public void PauseGame()
         {
-            if (CurrentState == GameState.Playing)
-            {
-                SetState(GameState.Paused);
+            if (_state.RequestPause())
                 SetTreePaused(true);
-            }
         }
 
         public void ResumeGame()
         {
-            if (CurrentState == GameState.Paused)
-            {
-                SetState(GameState.Playing);
+            if (_state.RequestResume())
                 SetTreePaused(false);
-            }
         }
 
         public void TriggerGameOver()
         {
-            SetState(GameState.GameOver);
+            _state.SetState(GameState.GameOver);
         }
 
         public void AddScore(long points)
         {
-            Score += points;
+            _state.AddScore(points);
         }
 
-        public void IncrementEnemyCount() => ActiveEnemyCount++;
-        public void DecrementEnemyCount() => ActiveEnemyCount = Mathf.Max(0, ActiveEnemyCount - 1);
+        public void IncrementEnemyCount() => _state.IncrementEnemyCount();
+        public void DecrementEnemyCount() => _state.DecrementEnemyCount();
 
         public void SetThreatLevel(int level)
         {
-            if (ThreatLevel == level) return;
-            ThreatLevel = level;
-            EventBus.Instance.EmitThreatLevelChanged(ThreatLevel);
+            if (_state.SetThreatLevel(level))
+                EventBus.Instance.EmitThreatLevelChanged(level);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
-        private void SetState(GameState newState)
-        {
-            CurrentState = newState;
-        }
-
         private void HandleEnemyKilled(EnemyBase enemy)
         {
-            KillCount++;
-            AddScore(enemy.ExpValue * 10);
-            DecrementEnemyCount();
+            _state.RecordEnemyKill(enemy.ExpValue);
         }
 
         private void HandleEnvironmentDestroyed(Vector2 pos, float radius)
         {
-            DestructionCount++;
-            int newThreat = DestructionCount / 10;
-            if (newThreat > ThreatLevel)
-                SetThreatLevel(newThreat);
+            if (_state.RecordEnvironmentDestroyed())
+                EventBus.Instance.EmitThreatLevelChanged(_state.ThreatLevel);
         }
 
         public override void _ExitTree()

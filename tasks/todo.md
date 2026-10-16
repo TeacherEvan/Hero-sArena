@@ -102,7 +102,12 @@ review (2026-10-16) found and fixed:
       the ceiling), README bench bullet refreshed (issue #20 is CLOSED),
       `WaveFormulas.MaxEnemies = 2000` pinned by `MaxEnemies_Cap_Is2000`.
       Plan.md holds the full note.
-- [ ] T3.1-rest: GameManager state-machine extraction (deferred, tree-coupled)
+- [x] T3.1-rest (2026-10-16): GameManager state extracted to the pure
+      `GameManagerState`; GameManagerTests/GameManagerTests_State retired
+      into headless `GameManagerStateTests` + gate delegation check.
+      Counts 121 filtered / 126 unfiltered. Last tagged suite:
+      InputBufferTests (5 tests, 2 bypass sites). Full note: plan.md
+      Next-section T3.1-rest entry.
 - [ ] T3.3: bench hot-path alignment (#20)
 - [ ] Lint gate red on pre-existing infos — 2026-10 re-count: **14 infos
       (exit 1)**: 13× CA1822 + 1× CA1016 (was 17). None in the new pure files.
@@ -148,6 +153,19 @@ review (2026-10-16) found and fixed:
       editor reload prompts answered incorrectly (acknowledged).
       Rule: single writer per file; restore project.godot after engine runs.
 
+## Verification evidence (2026-10-16 — T3.1-rest GameManager extraction)
+
+- `dotnet build` Release: 0 warnings, 0 errors
+- `dotnet test --filter Category!=GodotRuntime`: 121/121 (was 105;
+  +17 GameManagerStateTests, −1 retired GameManagerThreatLevelTests)
+- unfiltered: 126/126 (was 122; −13 bypass-built tests, +17 pure)
+- Bypass call sites recounted by grep: 11 in 6 suites
+  (HeroBaseTests 4, FlowFieldPathfinderTests 2, InputBufferTests 2,
+  EventBusTests 1, EnemyMutatorSystemTests 1, KarmaAmplifierTests 1);
+  the previously recorded "14 in 7" was inaccurate.
+- docs: AGENTS/README counts + trait/bypass claims updated; gate
+  docstring lists GameManager among extracted systems.
+
 ## Verification evidence (2026-10-16 — bench-refs round T3.3)
 
 - `dotnet test --filter Category!=GodotRuntime`: 105/105 pass (the
@@ -188,8 +206,9 @@ review (2026-10-16) found and fixed:
 - `dotnet test --filter Category!=GodotRuntime`: 104/104 pass (unfiltered:
   121/121 — the 17 GodotRuntime-tagged tests run headlessly via the
   GetUninitializedObject bypass noted in AGENTS.md)
-- Roslynator: exit 1, 14 infos (13× CA1822 + 1× CA1016), none in new files;
-  see the policy-call note above
+- Roslynator: exit 1, 15 infos (14× CA1822 + 1× CA1016); the new CA1822 is
+  the T3.1-rest gate check (same unrunnable-gate category as the rest),
+  none in `GameManagerState.cs`; see the policy-call note in plan.md
 - `godot-mono --headless --build-solutions --quit`: exit 0
 - ci.yml: GateRunner references gone; gate entry is the
   `CoreSystemTests.tscn` scene (mono binary in download jobs);
