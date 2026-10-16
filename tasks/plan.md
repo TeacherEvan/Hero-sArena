@@ -98,6 +98,16 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
   self-fork/SIGSEGV diagnosis in Known gaps).
 - [ ] T3.3: Align bench harnesses with production hot path
   (follow-up to dfb7acd). Scope: M.
+- [x] T3.3 (2026-10-16): hot-path content was already aligned by dfb7acd
+  (issue #20 CLOSED, four-case bracket + per-frame max metric). What was
+  still stale after the PR #49 extraction: bench headers cited
+  pre-extraction line numbers (WaveManager MAX_ENEMIES bail site,
+  MAX_SPAWNS_PER_FRAME, _PhysicsProcess) and did not mention that
+  MAX_ENEMIES now delegates to WaveFormulas.MaxEnemies. Re-pointed both
+  SceneTree bench headers; README bench bullet refreshed (divergences
+  documented, calibration pointers kept); WaveFormulas.MaxEnemies=2000
+  now pinned by MaxEnemies_Cap_Is2000. Gates: tests 105/105 filtered,
+  122/122 unfiltered; console bench runs green. Executed scope: S.
 - [ ] Lint policy call: 14 pre-existing infos (13× CA1822 + 1× CA1016), exit 1.
   Not mechanically fixable — LevelProgression delegates have instance call
   sites in Synapse.cs/Volt.cs; the rest live in unrunnable gate/scene scripts
@@ -125,8 +135,13 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 ### Next
 
 - [ ] T3.1-rest: GameManager state-machine extraction
-- [ ] T3.3: bench hot-path alignment (#20)
-- [ ] Commit T3.2c/T4.3/T5.2 follow-up corrections
+- [x] T3.3: bench hot-path alignment (#20) — see T3.3 note above
+- [x] Commit T3.2c/T4.3/T5.2 follow-up corrections (PR #50, 6668bc5)
+- [ ] Lint policy call: 14 pre-existing infos (13× CA1822 + 1× CA1016), exit 1.
+  Needs user policy decision (options listed in the phase-3 note above).
+- [ ] Merge or resolve the in-tree theme-feature WIP (VisualTheme/HUD/
+  MainMenu/UpgradeMenu/MainBootstrap/icon.svg) — a separate writer is
+  iterating on it in this workspace; see the quarantine note in todo.md.
 
 ## Risks and Mitigations
 

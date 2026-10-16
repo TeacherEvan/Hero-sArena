@@ -6,10 +6,10 @@
 // registration, mutator state, and an `_Ready` chain. (2) The loop reported
 // per-burst CPU time but not the per-frame spike, which is the user-facing
 // metric the `MAX_SPAWNS_PER_FRAME = 20` throttle (see
-// scripts/core/WaveManager.cs:17) exists to bound. (3) The "throttled" case
+// scripts/core/WaveManager.cs:15) exists to bound. (3) The "throttled" case
 // was a free-running `while (pending > 0)` tight loop, not a per-physics-frame
 // drain. Production calls `ProcessPendingSpawns` from `WaveManager._PhysicsProcess`
-// (scripts/core/WaveManager.cs:55), so a spawn budget of 20 is realized across
+// (scripts/core/WaveManager.cs:37), so a spawn budget of 20 is realized across
 // 100 separate frames at 60Hz physics — the bench was simulating the work
 // happening in those 100 frames without sleeping between them.
 //
@@ -32,8 +32,9 @@ using System.Diagnostics;
 
 public partial class FrameTimeBenchmark : SceneTree
 {
-    // Mirror of scripts/core/WaveManager.cs. If that constant moves, update
-    // this one (the bench is intentionally not linked against the game csproj).
+    // Mirror of scripts/core/WaveManager.cs:15 (MAX_SPAWNS_PER_FRAME). If
+    // that constant moves, update this one (the bench is intentionally not
+    // linked against the game csproj).
     private const int MaxSpawnsPerFrame = 20;
     private const int TotalSpawns = 2000;
     private const double PhysicsStepMs = 1000.0 / 60.0; // 60Hz

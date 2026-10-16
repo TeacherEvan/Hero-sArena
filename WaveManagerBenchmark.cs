@@ -22,8 +22,11 @@
 //     a micro-bench; calibrate using the in-game frame profiler instead.
 //   - Notes that `WaveManager.ProcessPendingSpawns` ALSO bails out when
 //     `GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES` (see
-//     scripts/core/WaveManager.cs:105). The bench does not model the
-//     active-enemy ceiling, so it over-estimates spawn cost in long runs.
+//     scripts/core/WaveManager.cs:95). `MAX_ENEMIES` lives on the
+//     Godot-free WaveFormulas ("WaveManager.MAX_ENEMIES = WaveFormulas.MaxEnemies",
+//     scripts/core/WaveManager.cs:12; pinned in WaveFormulasTests). The bench
+//     does not model the active-enemy ceiling, so it over-estimates spawn
+//     cost in long runs.
 
 using Godot;
 using System;
