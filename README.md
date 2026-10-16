@@ -57,7 +57,7 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **104 tests pass**
+Under the default filter (`Category!=GodotRuntime`), **105 tests pass**
 covering pure C# logic (`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
@@ -143,10 +143,14 @@ Roslynator) mirror CI meanwhile — the Godot gate does not (see above).
   `LevelProgression` / `CollateralKarma` were extracted to the pure
   `ProgressionFormulas` class (same fix still wanted for `GameManager`).
   Tracked in issue #22.
-- Bench harnesses (`bench_test/`, `FrameTimeBenchmark.cs`,
-  `WaveManagerBenchmark.cs`) do not exercise the production hot path
-  (use `Node2D` mocks, miss the per-frame throttle). Tracked in
-  issue #20.
+- Bench harnesses were realigned with the production hot path (dfb7acd,
+  issue #20 closed): the SceneTree benches report max per-frame wall time
+  and model the 60Hz drain of the `MAX_SPAWNS_PER_FRAME` throttle, and the
+  console bench brackets `SpatialHashGrid.Update` across four cell-crossing
+  cases. Documented residual divergences (the `Node2D` spawn mocks
+  under-count vs an `EnemyBase` `CharacterBody2D`; the active-enemy
+  ceiling is not modeled) live in each bench header — calibrate against
+  the in-game frame profiler.
 - `OnProjectileHit` is consumed by `HitFlash` (F-31 fix); audio cues
   and post-processing shaders can subscribe as VFX/SFX plugins.
   Tracked in issue #21.

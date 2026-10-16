@@ -26,8 +26,8 @@ Project conventions for autonomous agents (Jules / Copilot / Codex).
 ## Testing — TWO harnesses, different runtimes (READ CAREFULLY)
 1. **xUnit** — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`).
     - Run locally: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj`
-      (prefix `DOTNET_ROOT=~/.dotnet8`; 104 tests pass under the default filter;
-      121 pass unfiltered).
+      (prefix `DOTNET_ROOT=~/.dotnet8`; 105 tests pass under the default filter;
+      122 pass unfiltered).
     - Headless coverage: tests that merely *construct* a Godot `Node`
       subclass pass (GodotSharp types are plain managed objects; fixtures
       built on `FormatterServices.GetUninitializedObject` work, though that

@@ -76,4 +76,14 @@ public class WaveFormulasTests
     {
         WaveFormulas.WeibullIntensity(0f).Should().Be(0f);
     }
+
+    [Fact]
+    public void MaxEnemies_Cap_Is2000()
+    {
+        // The 2,000 concurrent-enemy ceiling moved here from WaveManager
+        // (whose MAX_ENEMIES now delegates to this constant, and whose
+        // spawn loop and bench headers reference it). Pin the raw value so
+        // a silent retune of the ceiling is a visible test change.
+        WaveFormulas.MaxEnemies.Should().Be(2000);
+    }
 }
