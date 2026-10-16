@@ -19,13 +19,23 @@ namespace HeroArena
         private System.Action<int>? _onWaveStarted;
         private System.Action<int>? _onLevelUp;
         private System.Action<int>? _onThreatChanged;
+        private System.Action<int, bool>? _onWaveIncoming;
 
         private long _lastScore = -1;
         private int _lastEnemyCount = -1;
         private float _lastMaxHealth = -1f;
+        private bool _lastHealthLow = false;
 
         private readonly Label[] _powerupLabels = new Label[PowerupBannerSlots.MaxBanners];
         private readonly float[] _powerupTimers = new float[PowerupBannerSlots.MaxBanners];
+
+        private Label _waveWarningLabel = null!;
+        private ColorRect _lowHealthVignette = null!;
+        private float _waveWarningTimer;
+
+        private const float LOW_HEALTH_THRESHOLD = 0.30f;
+        private const float VIGNETTE_MAX_ALPHA = 0.30f;
+        private const float WAVE_WARNING_DURATION = 2.5f;
 
         public override void _Ready()
         {
@@ -47,6 +57,39 @@ namespace HeroArena
             EventBus.Instance.OnLevelUp += _onLevelUp;
             EventBus.Instance.OnThreatLevelChanged += _onThreatChanged;
             EventBus.Instance.OnPowerupCollected += ShowPowerup;
+            ApplyTheme();
+
+            _onWaveIncoming = (wave, isBoss) => ShowWaveWarning(wave, isBoss);
+            EventBus.Instance.OnWaveIncoming += _onWaveIncoming;
+
+            // Top-center wave warning banner.
+            _waveWarningLabel = new Label
+            {
+                Visible = false,
+                AnchorLeft = 0.5f,
+                AnchorRight = 0.5f,
+                AnchorTop = 0.15f,
+                AnchorBottom = 0.15f,
+                OffsetLeft = -220,
+                OffsetRight = 220,
+                OffsetTop = -20,
+                OffsetBottom = 20,
+                HorizontalAlignment = HorizontalAlignment.Center,
+            };
+            VisualTheme.StyleLabel(_waveWarningLabel, VisualTheme.Gold);
+            _waveWarningLabel.AddThemeFontSizeOverride("font_size", 30);
+            AddChild(_waveWarningLabel);
+
+            // Fullscreen low-health vignette (sits behind UI).
+            _lowHealthVignette = new ColorRect
+            {
+                Color = new Color(0.5f, 0f, 0f, 0f),
+                AnchorRight = 1f,
+                AnchorBottom = 1f,
+                MouseFilter = Control.MouseFilterEnum.Ignore,
+            };
+            AddChild(_lowHealthVignette);
+            MoveChild(_lowHealthVignette, 0);
         }
 
         public override void _Process(double delta)
@@ -75,6 +118,28 @@ namespace HeroArena
                 }
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
+
+                // Low-health state: vignette + health bar shifts gold → red.
+                if (hero.MaxHealth > 0f)
+                {
+                    var healthPct = hero.CurrentHealth / hero.MaxHealth;
+                    var low = healthPct <= LOW_HEALTH_THRESHOLD;
+                    if (low != _lastHealthLow)
+                    {
+                        _lastHealthLow = low;
+                        var fillColor = low ? VisualTheme.LowHealth : VisualTheme.Gold;
+                        HealthBar.AddThemeStyleboxOverride("fill", VisualTheme.PanelStyle(fillColor, VisualTheme.Border));
+                    }
+                    if (low)
+                    {
+                        var t = 1f - healthPct / LOW_HEALTH_THRESHOLD; // 1 at 0%, 0 at 30%
+                        _lowHealthVignette.Color = new Color(0.5f, 0f, 0f, VIGNETTE_MAX_ALPHA * t);
+                    }
+                    else
+                    {
+                        _lowHealthVignette.Color = new Color(0.5f, 0f, 0f, 0f);
+                    }
+                }
             }
 
             for (int i = 0; i < PowerupBannerSlots.MaxBanners; i++)
@@ -88,6 +153,22 @@ namespace HeroArena
                     }
                 }
             }
+
+            // Wave warning banner countdown.
+            if (_waveWarningTimer > 0f)
+            {
+                _waveWarningTimer -= (float)delta;
+                if (_waveWarningTimer <= 0f)
+                    _waveWarningLabel.Visible = false;
+            }
+        }
+
+        private void ShowWaveWarning(int wave, bool isBoss)
+        {
+            _waveWarningLabel.Text = isBoss ? $"BOSS WAVE {wave} INCOMING" : $"WAVE {wave} INCOMING";
+            _waveWarningLabel.Visible = true;
+            _waveWarningTimer = WAVE_WARNING_DURATION;
+            SetProcess(true);
         }
 
         private void RefreshHealth()
@@ -111,6 +192,24 @@ namespace HeroArena
             PowerupList.MoveChild(lbl, -1);
         }
 
+        private void ApplyTheme()
+        {
+            VisualTheme.StylePanel(GetNode<VBoxContainer>("VBoxContainer"));
+            VisualTheme.StylePanel(PowerupList);
+
+            VisualTheme.StyleLabel(LevelLabel, VisualTheme.Gold);
+            VisualTheme.StyleLabel(WaveLabel, VisualTheme.Gold);
+            VisualTheme.StyleLabel(ScoreLabel, VisualTheme.Text);
+            VisualTheme.StyleLabel(EnemyCountLabel, VisualTheme.Text);
+            VisualTheme.StyleLabel(ThreatLabel, VisualTheme.Text);
+
+            VisualTheme.StyleProgressBar(HealthBar, VisualTheme.Gold);
+            VisualTheme.StyleProgressBar(XpBar, VisualTheme.Cyan);
+
+            for (int i = 0; i < _powerupLabels.Length; i++)
+                VisualTheme.StyleLabel(_powerupLabels[i], VisualTheme.TextMuted);
+        }
+
         public override void _ExitTree()
         {
             if (EventBus.Instance == null) return;
@@ -119,6 +218,8 @@ namespace HeroArena
             EventBus.Instance.OnLevelUp -= _onLevelUp;
             EventBus.Instance.OnThreatLevelChanged -= _onThreatChanged;
             EventBus.Instance.OnPowerupCollected -= ShowPowerup;
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnWaveIncoming -= _onWaveIncoming;
         }
     }
 }

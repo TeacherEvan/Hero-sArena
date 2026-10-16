@@ -33,6 +33,7 @@ namespace HeroArena
             EnsureInputMap();
             EnsureSystems(gm);
             WireWaveManager(gm);
+            EnsureEnvironment(gm);
             SpawnHero(gm);
             _camera = GetParent().GetNodeOrNull<Camera2D>("Camera");
             // Direct boot (run/main_scene) has no menu to call StartGame; the
@@ -117,6 +118,23 @@ namespace HeroArena
             if (points.Length == 0)
                 GD.PrintErr("MainBootstrap: map has no SpawnPoint* markers; WaveManager.SpawnPoints left empty.");
             return points;
+        }
+
+        private void EnsureEnvironment(GameManager gm)
+        {
+            // Dark godlike atmosphere over the playfield: void background with
+            // a celestial glow. Environment is a Resource (not a Node), so it is
+            // wrapped in a WorldEnvironment node that can sit in the scene tree.
+            // BGMode.Color is the custom-color mode (BGMode.CustomColor does
+            // not exist in Godot 4.3 C#; the BG prefix is stripped).
+            var env = new Godot.Environment
+            {
+                BackgroundMode = Godot.Environment.BGMode.Color,
+                BackgroundColor = VisualTheme.Background,
+                GlowEnabled = true,
+                GlowStrength = 0.5f,
+            };
+            AddChild(new WorldEnvironment { Environment = env });
         }
 
         private void SpawnHero(GameManager gm)
