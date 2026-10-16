@@ -8,8 +8,8 @@ namespace HeroArena.Tests.Systems;
 // RuntimeHelpers.GetUninitializedObject bypass to instantiate the
 // CollateralKarma Node headlessly (see git history); the math now lives in
 // ProgressionFormulas, so no bypass, reflection, or GodotRuntime trait is
-// needed. Node-level behavior (event subscription, DestructionCount) is
-// covered in-engine by CoreSystemTests.TestCollateralKarmaBehavior.
+// needed. Node-level behavior (event subscription, DestructionCount) lives in
+// DestructionTracker, covered headlessly by DestructionTrackerTests.
 public class KarmaAmplifierTests
 {
     [Theory]

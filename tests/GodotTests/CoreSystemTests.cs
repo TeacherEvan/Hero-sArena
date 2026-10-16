@@ -5,11 +5,26 @@ using System.Collections.Generic;
 namespace HeroArena.Tests
 {
     /// <summary>
-    /// Godot headless test runner for core systems that require Godot types.
-    /// Cannot be run via `-s` directly (Godot 4 requires the entry script to
-    /// inherit SceneTree/MainLoop); run through GateRunner instead:
-    /// godot --headless -s res://tests/GodotTests/GateRunner.cs
-    /// (requires a .NET/mono-enabled Godot 4.3 build).
+    /// Godot headless test runner for core systems. Run via the scene entry:
+    /// godot --headless res://tests/GodotTests/CoreSystemTests.tscn
+    ///
+    /// IMPORTANT (environment status): this gate has never run on the developer
+    /// machine — the Godot mono binary here cannot execute managed (C#) code at
+    /// all (any C# entry stalls in unmanaged code after the .NET module
+    /// initializes; verified against `--quit`, `--import`, GDScript `-s`, a
+    /// no-dependency C# scene, and `scenes/Main.tscn`), and CI has never run
+    /// (GitHub billing lock, issue #23). Pure logic that used to be gate-only
+    /// is now extracted and covered headlessly by xUnit:
+    ///   - EntityRegistry F-1 guard      → EntityRegistryTests
+    ///   - HitFlash color/fade (F-31)    → HitFlashPaletteTests
+    ///   - CollateralKarma counting      → DestructionTrackerTests
+    ///   - Powerup banner selection      → PowerupBannerSlotsTests
+    ///   - Weibull wave intensity        → WaveFormulasTests
+    /// What remains here is genuinely SceneTree-dependent behavior.
+    ///
+    /// Note: the retired `GateRunner.cs` SceneTree wrapper used `-s` mode,
+    /// which cannot run C# scripts on this machine. The scene entry above
+    /// exercises autoloads and `_Ready` normally on an engine that can run C#.
     /// </summary>
     [GlobalClass]
     public partial class CoreSystemTests : Node
@@ -106,6 +121,12 @@ namespace HeroArena.Tests
                 throw new Exception($"AABB query expected 2, got {count}");
         }
 
+        /// <summary>
+        /// Wave manager Weibull intensity assertions. The curve math now
+        /// lives in the Godot-free WaveFormulas and is pinned by
+        /// WaveFormulasTests in xUnit; this in-engine check cross-covers the
+        /// values.
+        /// </summary>
         private void TestWaveManager()
         {
             // Test the Weibull distribution calculation directly
@@ -235,9 +256,10 @@ namespace HeroArena.Tests
         }
 
         /// <summary>
-        /// Cross-cover CollateralKarma math here so the xUnit bypass trick
+        /// Cross-cover the CollateralKarma math here so the xUnit bypass trick
         /// (RuntimeHelpers.GetUninitializedObject) is not the only CI check.
         /// Verifies the logarithmic amplifier formula at a few known points.
+        /// (Also covered headlessly in KarmaAmplifierTests.)
         /// </summary>
         private void TestCollateralKarma()
         {
@@ -258,11 +280,10 @@ namespace HeroArena.Tests
         }
 
         /// <summary>
-        /// Node-level behavior retired from xUnit (which needed the
-        /// RuntimeHelpers.GetUninitializedObject bypass to instantiate the
-        /// Node headlessly): a live CollateralKarma subscribes to
-        /// OnEnvironmentDestroyed, counts destructions, and its amplifier
-        /// delegates to ProgressionFormulas.
+        /// Node-level behavior of CollateralKarma: a live node subscribes to
+        /// OnEnvironmentDestroyed and its DestructionCount/KarmaAmplifier
+        /// forward to the Godot-free DestructionTracker (whose counting state
+        /// is asserted in DestructionTrackerTests, headlessly).
         /// </summary>
         private void TestCollateralKarmaBehavior()
         {
@@ -274,64 +295,47 @@ namespace HeroArena.Tests
             if (karma.DestructionCount != 1)
                 throw new Exception($"DestructionCount expected 1 after event, got {karma.DestructionCount}");
             if (MathF.Abs(karma.KarmaAmplifier - ProgressionFormulas.CalcKarmaAmplifier(1)) > 0.0001f)
-                throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");
-            karma.QueueFree();
+                throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");            karma.QueueFree();
         }
 
         /// <summary>
-        /// Regression guard for the HUD ShowPowerup timer leak. The original
-        /// bug (Sourcery caught on PR #18; c9fed16 was the user-applied fix)
-        /// was a lambda with an early-return on `!IsInstanceValid(lbl)` that
-        /// skipped `timer.QueueFree()`. The banner+factory logic was extracted
-        /// into `PowerupBannerFactory` so it can be reviewed and asserted
-        /// independently of the HUD scene.
+        /// Guards the HUD powerup-banner selection invariant: ShowPowerup must
+        /// delegate slot selection to the pure PowerupBannerSlots class, and
+        /// that class must implement both branches of the rule (reuse an
+        /// expired slot; else recycle the oldest active one).
         ///
-        /// Why a source-text test: a behavioral test would need to wire a
-        /// real SceneTree frame loop and time the 0.1s timer fire after a
-        /// `QueueFree()`, which is brittle in the headless gate's _Ready
-        /// context. The actual invariant is structural — every return path
-        /// in the lambda must free the timer — and the cheapest faithful
-        /// assertion is to read the file and grep for the leak-guard pattern.
-        /// A future refactor that breaks the invariant will fail this gate.
+        /// The original PR #18 regression (c9fed16) was asserted by grepping a
+        /// `scripts/ui/PowerupBannerFactory.cs` file that never existed in the
+        /// repo — the gate would have failed instantly with "Source file not
+        /// found" had it ever run. The selection rule is pure and is now
+        /// asserted properly in PowerupBannerSlotsTests (xUnit, headless); this
+        /// gate check only pins the delegation so the extracted logic stays
+        /// wired into the HUD.
         /// </summary>
         private void TestPowerupBannerFactory()
         {
-            // Resolve the source path relative to the project root. The headless
-            // gate runs from res:// so the working directory is the project root.
-            const string relativeSource = "scripts/ui/PowerupBannerFactory.cs";
-            if (!System.IO.File.Exists(relativeSource))
-                throw new Exception($"Source file not found: {relativeSource}");
+            const string slotsSource = "scripts/core/PowerupBannerSlots.cs";
+            if (!System.IO.File.Exists(slotsSource))
+                throw new Exception($"Source file not found: {slotsSource}");
 
-            string source = System.IO.File.ReadAllText(relativeSource);
+            string slotsText = System.IO.File.ReadAllText(slotsSource);
+            if (!slotsText.Contains("SelectSlot"))
+                throw new Exception("PowerupBannerSlots: SelectSlot entry point missing");
+            // Expired-slot branch.
+            if (!slotsText.Contains("timers[i] <= 0f"))
+                throw new Exception("PowerupBannerSlots: missing expired-slot branch");
+            // Oldest-banner branch.
+            if (!slotsText.Contains("timers[i] < minTime"))
+                throw new Exception("PowerupBannerSlots: missing oldest-active-slot branch");
 
-            // The lambda must contain BOTH the IsInstanceValid check AND a
-            // timer.QueueFree() in the early-return branch.
-            int idxValid = source.IndexOf("IsInstanceValid(lbl)");
-            if (idxValid < 0)
-                throw new Exception("PowerupBannerFactory: IsInstanceValid(lbl) check missing — early-return leak guard not present");
+            // The HUD must actually use the extractor.
+            const string hudSource = "scripts/ui/HUD.cs";
+            if (!System.IO.File.Exists(hudSource))
+                throw new Exception($"Source file not found: {hudSource}");
+            if (!System.IO.File.ReadAllText(hudSource).Contains("PowerupBannerSlots.SelectSlot"))
+                throw new Exception("HUD.ShowPowerup no longer delegates to PowerupBannerSlots");
 
-            // Slice the source from the IsInstanceValid check to the next
-            // standalone "return;" that follows it. The early-return branch
-            // must contain a timer.QueueFree() call.
-            string afterValid = source.Substring(idxValid);
-            int blockEnd = afterValid.IndexOf("return;");
-            if (blockEnd < 0)
-                throw new Exception("PowerupBannerFactory: cannot locate early-return statement after IsInstanceValid check");
-
-            string block = afterValid.Substring(0, blockEnd);
-            if (!block.Contains("timer.QueueFree()"))
-                throw new Exception("PowerupBannerFactory: timer.QueueFree() missing on early-return path — HUD timer leak regression (c9fed16).");
-
-            // Also assert the success path frees the timer. The last
-            // `lbl.QueueFree()` should be followed by a `timer.QueueFree()`.
-            int lastLblQueueFree = source.LastIndexOf("lbl.QueueFree()");
-            if (lastLblQueueFree < 0)
-                throw new Exception("PowerupBannerFactory: lbl.QueueFree() not found");
-            string afterLbl = source.Substring(lastLblQueueFree);
-            if (!afterLbl.Contains("timer.QueueFree()"))
-                throw new Exception("PowerupBannerFactory: timer.QueueFree() missing on success path");
-
-            GD.Print("  PowerupBannerFactory: leak-guard pattern present (early-return + success path)");
+            GD.Print("  PowerupBannerSlots: selection rule present and delegated by HUD");
         }
 
         /// <summary>
@@ -390,11 +394,17 @@ namespace HeroArena.Tests
 
             // 4. The damage-type-keyed color mapping must cover all 6 types
             //    (defense against future enum additions silently using red).
+            //    The branches live in the Godot-free HitFlashPalette; the
+            //    mapping itself is asserted in HitFlashPaletteTests.
+            const string paletteSource = "scripts/core/HitFlashPalette.cs";
+            if (!System.IO.File.Exists(paletteSource))
+                throw new Exception($"HitFlashPalette source not found: {paletteSource}");
+            string paletteText = System.IO.File.ReadAllText(paletteSource);
             string[] requiredTypes = { "Kinetic", "Energy", "Lightning", "Acid", "Fire", "Explosive" };
             foreach (var t in requiredTypes)
             {
-                if (!hfText.Contains($"DamageType.{t} =>"))
-                    throw new Exception($"HitFlash.TypeToColor missing branch for DamageType.{t}");
+                if (!paletteText.Contains($"DamageType.{t} =>"))
+                    throw new Exception($"HitFlashPalette.ColorFor missing branch for DamageType.{t}");
             }
 
             flash.QueueFree();

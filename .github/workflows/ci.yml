@@ -89,7 +89,7 @@ jobs:
         run: godot --headless --quit
 
       - name: Run Godot core system tests
-        run: godot --headless -s res://tests/GodotTests/GateRunner.cs
+        run: godot --headless res://tests/GodotTests/CoreSystemTests.tscn
 
   export:
     name: Export (Linux/Windows/macOS)
@@ -158,5 +158,11 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Check for TODO/FIXME comments in production code
+        # Must fail the job on a match. `find -exec grep` returns find's exit
+        # code, so the previous form passed vacuously even with TODOs present.
         run: |
-          find scripts -name "*.cs" -exec grep -n -i "TODO\|FIXME" {} \;
+          if grep -rni --include="*.cs" -E "TODO|FIXME" scripts/; then
+            echo "Quality gate failed: TODO/FIXME markers found in scripts/"
+            exit 1
+          fi
+          echo "Quality gate passed: no TODO/FIXME markers in scripts/"

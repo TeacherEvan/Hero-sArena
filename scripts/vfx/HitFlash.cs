@@ -15,8 +15,6 @@ namespace HeroArena
     public partial class HitFlash : CanvasLayer
     {
         private ColorRect _overlay = null!;
-        private const float FlashDuration = 0.08f;
-        private const float MaxAlpha = 0.25f;
         private float _remaining;
 
         public override void _Ready()
@@ -42,33 +40,20 @@ namespace HeroArena
 
         private void OnProjectileHit(Vector2 pos, DamageType type)
         {
-            _overlay.Color = TypeToColor(type);
-            _remaining = FlashDuration;
+            _overlay.Color = HitFlashPalette.ColorFor(type);
+            _remaining = HitFlashPalette.Duration;
             SetProcess(true);
         }
 
         public override void _Process(double delta)
         {
             _remaining -= (float)delta;
-            if (_remaining <= 0f)
+            float alpha = HitFlashPalette.AlphaFor(_remaining);
+            _overlay.Color = _overlay.Color with { A = alpha };
+            if (alpha <= 0f)
             {
-                _overlay.Color = _overlay.Color with { A = 0f };
                 SetProcess(false);
-                return;
             }
-            float t = _remaining / FlashDuration; // 1 → 0
-            _overlay.Color = _overlay.Color with { A = MaxAlpha * t };
         }
-
-        private static Color TypeToColor(DamageType type) => type switch
-        {
-            DamageType.Kinetic => new Color(1f, 0.2f, 0.2f),
-            DamageType.Energy => new Color(0.3f, 0.8f, 1f),
-            DamageType.Lightning => new Color(1f, 1f, 0.3f),
-            DamageType.Acid => new Color(0.4f, 1f, 0.4f),
-            DamageType.Fire => new Color(1f, 0.5f, 0.1f),
-            DamageType.Explosive => new Color(1f, 1f, 1f),
-            _ => new Color(1f, 0f, 0f),
-        };
     }
 }
