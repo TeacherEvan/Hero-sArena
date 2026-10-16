@@ -89,7 +89,9 @@ jobs:
         run: godot --headless --quit
 
       - name: Run Godot core system tests
-        run: godot --headless res://tests/GodotTests/CoreSystemTests.tscn
+        # The mono engine locates the .NET host fxr via DOTNET_ROOT;
+        # setup-dotnet 8.0.x put dotnet on PATH, so derive its root from there.
+        run: DOTNET_ROOT=$(dirname "$(readlink -f "$(which dotnet)")") godot --headless res://tests/GodotTests/CoreSystemTests.tscn
 
   export:
     name: Export (Linux/Windows/macOS)
@@ -98,6 +100,16 @@ jobs:
     needs: [build, test, godot-verify]
     steps:
       - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '8.0.x'
+          cache: true
+
+      - name: Export DOTNET_ROOT for the mono engine
+        # Exporting a C# project invokes dotnet build; the mono engine also
+        # needs DOTNET_ROOT to locate hostfxr (same as the godot-verify job).
+        run: echo "DOTNET_ROOT=$(dirname "$(readlink -f "$(which dotnet)")")" >> $GITHUB_ENV
 
       - name: Download Godot 4.3 mono (C#-enabled) headless
         run: |
@@ -110,11 +122,16 @@ jobs:
           echo "$PWD" >> $GITHUB_PATH
 
       - name: Download Godot 4.3 export templates
+        # The .tpz archive has a `templates/` root directory; Godot expects
+        # the template files DIRECTLY under export_templates/4.3.stable/.
+        # Unzipping in place nested them one level too deep, and the export
+        # would fail with "no export template found".
         run: |
-          mkdir -p ~/.local/share/godot/export_templates/4.3.stable
-          cd ~/.local/share/godot/export_templates/4.3.stable
+          mkdir -p ~/.local/share/godot/export_templates
+          cd ~/.local/share/godot/export_templates
           wget -q https://github.com/godotengine/godot-builds/releases/download/4.3-stable/Godot_v4.3-stable_export_templates.tpz
           unzip -q Godot_v4.3-stable_export_templates.tpz
+          mv templates 4.3.stable
 
       - name: Export for Linux (headless server test)
         run: godot --headless --export-release "Linux/X11" build/linux/HeroArena.x86_64

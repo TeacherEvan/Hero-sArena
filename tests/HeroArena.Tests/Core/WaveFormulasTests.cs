@@ -47,6 +47,20 @@ public class WaveFormulasTests
     }
 
     [Fact]
+    public void ArenaPastCapacity_YieldsNonPositiveCount_NeverThrows()
+    {
+        // BASE used Mathf.Clamp, which throws when the ceiling drops below
+        // the floor (reachable near MaxEnemies active enemies mid-spawn).
+        // An over-full arena now yields a non-positive count so the
+        // caller's spawn loop simply runs zero times.
+        WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 2000)
+            .Should().BeLessThanOrEqualTo(0);
+
+        WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 2500)
+            .Should().BeLessThanOrEqualTo(0);
+    }
+
+    [Fact]
     public void Intensity_PeaksBeforeWaveTen_ThenDecays()
     {
         float early = WaveFormulas.WeibullIntensity(1f);

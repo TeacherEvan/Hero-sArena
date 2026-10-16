@@ -37,7 +37,12 @@ namespace HeroArena
         {
             int count = MinWaveEnemies + (int)(WeibullIntensity(wave) * IntensityScaleFactor);
             int max = MaxEnemies - activeEnemyCount;
-            // Mirrors Godot Mathf.Clamp semantics (no exception when max < min).
+            // Deliberate divergence from BASE: WaveManager used Mathf.Clamp,
+            // which THROWS when the ceiling drops below the floor (Godot
+            // 4.3: "'10' cannot be greater than '-5'") — reachable whenever
+            // the arena sits within MinWaveEnemies of MaxEnemies active
+            // enemies mid-spawn. Here an over-full room instead yields a
+            // non-positive count and the caller's spawn loop runs zero times.
             if (count < MinWaveEnemies) return MinWaveEnemies;
             if (count > max) return max;
             return count;

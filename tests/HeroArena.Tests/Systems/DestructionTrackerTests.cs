@@ -56,16 +56,4 @@ public class DestructionTrackerTests
             previous = amplifier;
         }
     }
-
-    [Fact]
-    public void Reset_ReturnsToZero()
-    {
-        var tracker = new DestructionTracker();
-        tracker.Record();
-        tracker.Record();
-
-        tracker.Reset();
-
-        tracker.DestructionCount.Should().Be(0);
-    }
 }

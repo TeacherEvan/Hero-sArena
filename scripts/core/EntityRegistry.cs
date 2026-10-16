@@ -5,10 +5,11 @@ namespace HeroArena
     /// <summary>
     /// Godot-free entity-id registry. Extracted from EnemyBase's static
     /// dictionary (the F-1 regression site) so the xUnit suite can cover the
-    /// registry semantics headlessly: unknown ids resolve to null, negative
-    /// ids are never registered, and removal on _ExitTree is reflected here.
-    /// EnemyBase delegates to a static <see cref="EntityRegistry{TEntity}"/>
-    /// instance and keeps only the engine wiring.
+    /// registry semantics headlessly: any id that was never inserted —
+    /// including negative ids, which callers never produce (they pass Godot
+    /// InstanceIds, always positive) — resolves to null. EnemyBase delegates
+    /// to a static <see cref="EntityRegistry{TEntity}"/> instance and keeps
+    /// only the engine wiring.
     /// </summary>
     public class EntityRegistry<TEntity> where TEntity : class
     {
@@ -27,9 +28,5 @@ namespace HeroArena
 
         public bool Remove(int entityId)
             => _byEntityId.Remove(entityId);
-
-        public void Clear() => _byEntityId.Clear();
-
-        public IEnumerable<int> Ids => _byEntityId.Keys;
     }
 }

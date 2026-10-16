@@ -64,6 +64,11 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 
 - [x] T2.1: Both Godot downloads → mono build; setup-dotnet in godot-verify.
 - [x] T2.2: Corrected gate invocation (`GateRunner.cs`) in `godot-verify`.
+- [x] T2.3: Export job repaired (setup-dotnet + DOTNET_ROOT for the C#
+  solution build; template extraction moved up one level so
+  `export_templates/4.3.stable/` holds the template files directly —
+  the in-place unzip nested them under `templates/` where Godot never
+  looks). Dispatched post-merge review 2026-10-16.
 
 ### Phase 3: Test hardening (issues #20, #22)
 
@@ -75,8 +80,22 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 - [x] T3.2b (2026-10): Godot-free extractions — EntityRegistry (F-1,
   EnemyBase delegates), HitFlashPalette (F-31), DestructionTracker
   (CollateralKarma), PowerupBannerSlots (HUD), WaveFormulas (WaveManager);
-  4 new xUnit files; GateRunner.cs retired (scene entry in ci.yml);
-  CoreSystemTests delegates. Gates: build 0/0, tests 106/106 (123 unfiltered).
+  5 new xUnit files; GateRunner.cs retired (scene entry in ci.yml);
+  CoreSystemTests delegates. Gates: build 0/0, tests 104/104 (121 unfiltered).
+  Merged as PR #49 (8b15e15).
+- [x] T3.2c (2026-10-16, post-merge review follow-ups):
+  TestPowerupBannerFactory (since renamed TestPowerupBannerDelegation) was
+  never invoked from the gate `_Ready` — the HUD-delegation guard sat dead,
+  same bug class as the never-existing-file grep it replaced; wired in.
+  HitFlashPalette now returns an RGB triple instead of Godot.Color
+  (genuinely Godot-free); WaveFormulas clamp divergence from Mathf.Clamp
+  verified empirically against GodotSharp 4.3 (both overloads throw when
+  max < min) and documented + pinned by a test; ci.yml godot-verify and
+  export jobs now set DOTNET_ROOT (see T2.3); dead API removed
+  (EntityRegistry.Clear/Ids, DestructionTracker.Reset); AGENTS.md/README
+  stale claims corrected (test counts, vacuous quality-gate command,
+  "Works headlessly ONLY…", RETIRED-vs-14-live-bypass-sites, wrong
+  self-fork/SIGSEGV diagnosis in Known gaps).
 - [ ] T3.3: Align bench harnesses with production hot path
   (follow-up to dfb7acd). Scope: M.
 - [ ] Lint policy call: 14 pre-existing infos (13× CA1822 + 1× CA1016), exit 1.
@@ -84,21 +103,30 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
   sites in Synapse.cs/Volt.cs; the rest live in unrunnable gate/scene scripts
   (T0.3); CA1016 unfixable by design. Needs user policy decision.
 
-### Phase 6: Next
-
-- Commit the extraction refactor (uncommitted in working tree; user decision)
-- T3.1-rest: GameManager state-machine extraction
-- T3.3: bench hot-path alignment (#20)
-
 ### Phase 4: Docs sync
 
 - [x] T4.1: README synced (66 tests, merged PRs, mono, GateRunner).
 - [x] T4.2: AGENTS.md synced (stack, test matrix, CI cmds, gaps).
+- [x] T4.3 (2026-10-16): post-merge-review doc corrections — AGENTS.md
+  counts (104/121), the vacuous quality-gate command, the false
+  "headless ONLY without Node construction" claim, RETIRED→deprecated
+  with the 14 live bypass sites listed, and the wrong self-fork/SIGSEGV
+  diagnosis in Known gaps; README seven jobs (quality-gates added),
+  104-test count, tagged-tests-nowhere-in-CI note, mono-headless
+  removed from "local gates mirror CI".
 
 ### Phase 5: Branch hygiene
 
 - [x] T5.1: merge-base checks done; both stale branches pruned with approval
   (burrower superseded, evictoldest content already in main).
+- [x] T5.2 (2026-10-16): extraction refactor merged as PR #49 (8b15e15);
+  post-merge code review findings fixed (see T3.2c) — uncommitted.
+
+### Next
+
+- [ ] T3.1-rest: GameManager state-machine extraction
+- [ ] T3.3: bench hot-path alignment (#20)
+- [ ] Commit T3.2c/T4.3/T5.2 follow-up corrections
 
 ## Risks and Mitigations
 

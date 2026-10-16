@@ -57,7 +57,7 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **106 tests pass**
+Under the default filter (`Category!=GodotRuntime`), **104 tests pass**
 covering pure C# logic (`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
@@ -74,8 +74,9 @@ delegates to, mirroring the `ProgressionFormulas` pattern.
 `[Trait("Category","GodotRuntime")]` and are filtered out by the default
 command above. **On this machine the tag is stale**: those 17 tests use a
 `FormatterServices.GetUninitializedObject` bypass (which `AGENTS.md` records
-as RETIRED) and pass headlessly when run unfiltered — but the bypass must be
-removed before the trait can be dropped. The former `LevelProgressionTests` /
+as deprecated, with 14 legacy sites listed) and pass headlessly when run
+unfiltered — but the bypass must be removed before the trait can be dropped.
+The former `LevelProgressionTests` /
 `CollateralKarmaTests` were retired: the math lives in the pure
 `ProgressionFormulas` class, tested directly.
 
@@ -111,13 +112,14 @@ test harness wrapper shell and has been removed.
 
 ## CI
 
-`.github/workflows/ci.yml` runs six jobs on every push and PR:
+`.github/workflows/ci.yml` runs seven jobs on every push and PR:
 - `lint` (Roslynator) — must pass
 - `typecheck` — must pass
 - `build` — must pass
 - `test` (xUnit, `Category!=GodotRuntime`) — must pass
-- `godot-verify` (downloads Godot 4.3, runs the headless gate) — must pass
+- `godot-verify` (downloads Godot 4.3 mono, runs the headless gate) — must pass
 - `export` (Linux/Windows/macOS) — must pass
+- `quality-gates` (fails on any `TODO|FIXME` in `scripts/`) — must pass
 
 As of `a3171a5` (PR #18) and `7968f52` (PR #19), all gates must pass
 on the branch — `continue-on-error: true` was removed from the
@@ -126,15 +128,21 @@ typecheck/build/test jobs.
 **Note (2026-08-27):** the GitHub account is currently locked due to a
 billing issue, so CI is not running. Tracked in issue #23. The audit
 fix PRs (#18, #19) are merged; local gates (`dotnet build`, `dotnet test`,
-Roslynator, mono headless) mirror CI meanwhile.
+Roslynator) mirror CI meanwhile — the Godot gate does not (see above).
 
 ## Known gaps
 - The Godot-dependent xUnit test classes (`GameManagerTests`,
-  `GameManagerTests_State`, `InputBufferTests`) are gated behind a
-  trait and run in the Godot headless gate only. `LevelProgression` /
-  `CollateralKarma` were extracted to the pure `ProgressionFormulas`
-  class (same fix still wanted for `GameManager`). Tracked in
-  issue #22.
+  `GameManagerTests_State`, `InputBufferTests`) carry
+  `[Trait("Category","GodotRuntime")]`, so the default xUnit command
+  filters them out — and they are not wired into the Godot gate either,
+  so in CI they currently run nowhere. They do pass when xUnit is run
+  unfiltered locally, via the deprecated
+  `FormatterServices.GetUninitializedObject` construction bypass (see
+  `AGENTS.md`); the bypass must be removed (extract state, as was done
+  for `ProgressionFormulas`/`EntityRegistry`/…) before the trait can go.
+  `LevelProgression` / `CollateralKarma` were extracted to the pure
+  `ProgressionFormulas` class (same fix still wanted for `GameManager`).
+  Tracked in issue #22.
 - Bench harnesses (`bench_test/`, `FrameTimeBenchmark.cs`,
   `WaveManagerBenchmark.cs`) do not exercise the production hot path
   (use `Node2D` mocks, miss the per-frame throttle). Tracked in

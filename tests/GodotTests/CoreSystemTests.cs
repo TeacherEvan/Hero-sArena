@@ -20,7 +20,12 @@ namespace HeroArena.Tests
     ///   - CollateralKarma counting      → DestructionTrackerTests
     ///   - Powerup banner selection      → PowerupBannerSlotsTests
     ///   - Weibull wave intensity        → WaveFormulasTests
-    /// What remains here is genuinely SceneTree-dependent behavior.
+    /// The pure-math checks that remain below (SpatialHashGrid, WaveManager,
+    /// FlowFieldPathfinder, LevelProgression, CollateralKarma) are now
+    /// in-engine cross-covers of headlessly-tested logic, kept as a second
+    /// harness for the day the engine runs. Only TestEntityRegistry,
+    /// TestCollateralKarmaBehavior, TestPowerupBannerDelegation and
+    /// TestHitFlash are genuinely SceneTree-dependent.
     ///
     /// Note: the retired `GateRunner.cs` SceneTree wrapper used `-s` mode,
     /// which cannot run C# scripts on this machine. The scene entry above
@@ -55,6 +60,9 @@ namespace HeroArena.Tests
 
             try { TestCollateralKarmaBehavior(); passed++; GD.Print("PASS: CollateralKarma behavior tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: CollateralKarma behavior - {e.Message}"); }
+
+            try { TestPowerupBannerDelegation(); passed++; GD.Print("PASS: PowerupBannerSlots delegation tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: PowerupBannerSlots delegation - {e.Message}"); }
 
             try { TestHitFlash(); passed++; GD.Print("PASS: HitFlash tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
@@ -240,9 +248,11 @@ namespace HeroArena.Tests
 
         /// <summary>
         /// Regression guard for F-1: the static entity-id registry on EnemyBase
-        /// must return null for unknown ids and must reflect removal on _ExitTree.
-        /// We exercise it through the public TryGetById without spinning up a
-        /// full enemy scene (the Godot gate is headless; scenes are expensive).
+        /// must resolve unknown and negative ids to null. Exercised through
+        /// the public TryGetById so the delegation wiring is covered without
+        /// spinning up an enemy scene. The register → lookup → remove round
+        /// trip is asserted in EntityRegistryTests (xUnit, against the pure
+        /// EntityRegistry directly).
         /// </summary>
         private void TestEntityRegistry()
         {
@@ -295,7 +305,8 @@ namespace HeroArena.Tests
             if (karma.DestructionCount != 1)
                 throw new Exception($"DestructionCount expected 1 after event, got {karma.DestructionCount}");
             if (MathF.Abs(karma.KarmaAmplifier - ProgressionFormulas.CalcKarmaAmplifier(1)) > 0.0001f)
-                throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");            karma.QueueFree();
+                throw new Exception("KarmaAmplifier does not delegate to ProgressionFormulas");
+            karma.QueueFree();
         }
 
         /// <summary>
@@ -312,7 +323,7 @@ namespace HeroArena.Tests
         /// gate check only pins the delegation so the extracted logic stays
         /// wired into the HUD.
         /// </summary>
-        private void TestPowerupBannerFactory()
+        private void TestPowerupBannerDelegation()
         {
             const string slotsSource = "scripts/core/PowerupBannerSlots.cs";
             if (!System.IO.File.Exists(slotsSource))
@@ -343,10 +354,13 @@ namespace HeroArena.Tests
         /// damage-type color, and resets after the flash duration. Resolves
         /// audit finding F-31 (dead signal).
         ///
-        /// Uses a source-text + scene-tree assertion hybrid: confirms the
-        /// scene wires the HitFlash node, and exercises the color mapping
-        /// via reflection on the static TypeToColor (if private, the test
-        /// gracefully skips the color check rather than failing).
+        /// Source-text assertions confirm the Main scene wires a HitFlash
+        /// node and the script subscribes/unsubscribes; live-tree checks
+        /// drive the flash lifecycle (processing on/off, overlay alpha)
+        /// through a real HitFlash instance. The damage-type color table
+        /// lives in the Godot-free HitFlashPalette and is asserted
+        /// branch-by-branch in HitFlashPaletteTests (xUnit); here we only
+        /// pin that every DamageType branch exists in that source.
         /// </summary>
         private void TestHitFlash()
         {
