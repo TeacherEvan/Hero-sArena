@@ -13,6 +13,7 @@ namespace HeroArena
         private const float BREATHER_SECONDS = 5f;
         private const float BOSS_INTERVAL_SECONDS = 300f;
         private const int MAX_SPAWNS_PER_FRAME = 20;
+        private const float WAVE_WARNING_LEAD_SECONDS = 2f;
 
         [Export] public PackedScene[] EnemyScenes { get; set; } = Array.Empty<PackedScene>();
         [Export] public Vector2[] SpawnPoints { get; set; } = Array.Empty<Vector2>();
@@ -23,6 +24,7 @@ namespace HeroArena
         private int _currentWave = 0;
         private int _pendingEnemiesToSpawn = 0;
         private RandomNumberGenerator _rng = new RandomNumberGenerator();
+        private bool _waveWarningEmitted;
 
         public override void _Ready()
         {
@@ -48,6 +50,17 @@ namespace HeroArena
             if (!_waveInProgress && _breatherTimer > 0f)
             {
                 _breatherTimer -= dt;
+
+                // Warn the player once when the breather reaches the lead time
+                // before the next wave spawns.
+                if (!_waveWarningEmitted && _breatherTimer <= WAVE_WARNING_LEAD_SECONDS)
+                {
+                    _waveWarningEmitted = true;
+                    var nextWave = _currentWave + 1;
+                    var isBoss = _bossTimer >= BOSS_INTERVAL_SECONDS - WAVE_WARNING_LEAD_SECONDS;
+                    EventBus.Instance.EmitWaveIncoming(nextWave, isBoss);
+                }
+
                 if (_breatherTimer <= 0f)
                     BeginNextWave();
             }
@@ -70,6 +83,7 @@ namespace HeroArena
         {
             _currentWave++;
             _waveInProgress = true;
+            _waveWarningEmitted = false;
             EventBus.Instance.EmitWaveStarted(_currentWave);
 
             // Weibull intensity, min floor, and the MaxEnemies clamp live in
@@ -128,6 +142,7 @@ namespace HeroArena
         {
             _waveInProgress = false;
             _breatherTimer = BREATHER_SECONDS;
+            _waveWarningEmitted = false;
         }
 
         public override void _ExitTree()
