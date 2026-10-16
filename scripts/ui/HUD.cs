@@ -20,17 +20,16 @@ namespace HeroArena
         private System.Action<int>? _onLevelUp;
         private System.Action<int>? _onThreatChanged;
 
-        private const int MAX_POWERUP_BANNERS = 5;
         private long _lastScore = -1;
         private int _lastEnemyCount = -1;
         private float _lastMaxHealth = -1f;
 
-        private readonly Label[] _powerupLabels = new Label[MAX_POWERUP_BANNERS];
-        private readonly float[] _powerupTimers = new float[MAX_POWERUP_BANNERS];
+        private readonly Label[] _powerupLabels = new Label[PowerupBannerSlots.MaxBanners];
+        private readonly float[] _powerupTimers = new float[PowerupBannerSlots.MaxBanners];
 
         public override void _Ready()
         {
-            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
+            for (int i = 0; i < PowerupBannerSlots.MaxBanners; i++)
             {
                 var lbl = new Label { Visible = false };
                 PowerupList.AddChild(lbl);
@@ -78,7 +77,7 @@ namespace HeroArena
                 XpBar.Value = hero.Experience;
             }
 
-            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
+            for (int i = 0; i < PowerupBannerSlots.MaxBanners; i++)
             {
                 if (_powerupTimers[i] > 0f)
                 {
@@ -101,28 +100,14 @@ namespace HeroArena
         {
             if (!IsInsideTree()) return;
 
-            // Find an inactive label, or the oldest active label (the one with the smallest timer > 0)
-            int targetIdx = 0;
-            float minTime = float.MaxValue;
-
-            for (int i = 0; i < MAX_POWERUP_BANNERS; i++)
-            {
-                if (_powerupTimers[i] <= 0f)
-                {
-                    targetIdx = i;
-                    break;
-                }
-                if (_powerupTimers[i] < minTime)
-                {
-                    minTime = _powerupTimers[i];
-                    targetIdx = i;
-                }
-            }
+            // Slot selection (first expired banner, else the oldest active one)
+            // lives in PowerupBannerSlots so the rule is unit-tested headlessly.
+            int targetIdx = PowerupBannerSlots.SelectSlot(_powerupTimers);
 
             var lbl = _powerupLabels[targetIdx];
             lbl.Text = type;
             lbl.Visible = true;
-            _powerupTimers[targetIdx] = 5f;
+            _powerupTimers[targetIdx] = PowerupBannerSlots.Lifetime;
             PowerupList.MoveChild(lbl, -1);
         }
 

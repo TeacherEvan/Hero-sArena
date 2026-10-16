@@ -9,9 +9,7 @@ namespace HeroArena
     /// </summary>
     public partial class WaveManager : Node
     {
-        public const int MAX_ENEMIES = 2000;
-        private const float WEIBULL_K = 1.5f;
-        private const float WEIBULL_LAMBDA = 10f;
+        public const int MAX_ENEMIES = WaveFormulas.MaxEnemies;
         private const float BREATHER_SECONDS = 5f;
         private const float BOSS_INTERVAL_SECONDS = 300f;
         private const int MAX_SPAWNS_PER_FRAME = 20;
@@ -74,23 +72,11 @@ namespace HeroArena
             _waveInProgress = true;
             EventBus.Instance.EmitWaveStarted(_currentWave);
 
-            int totalEnemies = CalculateWaveEnemyCount(_currentWave);
+            // Weibull intensity, min floor, and the MaxEnemies clamp live in
+            // WaveFormulas (covered headlessly in WaveFormulasTests).
+            int totalEnemies = WaveFormulas.CalculateWaveEnemyCount(
+                _currentWave, GameManager.Instance.ActiveEnemyCount);
             SpawnWaveEnemies(totalEnemies);
-        }
-
-        private int CalculateWaveEnemyCount(int wave)
-        {
-            const int MinWaveEnemies = 10;
-            const float IntensityScaleFactor = 500f;
-
-            // Weibull intensity scaled to spawn count
-            float t = wave;
-            float intensity = (WEIBULL_K / WEIBULL_LAMBDA)
-                * MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K - 1f)
-                * MathF.Exp(-MathF.Pow(t / WEIBULL_LAMBDA, WEIBULL_K));
-            int count = MinWaveEnemies + (int)(intensity * IntensityScaleFactor);
-            count = Mathf.Clamp(count, MinWaveEnemies, MAX_ENEMIES - GameManager.Instance.ActiveEnemyCount);
-            return count;
         }
 
         private void SpawnWaveEnemies(int total)

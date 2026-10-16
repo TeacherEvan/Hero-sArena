@@ -29,9 +29,13 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
 
 - [x] T0.1: Install Godot 4.3 mono binary (done: `~/.local/bin/godot-mono`)
 - [x] T0.2: Fix `.vscode/settings.json` editorPath → mono binary path
-- [ ] T0.3: Diagnose headless runtime hang (engine stalls after .NET init;
-  evidence: /tmp/gatev.log). `--build-solutions` exits 0; `-s` script runs
-  hang. Pre-existing container issue; CI unaffected.
+- [x] T0.3: Diagnose headless runtime hang — DIAGNOSED 2026-10-16 (full
+  evidence note in AGENTS.md): unmanaged main-thread spin at ~100% CPU with all
+  .NET threads idle on futexes; every C# entry hangs (incl. a minimal scene with
+  no project deps) — not a missing library, not the runtime version, not this
+  project's code. Prior "self-fork + SIGSEGV" diagnosis was wrong. Adopted
+  consequence: xUnit is the only authoritative local gate; headless gate stays
+  unrunnable until the engine build is replaced. `--build-solutions` exit 0.
 
 ### Checkpoint: Workspace
 
@@ -68,8 +72,23 @@ Godot 4, and CI downloads a Godot binary that cannot run C# at all.
   REMAINDER: GameManager state-machine extraction (deferred, tree-coupled).
 - [x] T3.2: Bypass RETIRED (tests renamed to ProgressionFormulasTests /
   KarmaAmplifierTests; Node behavior in gate TestCollateralKarmaBehavior).
+- [x] T3.2b (2026-10): Godot-free extractions — EntityRegistry (F-1,
+  EnemyBase delegates), HitFlashPalette (F-31), DestructionTracker
+  (CollateralKarma), PowerupBannerSlots (HUD), WaveFormulas (WaveManager);
+  4 new xUnit files; GateRunner.cs retired (scene entry in ci.yml);
+  CoreSystemTests delegates. Gates: build 0/0, tests 106/106 (123 unfiltered).
 - [ ] T3.3: Align bench harnesses with production hot path
   (follow-up to dfb7acd). Scope: M.
+- [ ] Lint policy call: 14 pre-existing infos (13× CA1822 + 1× CA1016), exit 1.
+  Not mechanically fixable — LevelProgression delegates have instance call
+  sites in Synapse.cs/Volt.cs; the rest live in unrunnable gate/scene scripts
+  (T0.3); CA1016 unfixable by design. Needs user policy decision.
+
+### Phase 6: Next
+
+- Commit the extraction refactor (uncommitted in working tree; user decision)
+- T3.1-rest: GameManager state-machine extraction
+- T3.3: bench hot-path alignment (#20)
 
 ### Phase 4: Docs sync
 

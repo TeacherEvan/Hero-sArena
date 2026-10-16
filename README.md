@@ -57,37 +57,57 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter (`Category!=GodotRuntime`), **66 tests pass**
+Under the default filter (`Category!=GodotRuntime`), **106 tests pass**
 covering pure C# logic (`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
-`EventBusTests`, plus regression tests).
+`EventBusTests`, plus regression tests), including the systems that used to
+have no headless coverage: `EntityRegistryTests` (F-1 registry regression),
+`HitFlashPaletteTests` (F-31 damage-type colors + fade curve),
+`DestructionTrackerTests` (CollateralKarma counting state),
+`PowerupBannerSlotsTests` (HUD banner selection rule), and
+`WaveFormulasTests` (Weibull wave-intensity curve). Each of these was
+extracted from the `Node` wrapper into a Godot-free class that the wrapper
+delegates to, mirroring the `ProgressionFormulas` pattern.
 
-Tests that need the Godot native runtime carry
+`GameManagerTests`, `GameManagerTests_State`, and `InputBufferTests` carry
 `[Trait("Category","GodotRuntime")]` and are filtered out by the default
-command above: `GameManagerTests`, `GameManagerTests_State`,
-`InputBufferTests`. The former `LevelProgressionTests` /
-`CollateralKarmaTests` (which needed a `RuntimeHelpers` bypass to
-instantiate `Node`s) were retired: the math lives in the pure
-`ProgressionFormulas` class, tested directly. The Godot headless gate
-below cross-covers the `Node` wrappers.
+command above. **On this machine the tag is stale**: those 17 tests use a
+`FormatterServices.GetUninitializedObject` bypass (which `AGENTS.md` records
+as RETIRED) and pass headlessly when run unfiltered — but the bypass must be
+removed before the trait can be dropped. The former `LevelProgressionTests` /
+`CollateralKarmaTests` were retired: the math lives in the pure
+`ProgressionFormulas` class, tested directly.
 
-### 2. Godot headless gate — `tests/GodotTests/` (`GateRunner.cs` + `CoreSystemTests.cs`)
-A Godot script (`Node`) that self-runs assertions for `SpatialHashGrid`,
+### 2. Godot headless gate — `tests/GodotTests/` (`CoreSystemTests.tscn` + `CoreSystemTests.cs`)
+A Godot `Node` that self-runs assertions for `SpatialHashGrid`,
 `WaveManager`, `FlowFieldPathfinder`, `LevelProgression`, `EntityRegistry`
 (registry regression for the F-1 fix), `CollateralKarma` (math
-cross-cover + Node behavior), `PowerupBannerFactory` (timer-leak guard),
-and `HitFlash` (F-31 consumer), then quits non-zero on failure.
-Godot 4 requires `-s` scripts to inherit `SceneTree`/`MainLoop`, so the
-entry point is `GateRunner`, which hosts the tests node. Run with a
-**.NET/mono-enabled** Godot 4.3 binary (the standard headless binary
-cannot load `.cs` scripts):
+cross-cover + Node behavior), `PowerupBannerSlots` (HUD delegation
+guard — it replaces an older check that grepped for a
+`scripts/ui/PowerupBannerFactory.cs` file which never existed in the
+repo), and `HitFlash` (F-31 consumer), then quits non-zero on failure.
+Run the scene with a **.NET/mono-enabled** Godot 4.3 binary (the standard
+headless binary cannot load `.cs` scripts), with `DOTNET_ROOT` pointing at
+the 8.0 runtime so the engine finds the .NET host fxr:
 ```
-godot --headless -s res://tests/GodotTests/GateRunner.cs
+DOTNET_ROOT=~/.dotnet8 godot --headless res://tests/GodotTests/CoreSystemTests.tscn
 ```
-**Note:** this workspace provides `~/.local/bin/godot-mono`
-(`4.3.stable.mono`). The CI `godot-verify` job downloads the same mono
-build on every push and PR.
+**⚠ This gate has never run in this workspace: the Godot mono binary here
+cannot execute managed (C#) code.** What works: `--headless --quit`,
+`--headless --import`, and a GDScript `-s` entry. What does not: any entry
+that instantiates a C# script — a scene, `-s` with a `SceneTree` wrapper, a
+minimal 3-line C# script with no project dependencies, and the game's own
+`scenes/Main.tscn`. C# entries print only the engine banner, never reach
+`_Ready`, and spin at ~100% CPU in unmanaged code while every .NET runtime
+thread idles on futexes. It is not a missing library (`ldd` is clean), not
+the runtime version (identical hang on .NET 8.0.31 and 10.0.5), not the
+`DOTNET_EnableDiagnostics` / `gcServer` / `EnableEventPipe` overrides, and
+not the project's code (a minimal C#-only scene hangs too). The CI
+`godot-verify` job therefore cannot pass until the engine build is fixed or
+replaced — treat the xUnit suite as the authoritative gate. An earlier note
+in this file blaming an engine "self-fork + SIGSEGV" was a misread of the
+test harness wrapper shell and has been removed.
 
 ## CI
 

@@ -4,9 +4,18 @@
 
 - [x] T0.1 Godot 4.3 mono binary at `~/.local/bin/godot-mono`
 - [x] T0.2 Fix `.vscode/settings.json` godotTools editorPath
-- [ ] T0.3 Diagnose headless runtime hang (engine stalls after .NET init;
-      evidence: /tmp/gatev.log). Pre-existing container issue. CI unaffected.
-      `--build-solutions` works (exit 0).
+- [x] T0.3 Diagnose headless runtime hang — DIAGNOSED 2026-10-16 (evidence:
+      full note in AGENTS.md): the engine's main thread spins at ~100% CPU in
+      unmanaged code while all .NET runtime threads idle on futexes; every C#
+      entry hangs (`-s GateRunner.cs`, `CoreSystemTests.tscn`, the game's own
+      `scenes/Main.tscn`, and a minimal 3-line C# scene — so it is NOT this
+      project's code). Not a missing library (`ldd` clean), not the runtime
+      version (identical on .NET 8.0.31 and 10.0.5), not fixed by
+      `DOTNET_EnableDiagnostics`/`gcServer`/`EnableEventPipe` overrides. An
+      earlier "self-fork + SIGSEGV" diagnosis was WRONG (harness wrapper shell).
+      Consequence adopted: xUnit is the ONLY authoritative local gate; the
+      Godot headless gate stays unrunnable until the engine build is
+      fixed/replaced. `--build-solutions` works (exit 0). CI unaffected.
 
 ## Phase 1: P0 — game runs (IMPLEMENTED 2026-09-22)
 
@@ -22,6 +31,26 @@
 
 - [x] CS0579 incremental-break fixed (GenerateAssemblyInfo/TargetFramework false).
       Pre-existing, reproduced on clean HEAD.
+
+## Godot-free extractions (2026-10 — gates green, uncommitted in tree)
+
+Pure classes extracted from `Node` wrappers so xUnit covers what used to be
+gate-only; each Node delegates 1:1 (pattern per AGENTS.md):
+
+- [x] `scripts/core/EntityRegistry.cs` + EntityRegistryTests — F-1 regression
+      (EnemyBase.TryGetById now delegates to `EntityRegistry<EnemyBase>`)
+- [x] `scripts/core/HitFlashPalette.cs` + HitFlashPaletteTests — F-31
+      damage-type colors + fade (HitFlash delegates)
+- [x] `scripts/core/DestructionTracker.cs` + DestructionTrackerTests —
+      CollateralKarma counting/amplifier state (CollateralKarma delegates)
+- [x] `scripts/core/PowerupBannerSlots.cs` + PowerupBannerSlotsTests — HUD
+      banner slot-selection rule (HUD delegates; MaxBanners const)
+- [x] `scripts/core/WaveFormulas.cs` + WaveFormulasTests — Weibull wave
+      intensity + min floor + MaxEnemies clamp (WaveManager delegates;
+      MAX_ENEMIES now `WaveFormulas.MaxEnemies`)
+- [x] `tests/GodotTests/GateRunner.cs` deleted (retired `-s` entry; superseded
+      by `CoreSystemTests.tscn` scene entry in ci.yml); CoreSystemTests.cs
+      delegates to the pure classes; AGENTS.md/README updated
 
 ## Phase 2: CI repair (blocked: billing lock #23)
 
@@ -39,8 +68,17 @@
       (TestCollateralKarmaBehavior, needs CI run).
 - [ ] T3.1-rest: GameManager state-machine extraction (deferred, tree-coupled)
 - [ ] T3.3: bench hot-path alignment (#20)
-- [ ] Lint gate red on 17 pre-existing infos (exit 1, predates session; +4 by-design
-      wrapper infos). Needs policy call: info-cleanup pass or warn-level config.
+- [ ] Lint gate red on pre-existing infos — 2026-10 re-count: **14 infos
+      (exit 1)**: 13× CA1822 + 1× CA1016 (was 17). None in the new pure files.
+      Policy call still stands — the CA1822s are NOT mechanically fixable:
+      `LevelProgression`'s 4 delegates are called via instance
+      (`_levelProg.CalcEnergyDamage(...)` in Synapse.cs/Volt.cs), so `static`
+      conversion would break compilation of hero code, and the
+      CoreSystemTests/MainMenu/MainBootstrap CA1822s live in the gate/scene
+      scripts this container cannot run (T0.3) — unverifiable changes.
+      CA1016 is unfixable by design (`GenerateAssemblyInfo=false`). Options:
+      info-cleanup pass with hero call-site updates (touches gameplay code —
+      needs approval), warn-level config, or accept-with-note in CI.
 
 ## Phase 4: Docs sync
 
@@ -74,11 +112,14 @@
       editor reload prompts answered incorrectly (acknowledged).
       Rule: single writer per file; restore project.godot after engine runs.
 
-## Verification evidence (2026-09-22)
+## Verification evidence (2026-10, working tree — extraction refactor)
 
-- `dotnet build` Release: 0 warnings, 0 errors (consecutive incremental builds)
-- `dotnet test --filter Category!=GodotRuntime`: 66/66 pass (was 51)
-- Roslynator: 17 infos, none in new files
-  (ProgressionFormulas/MainBootstrap/GateRunner clean)
+- `dotnet build` Release: 0 warnings, 0 errors
+- `dotnet test --filter Category!=GodotRuntime`: 106/106 pass (unfiltered:
+  123/123 — the 17 GodotRuntime-tagged tests run headlessly via the
+  GetUninitializedObject bypass noted in AGENTS.md)
+- Roslynator: exit 1, 14 infos (13× CA1822 + 1× CA1016), none in new files;
+  see the policy-call note above
 - `godot-mono --headless --build-solutions --quit`: exit 0
-- ci.yml: valid YAML, 7 jobs intact
+- ci.yml: GateRunner references gone; gate entry is the
+  `CoreSystemTests.tscn` scene (mono binary in download jobs)

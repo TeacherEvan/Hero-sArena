@@ -1,6 +1,5 @@
 using Godot;
 using System;
-using System.Collections.Generic;
 
 namespace HeroArena
 {
@@ -12,10 +11,13 @@ namespace HeroArena
     /// </summary>
     public abstract partial class EnemyBase : CharacterBody2D
     {
-        private static readonly Dictionary<int, EnemyBase> _byEntityId = new();
+        // F-1 regression site: entity-id → enemy lookup. The pure registry is
+        // EntityRegistry<T> (covered headlessly in EntityRegistryTests); this
+        // class keeps only the engine wiring (_Ready/_ExitTree).
+        private static readonly EntityRegistry<EnemyBase> Registry = new();
 
         public static bool TryGetById(int entityId, out EnemyBase? enemy)
-            => _byEntityId.TryGetValue(entityId, out enemy);
+            => Registry.TryGet(entityId, out enemy);
 
         [Export] public float MaxHealth { get; set; } = 50f;
         [Export] public float MoveSpeed { get; set; } = 100f;
@@ -42,7 +44,7 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             grid?.Insert(_entityId, GlobalPosition, 16f);
 
-            _byEntityId[_entityId] = this;
+            Registry.Register(_entityId, this);
             _lastGridPos = GlobalPosition;
 
             _hero = GameManager.Instance.ActiveHero;
@@ -51,7 +53,7 @@ namespace HeroArena
 
         public override void _ExitTree()
         {
-            _byEntityId.Remove(_entityId);
+            Registry.Remove(_entityId);
             base._ExitTree();
         }
 
