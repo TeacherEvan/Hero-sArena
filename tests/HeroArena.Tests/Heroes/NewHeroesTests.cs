@@ -73,4 +73,85 @@ public class NewHeroesTests
         color.G.Should().Be(g);
         color.B.Should().Be(b);
     }
+
+    [Fact]
+    public void IgnisCombustionState_HeatBuildsAndTransitionsStages()
+    {
+        var state = new IgnisCombustionState();
+        state.CurrentHeat.Should().Be(0f);
+        state.Stage.Should().Be(CombustionStage.Normal);
+
+        state.AddHeat(55f);
+        state.CurrentHeat.Should().Be(55f);
+        state.Stage.Should().Be(CombustionStage.Blazing);
+
+        state.AddHeat(50f);
+        state.CurrentHeat.Should().Be(100f);
+        state.Stage.Should().Be(CombustionStage.Overheat);
+
+        float vented = state.VentHeat(30f);
+        vented.Should().Be(30f);
+        state.CurrentHeat.Should().Be(70f);
+        state.Stage.Should().Be(CombustionStage.Blazing);
+
+        float consumed = state.ConsumeAllHeat();
+        consumed.Should().Be(70f);
+        state.CurrentHeat.Should().Be(0f);
+        state.Stage.Should().Be(CombustionStage.Normal);
+    }
+
+    [Fact]
+    public void IgnisCombustionState_CalculatesNovaScalingAccurately()
+    {
+        float zeroHeatDmg = IgnisCombustionState.CalcNovaDamage(100f, 0f);
+        float fullHeatDmg = IgnisCombustionState.CalcNovaDamage(100f, 100f);
+        float fullHeatRadius = IgnisCombustionState.CalcNovaRadius(280f, 100f);
+
+        zeroHeatDmg.Should().Be(100f);
+        fullHeatDmg.Should().Be(250f);
+        fullHeatRadius.Should().Be(400f);
+    }
+
+    [Fact]
+    public void ToxisCatalystState_StacksCorrosionAndCalculatesAmplification()
+    {
+        var state = new ToxisCatalystState();
+        state.GetCorrosion(101).Should().Be(0);
+
+        state.AddCorrosion(101, 2);
+        state.GetCorrosion(101).Should().Be(2);
+        state.GetDamageAmplification(101).Should().BeApproximately(1.20f, 0.001f);
+        state.GetSpeedMultiplier(101).Should().BeApproximately(0.84f, 0.001f);
+
+        state.AddCorrosion(101, 10);
+        state.GetCorrosion(101).Should().Be(5);
+        state.GetDamageAmplification(101).Should().BeApproximately(1.50f, 0.001f);
+
+        var detonated = state.DetonateAll();
+        detonated.Should().HaveCount(1);
+        detonated[0].Key.Should().Be(101);
+        detonated[0].Value.Should().Be(5);
+        state.GetCorrosion(101).Should().Be(0);
+
+        float ruptureDmg = ToxisCatalystState.CalcRuptureDamage(80f, 5);
+        ruptureDmg.Should().Be(205f);
+        float siphon = ToxisCatalystState.CalcSiphonHealing(5);
+        siphon.Should().Be(15f);
+    }
+
+    [Fact]
+    public void HavocArtilleryState_CalculatesRecoilAndClusterDirections()
+    {
+        var aimDir = new Godot.Vector2(1f, 0f);
+        var recoil = HavocArtilleryState.CalcRecoilImpulse(aimDir, 300f);
+        recoil.X.Should().Be(-300f);
+        recoil.Y.Should().Be(0f);
+
+        var clusters = HavocArtilleryState.CalcClusterSpreadDirections(aimDir, 3, 0.4f);
+        clusters.Should().HaveCount(3);
+
+        var strikes = HavocArtilleryState.GetSequentialStrikes();
+        strikes.Should().HaveCount(3);
+        strikes[2].DamageMultiplier.Should().Be(1.4f);
+    }
 }

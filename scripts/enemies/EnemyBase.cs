@@ -240,6 +240,7 @@ namespace HeroArena
                 return;
             }
             ApplyHealth(CurrentHealth - amount);
+            EventBus.Instance?.EmitDamageNumber(GlobalPosition, amount, type, false);
         }
 
         public void AddShieldCharges(int charges) => ShieldCharges += charges;

@@ -24,6 +24,7 @@ namespace HeroArena
             _intensity = intensity;
             _duration = duration;
             _elapsed = 0f;
+            SetProcess(true);
         }
 
         public override void _Process(double delta)

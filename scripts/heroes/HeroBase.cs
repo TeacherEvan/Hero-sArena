@@ -26,6 +26,11 @@ namespace HeroArena
         protected float _dodgeTimer = 0f;
         protected bool _isDodging = false;
 
+        public float DodgeCooldownRemaining => Mathf.Max(0f, _dodgeCooldown);
+        public float DodgeCooldownTotal { get; protected set; } = 0.8f;
+        public virtual float AbilityCooldownRemaining => 0f;
+        public virtual float AbilityCooldownTotal => 1f;
+
         // ── Subsystems ────────────────────────────────────────────────────────
         protected InputBuffer _inputBuffer = null!;
 
@@ -65,7 +70,7 @@ namespace HeroArena
             if (Input.IsActionJustPressed("ability"))
                 _inputBuffer.BufferAction("ability");
 
-            if (_inputBuffer.ConsumeAction("attack")) Attack();
+            if (_inputBuffer.ConsumeAction("attack") || Input.IsActionPressed("attack")) Attack();
             if (_inputBuffer.ConsumeAction("dodge") && _dodgeCooldown <= 0f) Dodge();
             if (_inputBuffer.ConsumeAction("ability")) UseAbility();
         }
@@ -134,6 +139,7 @@ namespace HeroArena
             _isDodging = true;
             _dodgeTimer = duration;
             _dodgeCooldown = cooldown;
+            DodgeCooldownTotal = cooldown;
         }
     }
 }

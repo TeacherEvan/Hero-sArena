@@ -31,6 +31,8 @@ namespace HeroArena
 
         private Label _waveWarningLabel = null!;
         private ColorRect _lowHealthVignette = null!;
+        private Label _dodgeCooldownLabel = null!;
+        private Label _abilityCooldownLabel = null!;
         private float _waveWarningTimer;
 
         private const float LOW_HEALTH_THRESHOLD = 0.30f;
@@ -90,6 +92,41 @@ namespace HeroArena
             };
             AddChild(_lowHealthVignette);
             MoveChild(_lowHealthVignette, 0);
+
+            // Floating Combat Damage Numbers Canvas
+            AddChild(new DamageNumberCanvas());
+
+            // Procedural Audio Engine
+            if (AudioManager.Instance == null)
+            {
+                AddChild(new AudioManager());
+            }
+
+            // Bottom-center Cooldown Bar
+            var cooldownContainer = new HBoxContainer
+            {
+                AnchorLeft = 0.5f,
+                AnchorRight = 0.5f,
+                AnchorTop = 0.94f,
+                AnchorBottom = 0.94f,
+                OffsetLeft = -220,
+                OffsetRight = 220,
+                OffsetTop = -32,
+                OffsetBottom = 0,
+                Alignment = BoxContainer.AlignmentMode.Center
+            };
+            cooldownContainer.AddThemeConstantOverride("separation", 36);
+
+            _dodgeCooldownLabel = new Label { Text = "DODGE [SPACE]: READY" };
+            _abilityCooldownLabel = new Label { Text = "ABILITY [E]: READY" };
+            VisualTheme.StyleLabel(_dodgeCooldownLabel, VisualTheme.Cyan);
+            VisualTheme.StyleLabel(_abilityCooldownLabel, VisualTheme.Gold);
+            _dodgeCooldownLabel.AddThemeFontSizeOverride("font_size", 16);
+            _abilityCooldownLabel.AddThemeFontSizeOverride("font_size", 16);
+
+            cooldownContainer.AddChild(_dodgeCooldownLabel);
+            cooldownContainer.AddChild(_abilityCooldownLabel);
+            AddChild(cooldownContainer);
         }
 
         public override void _Process(double delta)
@@ -118,6 +155,37 @@ namespace HeroArena
                 }
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
+
+                // Cooldown indicators
+                if (_dodgeCooldownLabel != null)
+                {
+                    float dRemain = hero.DodgeCooldownRemaining;
+                    if (dRemain <= 0.05f)
+                    {
+                        _dodgeCooldownLabel.Text = "DODGE: READY";
+                        _dodgeCooldownLabel.Modulate = VisualTheme.Cyan;
+                    }
+                    else
+                    {
+                        _dodgeCooldownLabel.Text = $"DODGE: {dRemain:0.0}s";
+                        _dodgeCooldownLabel.Modulate = VisualTheme.TextMuted;
+                    }
+                }
+
+                if (_abilityCooldownLabel != null)
+                {
+                    float aRemain = hero.AbilityCooldownRemaining;
+                    if (aRemain <= 0.05f)
+                    {
+                        _abilityCooldownLabel.Text = "ABILITY: READY";
+                        _abilityCooldownLabel.Modulate = VisualTheme.Gold;
+                    }
+                    else
+                    {
+                        _abilityCooldownLabel.Text = $"ABILITY: {aRemain:0.0}s";
+                        _abilityCooldownLabel.Modulate = VisualTheme.TextMuted;
+                    }
+                }
 
                 // Low-health state: vignette + health bar shifts gold → red.
                 if (hero.MaxHealth > 0f)

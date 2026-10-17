@@ -35,6 +35,9 @@ namespace HeroArena
         public event Action<Vector2, DamageType>? OnProjectileHit;
         public event Action<Vector2, DecalType, float>? OnDecalRequested;
 
+        // ── Floating Combat Text ──────────────────────────────────────────────
+        public event Action<Vector2, float, DamageType, bool>? OnDamageNumber;
+
         // ── Game Over ─────────────────────────────────────────────────────────
         public event Action? OnGameOver;
 
@@ -67,6 +70,7 @@ namespace HeroArena
         public void EmitThreatLevelChanged(int level) => OnThreatLevelChanged?.Invoke(level);
         public void EmitProjectileHit(Vector2 pos, DamageType type) => OnProjectileHit?.Invoke(pos, type);
         public void EmitDecalRequested(Vector2 pos, DecalType type, float size) => OnDecalRequested?.Invoke(pos, type, size);
+        public void EmitDamageNumber(Vector2 pos, float amount, DamageType type, bool isCritical = false) => OnDamageNumber?.Invoke(pos, amount, type, isCritical);
         public void EmitWaveIncoming(int wave, bool isBoss) => OnWaveIncoming?.Invoke(wave, isBoss);
         public void EmitGameOver() => OnGameOver?.Invoke();
     }
