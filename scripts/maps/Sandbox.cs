@@ -16,6 +16,9 @@ namespace HeroArena
         [Export] public Button BtnZephyr { get; set; } = null!;
         [Export] public Button BtnSynapse { get; set; } = null!;
         [Export] public Button BtnVolt { get; set; } = null!;
+        [Export] public Button BtnIgnis { get; set; } = null!;
+        [Export] public Button BtnToxis { get; set; } = null!;
+        [Export] public Button BtnHavoc { get; set; } = null!;
         [Export] public Button BtnSpawnDummy { get; set; } = null!;
         [Export] public Button BtnGodMode { get; set; } = null!;
         [Export] public Button BtnApplyPerk { get; set; } = null!;
@@ -38,6 +41,9 @@ namespace HeroArena
             BtnZephyr.Pressed += () => SelectHero(HeroClass.Zephyr);
             BtnSynapse.Pressed += () => SelectHero(HeroClass.Synapse);
             BtnVolt.Pressed += () => SelectHero(HeroClass.Volt);
+            BtnIgnis.Pressed += () => SelectHero(HeroClass.Ignis);
+            BtnToxis.Pressed += () => SelectHero(HeroClass.Toxis);
+            BtnHavoc.Pressed += () => SelectHero(HeroClass.Havoc);
             BtnSpawnDummy.Pressed += SpawnDummy;
             BtnGodMode.Pressed += ToggleGodMode;
             BtnApplyPerk.Pressed += ApplyNextPerk;
@@ -61,6 +67,9 @@ namespace HeroArena
                 HeroClass.Zephyr   => GD.Load<PackedScene>("res://scenes/heroes/Zephyr.tscn"),
                 HeroClass.Synapse  => GD.Load<PackedScene>("res://scenes/heroes/Synapse.tscn"),
                 HeroClass.Volt     => GD.Load<PackedScene>("res://scenes/heroes/Volt.tscn"),
+                HeroClass.Ignis    => GD.Load<PackedScene>("res://scenes/heroes/Ignis.tscn"),
+                HeroClass.Toxis    => GD.Load<PackedScene>("res://scenes/heroes/Toxis.tscn"),
+                HeroClass.Havoc    => GD.Load<PackedScene>("res://scenes/heroes/Havoc.tscn"),
                 _                  => GD.Load<PackedScene>("res://scenes/heroes/Atlas.tscn"),
             };
 

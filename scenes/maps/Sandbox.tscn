@@ -2,12 +2,15 @@
 
 [ext_resource type="Script" path="res://scripts/maps/Sandbox.cs" id="1"]
 
-[node name="Sandbox" type="Node2D" node_paths=PackedStringArray("BtnAtlas", "BtnZephyr", "BtnSynapse", "BtnVolt", "BtnSpawnDummy", "BtnGodMode", "BtnApplyPerk", "BtnResetStats", "BtnBack", "HeroLabel", "PerkLabel", "HeroSpawnPoint", "DummyContainer")]
+[node name="Sandbox" type="Node2D" node_paths=PackedStringArray("BtnAtlas", "BtnZephyr", "BtnSynapse", "BtnVolt", "BtnIgnis", "BtnToxis", "BtnHavoc", "BtnSpawnDummy", "BtnGodMode", "BtnApplyPerk", "BtnResetStats", "BtnBack", "HeroLabel", "PerkLabel", "HeroSpawnPoint", "DummyContainer")]
 script = ExtResource("1")
 BtnAtlas = NodePath("UI/Panel/VBoxContainer/BtnAtlas")
 BtnZephyr = NodePath("UI/Panel/VBoxContainer/BtnZephyr")
 BtnSynapse = NodePath("UI/Panel/VBoxContainer/BtnSynapse")
 BtnVolt = NodePath("UI/Panel/VBoxContainer/BtnVolt")
+BtnIgnis = NodePath("UI/Panel/VBoxContainer/BtnIgnis")
+BtnToxis = NodePath("UI/Panel/VBoxContainer/BtnToxis")
+BtnHavoc = NodePath("UI/Panel/VBoxContainer/BtnHavoc")
 BtnSpawnDummy = NodePath("UI/Panel/VBoxContainer/BtnSpawnDummy")
 BtnGodMode = NodePath("UI/Panel/VBoxContainer/BtnGodMode")
 BtnApplyPerk = NodePath("UI/Panel/VBoxContainer/BtnApplyPerk")
@@ -56,6 +59,15 @@ text = "Synapse"
 
 [node name="BtnVolt" type="Button" parent="UI/Panel/VBoxContainer"]
 text = "Volt"
+
+[node name="BtnIgnis" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Ignis"
+
+[node name="BtnToxis" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Toxis"
+
+[node name="BtnHavoc" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Havoc"
 
 [node name="BtnSpawnDummy" type="Button" parent="UI/Panel/VBoxContainer"]
 text = "Spawn Dummy"

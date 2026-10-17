@@ -1,0 +1,55 @@
+[gd_scene load_steps=8 format=3 uid="uid://pausemenu"]
+
+[ext_resource type="Script" path="res://scripts/ui/PauseMenu.cs" id="1"]
+
+[node name="PauseMenu" type="CanvasLayer" node_paths=PackedStringArray("ResumeButton", "RestartButton", "SettingsButton", "MainMenuButton", "QuitButton")]
+layer = 3
+script = ExtResource("1")
+modulate = Color(1, 1, 1, 0)
+ResumeButton = NodePath("Container/ResumeButton")
+RestartButton = NodePath("Container/RestartButton")
+SettingsButton = NodePath("Container/SettingsButton")
+MainMenuButton = NodePath("Container/MainMenuButton")
+QuitButton = NodePath("Container/QuitButton")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.043, 0.051, 0.078, 0.75)
+
+[node name="Container" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -180.0
+offset_right = 220.0
+offset_bottom = 180.0
+alignment = 1
+custom_constants/separation = 12
+
+[node name="TitleLabel" type="Label" parent="Container"]
+text = "PAUSED"
+
+[node name="ResumeButton" type="Button" parent="Container"]
+text = "Resume (ESC)"
+custom_minimum_size = Vector2(160, 0)
+
+[node name="RestartButton" type="Button" parent="Container"]
+text = "Restart"
+custom_minimum_size = Vector2(160, 0)
+
+[node name="SettingsButton" type="Button" parent="Container"]
+text = "Settings"
+custom_minimum_size = Vector2(160, 0)
+
+[node name="MainMenuButton" type="Button" parent="Container"]
+text = "Main Menu"
+custom_minimum_size = Vector2(160, 0)
+
+[node name="QuitButton" type="Button" parent="Container"]
+text = "Quit"
+custom_minimum_size = Vector2(160, 0)

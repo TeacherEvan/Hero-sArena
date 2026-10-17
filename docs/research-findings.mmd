@@ -1,25 +1,30 @@
 flowchart LR
-    subgraph Gaps["Confirmed gaps for novice players"]
-        G1[NO tutorial / onboarding<br/>Wave 1 with no instruction]
-        G2[NO difficulty selector<br/>single fixed Weibull + karma curve]
-        G3[NO perk transparency<br/>names only, no descriptions/synergies]
-        G4[17 of 20 perks are no-ops<br/>ApplyPerk() implements only 3]
-        G5[NO practice / sandbox mode<br/>permadeath GameOver, no experimentation]
-        G6[XP bar has no MaxValue<br/>progress-to-next-level unreadable]
+    subgraph Difficulty["Difficulty curves (Tier 2 sources)"]
+        D1[Vampire Survivors:<br/>time-based HP scalar +<br/>Curse difficulty-for-rewards<br/>+ Endless cycles]
+        D2[Brotato:<br/>Endless Factor exponential<br/>HP/dmg/speed/price scaling<br/>shrinking i-frames]
+        D3[Risk of Rain 2:<br/>Difficulty Coefficient<br/>stages > time, HUD bar]
     end
 
-    subgraph Recommendations["3 recommendations"]
-        R1[R1 - Guided Tutorial /<br/>"First Wave" onboarding<br/>GameState.Tutorial, controlled spawns,<br/>on-screen prompts, guaranteed level-up]
-        R2[R2 - Difficulty Selector<br/>Easy / Normal / Hard<br/>scales enemy count, threat, mutators, XP]
-        R3[R3 - Perk Transparency +<br/>Sandbox Mode<br/>fix ApplyPerk (all 20 perks),<br/>perk descriptions, risk-free practice]
+    subgraph Synergies["Perk synergies (Tier 2 sources)"]
+        S1[Hades Duo Boons:<br/>28 pairs, prerequisites<br/>emergent effects, UI hints]
+        S2[Vampire Survivors:<br/>weapon evolutions<br/>max level + passive prereq]
     end
 
-    G1 --> R1
-    G2 --> R2
-    G3 --> R3
-    G4 --> R3
-    G5 --> R3
-    G6 --> R3
+    subgraph Meta["Meta-progression (Tier 2 sources)"]
+        M1[Vampire Survivors:<br/>Gold kept on death,<br/>escalating stat shop<br/>(1.1^TotalBought pricing)]
+        M2[Hades Mirror of Night:<br/>Darkness + Chthonic Keys,<br/>refundable, ~50 runs to max]
+    end
 
-    style Gaps fill:#2d1b1b,stroke:#ef4444,color:#fecaca
-    style Recommendations fill:#1b2d1b,stroke:#22c55e,color:#dcfce7
+    subgraph Classes["Class abilities (Tier 1-2 sources)"]
+        C1[Risk of Rain 2:<br/>4-skill layout per survivor,<br/>unlock via challenges]
+        C2[Hades / Overwatch 2 / Valorant:<br/>cooldowns & ult cost as<br/>balance knobs, i-frame dodge]
+    end
+
+    Difficulty --> Synergies
+    Synergies --> Meta
+    Meta --> Classes
+
+    style Difficulty fill:#2d1b1b,stroke:#ef4444,color:#fecaca
+    style Synergies fill:#1b2d3d,stroke:#38bdf8,color:#dbeafe
+    style Meta fill:#1b3d1b,stroke:#22c55e,color:#dcfce7
+    style Classes fill:#3d2d1b,stroke:#f0883e,color:#fef3c7

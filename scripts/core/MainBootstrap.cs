@@ -19,6 +19,10 @@ namespace HeroArena
         // scene reloads never stack duplicate events.
         private static bool _inputReady;
 
+        [Export] public PauseMenu? PauseMenu { get; set; }
+        [Export] public GameOver? GameOver { get; set; }
+
+        private double _runStartTime;
         private Camera2D? _camera;
 
         public override void _Ready()
@@ -30,6 +34,8 @@ namespace HeroArena
                 return;
             }
 
+            _runStartTime = Time.GetUnixTimeFromSystem();
+            EventBus.Instance.OnGameOver += HandleGameOver;
             EnsureInputMap();
             EnsureSystems(gm);
             WireWaveManager(gm);
@@ -59,6 +65,25 @@ namespace HeroArena
                     GD.PrintErr("MainBootstrap: Tutorial.tscn missing; tutorial cannot run.");
                 }
             }
+        }
+
+        public override void _Input(InputEvent @event)
+        {
+            if (@event is InputEventKey key && key.Pressed && key.Keycode == Key.Escape)
+            {
+                if (PauseMenu == null) return;
+                PauseMenu.Toggle();
+            }
+        }
+
+        private void HandleGameOver()
+        {
+            if (GameOver == null) return;
+            var gm = GameManager.Instance;
+            if (gm == null) return;
+
+            int runSeconds = (int)(Time.GetUnixTimeFromSystem() - _runStartTime);
+            GameOver.Show(gm.KillCount, gm.Score, gm.CurrentWave, runSeconds, gm.CurrentDifficulty);
         }
 
         public override void _Process(double delta)
@@ -171,6 +196,9 @@ namespace HeroArena
                 HeroClass.Zephyr => "res://scenes/heroes/Zephyr.tscn",
                 HeroClass.Synapse => "res://scenes/heroes/Synapse.tscn",
                 HeroClass.Volt => "res://scenes/heroes/Volt.tscn",
+                HeroClass.Ignis => "res://scenes/heroes/Ignis.tscn",
+                HeroClass.Toxis => "res://scenes/heroes/Toxis.tscn",
+                HeroClass.Havoc => "res://scenes/heroes/Havoc.tscn",
                 _ => "res://scenes/heroes/Atlas.tscn",
             };
             var scene = GD.Load<PackedScene>(path);
@@ -184,6 +212,12 @@ namespace HeroArena
             parent.AddChild(hero);
             hero.GlobalPosition = Vector2.Zero;
             gm.ActiveHero = hero;
+        }
+
+        public override void _ExitTree()
+        {
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnGameOver -= HandleGameOver;
         }
     }
 }

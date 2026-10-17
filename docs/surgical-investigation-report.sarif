@@ -1,197 +1,436 @@
 {
-  "$schema": "https://docs.oasis-open.org/sarif/sarif-2.1.0/csprd01/schemas/sarif-schema-2.1.0.json",
+  "$schema": "https://json.schemastore.org/sarif-2.1.0.json",
   "version": "2.1.0",
   "runs": [
     {
       "tool": {
         "driver": {
-          "name": "surgical-investigation",
-          "version": "1.0.0",
-          "informationUri": "https://github.com/leandi-duplessis/Hero-sArena",
+          "name": "Surgical-Investigation",
+          "version": "1.1.0",
+          "informationUri": "https://github.com/TeacherEvan/Surgical-Investigation",
           "rules": [
             {
-              "id": "NOV-001",
-              "name": "Missing tutorial / onboarding",
-              "description": "New players are dropped into Wave 1 with no instruction on controls, dodge, abilities, or the level-up/perk flow.",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "help": {
-                "text": "Add GameState.Tutorial with controlled slow spawns and on-screen control prompts."
-              },
-              "properties": {
-                "category": "gameplay-onboarding",
-                "impact": "high",
-                "effort": "3-4 days",
-                "tier": 1
-              }
+              "id": "MISSION-GAP",
+              "name": "Mission Gap Finding",
+              "shortDescription": { "text": "Stated purpose vs actual implementation divergence" },
+              "fullDescription": { "text": "Identified during Step 2 (Mission Verification) of surgical-investigation." },
+              "defaultConfiguration": { "level": "warning" }
             },
             {
-              "id": "NOV-002",
-              "name": "No difficulty selector",
-              "description": "Single fixed Weibull wave curve + CollateralKarma threat escalation + stacking mutators punishes novices; no Easy/Normal/Hard levers.",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "help": {
-                "text": "Add GameManagerState.Difficulty enum; Easy/Normal/Hard scale enemy count, threat interval, mutator count, XP, breather."
-              },
-              "properties": {
-                "category": "gameplay-difficulty",
-                "impact": "high",
-                "effort": "2-3 days",
-                "tier": 1
-              }
+              "id": "DEPENDENCY-AUDIT",
+              "name": "Dependency Audit Finding",
+              "shortDescription": { "text": "Dependency version, security vulnerability, or maintenance finding" },
+              "fullDescription": { "text": "Found during Step 3 (Dependency Audit) of surgical-investigation." },
+              "defaultConfiguration": { "level": "error" }
             },
             {
-              "id": "NOV-003",
-              "name": "Perk transparency / dead perks",
-              "description": "UpgradeMenu.ApplyPerk() implements only 3 of 20 perks (DamageUp is a commented no-op, SpeedUp and MaxHealthUp work); the other 17 perks have no effect. No perk descriptions or synergy hints shown.",
-              "defaultConfiguration": {
-                "level": "error"
-              },
-              "help": {
-                "text": "Implement all 20 perks; add PerkDescription() + synergy hints; add Sandbox/practice mode (no waves/GameOver, spawn dummies, god mode, try all heroes/perks)."
-              },
-              "properties": {
-                "category": "gameplay-progression",
-                "impact": "critical",
-                "effort": "4-5 days",
-                "tier": 1
-              }
+              "id": "PRACTICE-REVIEW",
+              "name": "Best Practice Assessment",
+              "shortDescription": { "text": "Code quality, architecture, testing, security, performance, or docs issue" },
+              "fullDescription": { "text": "Found during Step 4 (Engineering Best Practices) of surgical-investigation." },
+              "defaultConfiguration": { "level": "warning" }
             },
             {
-              "id": "NOV-004",
-              "name": "No practice / sandbox mode",
-              "description": "Permadeath GameOver on first hero death gives novices no room to experiment with heroes, abilities, or perk combinations.",
-              "defaultConfiguration": {
-                "level": "warn"
-              },
-              "help": {
-                "text": "Add scenes/maps/Sandbox.tscn + scripts/maps/Sandbox.cs with SpawnDummy(), SetGodMode(), ApplyPerk(), ResetHero()."
-              },
-              "properties": {
-                "category": "gameplay-practice",
-                "impact": "medium",
-                "effort": "included in NOV-003",
-                "tier": 2
-              }
+              "id": "OPTIMALITY-REVIEW",
+              "name": "Implementation Optimality Finding",
+              "shortDescription": { "text": "Algorithm fit, computational complexity, resource usage, or scalability hotspot" },
+              "fullDescription": { "text": "Found during Step 5 (Implementation Optimality Check) of surgical-investigation." },
+              "defaultConfiguration": { "level": "note" }
+            },
+            {
+              "id": "AGENT-FILES-REVIEW",
+              "name": "Agent Files & Docs Audit Finding",
+              "shortDescription": { "text": "Skills, memory, config, docs, or kanban discrepancies" },
+              "fullDescription": { "text": "Found during Step 6 (Agent Files Audit) of surgical-investigation." },
+              "defaultConfiguration": { "level": "warning" }
+            },
+            {
+              "id": "RESEARCH-FINDING",
+              "name": "External Research Finding",
+              "shortDescription": { "text": "Strategy-driven finding from external sources with credibility tier" },
+              "fullDescription": { "text": "Found during Step 7 (External Source Investigation) of surgical-investigation." },
+              "defaultConfiguration": { "level": "note" }
+            },
+            {
+              "id": "RECOMMENDATION",
+              "name": "Feature Recommendation",
+              "shortDescription": { "text": "Actionable feature recommendation with endpoint or interactive control" },
+              "fullDescription": { "text": "Produced during Step 8a (Recommendations) of surgical-investigation." },
+              "defaultConfiguration": { "level": "note" }
             }
           ]
         }
       },
       "results": [
         {
-          "ruleId": "NOV-003",
-          "level": "error",
+          "ruleId": "MISSION-GAP",
+          "ruleIndex": 0,
+          "level": "warning",
           "message": {
-            "text": "17 of 20 perks are no-ops in UpgradeMenu.ApplyPerk(); progression feels random to novices."
+            "text": "Late-game difficulty decays: Weibull wave curve peaks at ~wave 5 then tapers toward zero, contradicting the 'escalating threat' mission."
           },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "scripts/ui/UpgradeMenu.cs"
-                },
-                "region": {
-                  "startLine": 51,
-                  "endLine": 65,
-                  "snippet": {
-                    "text": "switch (perk) { case DamageUp: break; ... }"
-                  }
-                }
-              }
-            }
-          ],
           "properties": {
-            "impact": "critical",
-            "effort": "4-5 days",
-            "recommendationId": "R3"
-          }
-        },
-        {
-          "ruleId": "NOV-001",
-          "level": "error",
-          "message": {
-            "text": "No tutorial/onboarding; new players receive no instruction before Wave 1."
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "scripts/ui/MainMenu.cs"
-                },
-                "region": {
-                  "startLine": 44,
-                  "endLine": 65,
-                  "snippet": {
-                    "text": "StartGame() loads GameScene directly with no tutorial gate."
-                  }
-                }
-              }
-            }
-          ],
-          "properties": {
-            "impact": "high",
-            "effort": "3-4 days",
-            "recommendationId": "R1"
-          }
-        },
-        {
-          "ruleId": "NOV-002",
-          "level": "error",
-          "message": {
-            "text": "No difficulty selector; single fixed curve punishes novices."
-          },
-          "locations": [
-            {
-              "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "scripts/core/GameManagerState.cs"
-                },
-                "region": {
-                  "startLine": 20,
-                  "endLine": 123,
-                  "snippet": {
-                    "text": "GameManagerState has no Difficulty concept."
-                  }
-                }
-              }
-            }
-          ],
-          "properties": {
-            "impact": "high",
+            "priority": "high",
+            "why": "Late waves get easier instead of harder, undercutting end-run tension. Vampire Survivors maintains pressure via time-based HP scalars (Tier 3: Arcade Artificer); Reddit r/gamedesign flags reverse/decaying curves as bad design (Tier 4).",
+            "what": "Add a per-wave HP/damage multiplier scaling with wave number (additive, not compounding); keep 2000 enemy cap as backstop; optional Curse-style difficulty-for-rewards toggle; visible threat-level meter on HUD.",
             "effort": "2-3 days",
-            "recommendationId": "R2"
-          }
-        },
-        {
-          "ruleId": "NOV-004",
-          "level": "warn",
-          "message": {
-            "text": "No practice/sandbox mode; permadeath GameOver blocks experimentation."
+            "source": "scripts/core/WaveFormulas.cs:26-51; Arcade Artificer Substack (Tier 3); RoR2 Difficulty (Tier 2); Brotato Wiki Endless Mode (Tier 2)"
           },
           "locations": [
             {
               "physicalLocation": {
-                "artifactLocation": {
-                  "uri": "scripts/heroes/HeroBase.cs"
-                },
-                "region": {
-                  "startLine": 95,
-                  "endLine": 99,
-                  "snippet": {
-                    "text": "Die() calls GameManager.Instance.TriggerGameOver() and QueueFree()."
-                  }
-                }
-              }
+                "artifactLocation": { "uri": "scripts/core/WaveFormulas.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 26, "startColumn": 1 }
+              },
+              "message": { "text": "WeibullIntensity curve peaks ~wave 5 then decays" }
             }
-          ],
+          ]
+        },
+        {
+          "ruleId": "MISSION-GAP",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "Perk synergies are tags only; 9 perk effects declared but never consumed (HealthRegen, ExplosiveRounds, LifeSteal, CritChance, SlowOnHit, BurnOnHit, FrostAura, ThornArmor, DoubleJump)."
+          },
           "properties": {
-            "impact": "medium",
-            "effort": "included in R3",
-            "recommendationId": "R3"
-          }
+            "priority": "high",
+            "why": "Perks carry SynergyTag but no synergy mechanics exist; dead effects mislead players. Hades' 28 Duo Boons show prerequisite-driven perk pairs create emergent power (Tier 2: TheGamer).",
+            "what": "Add 4-6 two-perk synergy triggers with emergent results; gate emergent perks behind two base perks; show synergy hints on perk cards; consume the nine dead effects.",
+            "effort": "4-5 days",
+            "source": "scripts/core/PerkSystem.cs:13-87; scripts/core/HeroStats.cs:10-29; Hades Duo Boons (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/PerkSystem.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 13, "startColumn": 1 }
+              },
+              "message": { "text": "PerkMeta synergy tags with no synergy mechanics; 9 dead perk effects" }
+            }
+          ]
+        },
+        {
+          "ruleId": "MISSION-GAP",
+          "ruleIndex": 0,
+          "level": "warning",
+          "message": {
+            "text": "No meta-progression between runs; every run starts from baseline — zero-progress runs."
+          },
+          "properties": {
+            "priority": "medium",
+            "why": "Nothing is kept after death, reducing retry motivation. Vampire Survivors' meta-progression eliminates zero-progress runs and drives immediate retries (~2.5x damage / 2x health cumulative; Tier 3: Arcade Artificer).",
+            "what": "Award run currency (scrap) kept after death; spend on permanent starting-stat bonuses and hero unlocks in a main-menu node tree; slow tiny-stat egg track; full-respec button.",
+            "effort": "5-6 days",
+            "source": "Arcade Artificer Substack (Tier 3); Vampire Survivors PowerUp shop (Tier 2); Hades Mirror of Night (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/ui/MainMenu.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "No meta-progression system exists; each run starts from zero" }
+            }
+          ]
+        },
+        {
+          "ruleId": "PRACTICE-REVIEW",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "EnemyMutatorSystem.OnThreatChanged is an empty stub — mutators applied once at spawn, never re-applied as threat rises."
+          },
+          "properties": {
+            "priority": "medium",
+            "why": "Wastes the threat system's escalation potential; mutators should scale with rising threat (Brotato: +1 elite per 10 waves; Tier 2).",
+            "what": "Implement OnThreatChanged to re-apply stacking mutators to live enemies as threat increases (capped per-mutator); un-comment and implement splitting mutator.",
+            "effort": "2-3 days",
+            "source": "scripts/systems/EnemyMutatorSystem.cs:34-78; Brotato Danger Levels (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/systems/EnemyMutatorSystem.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 34, "startColumn": 1 }
+              },
+              "message": { "text": "OnThreatChanged empty stub" }
+            }
+          ]
+        },
+        {
+          "ruleId": "PRACTICE-REVIEW",
+          "ruleIndex": 2,
+          "level": "warning",
+          "message": {
+            "text": "DifficultySettings defines EnemyHealthMultiplier, EnemyDamageMultiplier, XpMultiplier but no runtime consumer — defined + unit-tested but unused."
+          },
+          "properties": {
+            "priority": "low",
+            "why": "Dead configuration fields mislead about what difficulty actually scales.",
+            "what": "Either wire these fields into enemy spawning/damage/XP or remove them to keep the API surface honest.",
+            "effort": "0.5-1 day",
+            "source": "scripts/core/GameManagerState.cs:202-211"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/GameManagerState.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 206, "startColumn": 1 }
+              },
+              "message": { "text": "Unused difficulty multiplier fields" }
+            }
+          ]
+        },
+        {
+          "ruleId": "AGENT-FILES-REVIEW",
+          "ruleIndex": 4,
+          "level": "warning",
+          "message": {
+            "text": "docs/research-findings.mmd and docs/entire-project.mmd are stale: describe 'NO tutorial', 'NO difficulty selector', '17 of 20 perks are no-ops' — all already fixed in PRs #18/#19."
+          },
+          "properties": {
+            "priority": "low",
+            "why": "Stale docs mislead contributors and contradict AGENTS.md audit history.",
+            "what": "Update docs/research-findings.mmd and docs/entire-project.mmd to reflect current state (tutorial exists, difficulty exists, all 20 perks work, sandbox mode exists, Godot gate passes 13/13).",
+            "effort": "0.5 day",
+            "source": "docs/research-findings.mmd vs AGENTS.md PRs #18/#19"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "docs/research-findings.mmd", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Stale findings diagram" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RESEARCH-FINDING",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Vampire Survivors Endless Mode: additive per-cycle scaling (HP +1x/cycle, spawn +0.5x/cycle, damage +0.25x/cycle); Curse stacks additively no upper bound."
+          },
+          "properties": {
+            "priority": "high",
+            "why": "Proven late-game escalation pattern for wave survival games.",
+            "what": "Adopt additive (not compounding) per-cycle HP multiplier as the backstop for late-wave intensity.",
+            "effort": "2-3 days",
+            "source": "Vampire Survivors tuning doc (teemo.dev) + rogueranker curse guide (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/WaveFormulas.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Target for late-game difficulty escalation" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RESEARCH-FINDING",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Brotato Endless Factor: HP scaled by 1+EndlessFactor*2.25, damage by 1+EndlessFactor, i-frames shrink, +1 elite per 10 waves."
+          },
+          "properties": {
+            "priority": "high",
+            "why": "Concrete numbers for late-game escalation and elite wave ramping.",
+            "what": "Add Endless Factor-style HP/damage scaling post-finale; +1 elite per 10 waves past breather cadence.",
+            "effort": "2-3 days",
+            "source": "Brotato Wiki Endless Mode & Dangers (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/WaveManager.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Target for Endless Factor wave escalation" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RESEARCH-FINDING",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Hades Duo Boons: 28 prerequisite-driven perk pairs with emergent effects; UI signals combo one piece away."
+          },
+          "properties": {
+            "priority": "high",
+            "why": "Proven prerequisite-driven synergy system creating emergent power and build variety.",
+            "what": "Add 4-6 two-perk synergy triggers; gate emergent perks behind two base perks; show synergy hints on perk cards.",
+            "effort": "4-5 days",
+            "source": "TheGamer Hades Duo Boons List (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/PerkSystem.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Target for perk synergy system" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RESEARCH-FINDING",
+          "ruleIndex": 5,
+          "level": "note",
+          "message": {
+            "text": "Vampire Survivors meta-progression: gold kept on death, 19 stackable PowerUp lines at 1.1^TotalBought pricing, full respec; maxing all ranks costs 27,148,513 gold."
+          },
+          "properties": {
+            "priority": "medium",
+            "why": "Proven between-run progression that eliminates zero-progress runs.",
+            "what": "Award scrap currency kept after death; permanent starting-stat bonus tree; full-respec button.",
+            "effort": "5-6 days",
+            "source": "Vampire Survivors wiki of record + rogueranker (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/ui/MainMenu.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Target for meta-progression menu screen" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RECOMMENDATION",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "R1 — Replace decaying late-game Weibull with sustained/escalating intensity"
+          },
+          "properties": {
+            "priority": "high",
+            "why": "Late waves get easier, contradicting the 'escalating threat' mission.",
+            "what": "Add per-wave HP/damage multiplier scaling with wave number (additive); keep 2000 enemy cap backstop; optional Curse toggle; visible threat-level meter on HUD.",
+            "endpoint": "Modify scripts/core/WaveFormulas.cs (CalculateWaveEnemyCount) and scripts/core/WaveManager.cs (BeginNextWave); add threat-meter UI to scripts/ui/HUD.cs.",
+            "interactiveControl": "Difficulty toggle 'Curse mode' in MainMenu difficulty selector; threat-level progress bar on HUD.",
+            "effort": "2-3 days",
+            "source": "scripts/core/WaveFormulas.cs:26-51; Arcade Artificer Substack (Tier 3); RoR2 Difficulty (Tier 2); Brotato Wiki Endless Mode (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/WaveFormulas.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 26, "startColumn": 1 }
+              },
+              "message": { "text": "Recommended implementation site for wave difficulty escalation" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RECOMMENDATION",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "R2 — Implement real perk synergy combos (prerequisite-driven emergent effects)"
+          },
+          "properties": {
+            "priority": "high",
+            "why": "Perks carry SynergyTag but no synergy mechanics; 9 effects declared but unconsumed.",
+            "what": "Add 4-6 two-perk synergy triggers with emergent results; gate emergent perks behind two base perks; show synergy hints on perk cards; consume the nine dead effects.",
+            "endpoint": "Extend scripts/core/PerkSystem.cs ApplyPerk with synergy table; add synergy hints to scripts/ui/UpgradeMenu.cs; wire consumers in hero paths (HeroBase.cs, Atlas.cs, Zephyr.cs, Synapse.cs, Volt.cs).",
+            "interactiveControl": "Perk-card synergy badges/hints in UpgradeMenu; 'evolution' perk flagged in offer pool when prerequisites met.",
+            "effort": "4-5 days",
+            "source": "scripts/core/PerkSystem.cs:13-87; scripts/core/HeroStats.cs:10-29; Hades Duo Boons (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/core/PerkSystem.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 61, "startColumn": 1 }
+              },
+              "message": { "text": "Recommended implementation site for perk synergy table" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RECOMMENDATION",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "R3 — Add meta-progression between runs (gold kept on death, permanent stat shop)"
+          },
+          "properties": {
+            "priority": "medium",
+            "why": "No meta-progression means every run starts from zero — zero-progress runs.",
+            "what": "Award scrap currency kept after death; permanent starting-stat bonus tree + hero unlocks; slow tiny-stat egg track; full-respec button.",
+            "endpoint": "New scripts/core/MetaProgressionState.cs (Godot-free) + scripts/ui/MainMenu.cs meta-progression screen; save to user://meta.cfg via ConfigFile.",
+            "interactiveControl": "Meta-progression node tree in MainMenu; scrap currency on HUD/run-end screen; respec button.",
+            "effort": "5-6 days",
+            "source": "Arcade Artificer Substack (Tier 3); Vampire Survivors PowerUp shop (Tier 2); Hades Mirror of Night (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/ui/MainMenu.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Recommended implementation site for meta-progression menu" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RECOMMENDATION",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "R4 — Re-apply mutators as threat rises (EnemyMutatorSystem.OnThreatChanged)"
+          },
+          "properties": {
+            "priority": "medium",
+            "why": "Mutators applied once at spawn only; rising threat never re-mutates live enemies.",
+            "what": "Implement OnThreatChanged to re-apply stacking mutators to live enemies as threat increases; un-comment splitting mutator.",
+            "endpoint": "Implement scripts/systems/EnemyMutatorSystem.cs OnThreatChanged(int) + ApplySingleMutator extension for live enemies; add splitting mutator.",
+            "interactiveControl": "Threat-level-driven mutator intensity visible on HUD threat meter.",
+            "effort": "2-3 days",
+            "source": "scripts/systems/EnemyMutatorSystem.cs:34-78; Brotato Danger Levels (Tier 2)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "scripts/systems/EnemyMutatorSystem.cs", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 34, "startColumn": 1 }
+              },
+              "message": { "text": "Recommended implementation site for threat-scaled mutators" }
+            }
+          ]
+        },
+        {
+          "ruleId": "RECOMMENDATION",
+          "ruleIndex": 6,
+          "level": "note",
+          "message": {
+            "text": "R5 — Refresh stale docs (research-findings.mmd, entire-project.mmd)"
+          },
+          "properties": {
+            "priority": "low",
+            "why": "Docs describe features already fixed; mislead contributors and contradict AGENTS.md audit history.",
+            "what": "Update docs/research-findings.mmd and docs/entire-project.mmd to reflect current state.",
+            "endpoint": "Edit docs/research-findings.mmd and docs/entire-project.mmd.",
+            "interactiveControl": "None (documentation only).",
+            "effort": "0.5 day",
+            "source": "AGENTS.md audit history; docs/research-findings.mmd (stale)"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": { "uri": "docs/research-findings.mmd", "uriBaseId": "PROJECTROOT" },
+                "region": { "startLine": 1, "startColumn": 1 }
+              },
+              "message": { "text": "Recommended edit site for stale docs" }
+            }
+          ]
         }
       ]
     }

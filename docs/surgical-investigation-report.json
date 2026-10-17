@@ -1,78 +1,301 @@
 {
   "project": "Hero's Arena",
-  "timestamp": "2026-10-17",
+  "timestamp": "2026-10-17T00:00:00Z",
   "mode": "investigator",
-  "strategy": "codebase-first + targeted-docs + community-pulse (escalation pass)",
-  "escalationTrigger": "user asked 'is this the best you can do?'",
+  "escalation": "best-you-can-do",
+  "strategy": "pattern-driven + community-pulse",
   "mission": {
     "stated": "A top-down arena shooter built with Godot 4.3 and C# (.NET 8). Fight waves of enemies across 4 hero classes; environmental destruction escalates threat via the Collateral Karma system.",
-    "actual": "A horde / top-down arena shooter (Vampire Survivors / Brotato / Hades-like) with 4 heroes, 10 enemy types, Weibull wave-spawning curve, 2000-enemy cap, 5s breather between waves, boss every 300s, XP-driven level-up into a 20-perk upgrade menu, and Collateral Karma threat escalation.",
-    "gap": "No tutorial/onboarding, no difficulty selector, no perk transparency (17 of 20 perks are no-ops), no practice/sandbox mode, XP bar has no MaxValue."
+    "actual": "Wave survival loop is complete (spawning, mutators, AoE fixed per PRs #18/#19), 4 hero classes each with Attack/Dodge/Ability, Collateral Karma threat escalation, difficulty selector persisted to user://settings.cfg, 345 headless xUnit tests pass.",
+    "gap": "Three gaps: (1) Late-game difficulty decays (Weibull peaks ~wave 5 then tapers) contradicting 'escalating threat'. (2) Perk synergies are tags only; 9 perk effects declared but never consumed. (3) No meta-progression between runs; every run starts from baseline."
   },
   "dependencies": [
-    {"name":"Godot Engine","version":"4.3","latest":"4.3","status":"stable","tier":1},
-    {"name":".NET SDK","version":"8","latest":"8","status":"stable","tier":1},
-    {"name":"Godot.NET.Sdk","version":"4.3.0","latest":"4.3.0","status":"stable","tier":1},
-    {"name":"xUnit","version":"(test project)","latest":"—","status":"stable","tier":1},
-    {"name":"Roslynator","version":"(lint tool)","latest":"—","status":"stable","tier":1}
+    {
+      "name": "Godot Engine (mono)",
+      "version": "4.3.0",
+      "latest": "4.4.x",
+      "status": "ok",
+      "tier": 1,
+      "notes": "C#-enabled build at ~/.local/bin/godot-mono. Standard/non-mono Godot cannot load .cs scripts."
+    },
+    {
+      "name": ".NET SDK",
+      "version": "8.0 (~/.dotnet8)",
+      "latest": "10.x",
+      "status": "warn",
+      "tier": 1,
+      "notes": "PATH dotnet is .NET 10 (broken snap shim); ~/.dotnet is v10. Must use DOTNET_ROOT=~/.dotnet8 for all dotnet commands."
+    },
+    {
+      "name": "Godot.NET.Sdk",
+      "version": "4.3.0",
+      "latest": "4.4.x",
+      "status": "ok",
+      "tier": 1,
+      "notes": "Supplies GenerateAssemblyInfo + GenerateTargetFrameworkAttribute; csproj disables both to avoid CS0579 duplicates."
+    },
+    {
+      "name": "xUnit",
+      "version": "bundled",
+      "latest": "latest",
+      "status": "ok",
+      "tier": 1,
+      "notes": "345 tests pass, default filter unfiltered, no Category=GodotRuntime filtering."
+    },
+    {
+      "name": "Roslynator",
+      "version": "tool",
+      "latest": "latest",
+      "status": "ok",
+      "tier": 1,
+      "notes": "Lint gate via dotnet tool run roslynator analyze."
+    }
   ],
   "practices": {
-    "codeQuality": [{"rating":"good","finding":"Clean style; pure logic extracted from Node wrappers per AGENTS.md pattern."}],
-    "architecture": [{"rating":"good","finding":"EventBus decoupling, object pooling, SpatialHashGrid O(1), FlowFieldPathfinder on background thread."}],
-    "testing": [{"rating":"good","finding":"131 xUnit tests pass headlessly. Godot headless gate cannot run C# in this workspace (toolchain gap)."}],
-    "security": [{"rating":"good","finding":"No external services, no secrets, no network deps."}],
-    "performance": [{"rating":"good","finding":"Object pooling, spatial hash grid, capped spawns/frame (20), 2000-enemy cap."}],
-    "documentation": [{"rating":"warn","finding":"AGENTS.md/README accurate; docs/ux-feedback-spec.md covers combat juice, not onboarding."}],
-    "gameplay": [{"rating":"bad","finding":"UpgradeMenu.ApplyPerk() implements only 3 of 20 perks; the other 17 are no-ops."}]
+    "codeQuality": [
+      {
+        "status": "good",
+        "finding": "Pure-logic extraction convention followed: GameManagerState, InputBufferState, ProgressionFormulas, WaveFormulas, EntityRegistry, HitFlashPalette, DestructionTracker, PowerupBannerSlots, PerkSystem, HeroStats are Godot-free classes delegated to by Node wrappers. 345 headless xUnit tests pass.",
+        "source": "AGENTS.md Testing; scripts/core/*.cs [Tier 1: project convention]"
+      },
+      {
+        "status": "bad",
+        "finding": "Nine perk effects declared but never consumed (HealthRegen, ExplosiveRounds, LifeSteal, CritChance, SlowOnHit, BurnOnHit, FrostAura, ThornArmor, DoubleJump). Dead code misleads players about what perks do.",
+        "source": "scripts/core/PerkSystem.cs:66-85; scripts/core/HeroStats.cs:12-27 [code audit]"
+      }
+    ],
+    "architecture": [
+      {
+        "status": "good",
+        "finding": "Clear separation of concerns: EventBus decouples systems; WaveManager/EnemyMutatorSystem apply mutators at spawn; SpatialHashGrid O(1) spatial queries; FlowFieldPathfinder on background thread.",
+        "source": "scripts/core/EventBus.cs, WaveManager.cs, SpatialHashGrid.cs, FlowFieldPathfinder.cs [code audit]"
+      },
+      {
+        "status": "warn",
+        "finding": "DifficultySettings defines EnemyHealthMultiplier, EnemyDamageMultiplier, XpMultiplier but no runtime consumer — defined + unit-tested but unused.",
+        "source": "scripts/core/GameManagerState.cs:202-211 [code audit]"
+      },
+      {
+        "status": "bad",
+        "finding": "EnemyMutatorSystem.OnThreatChanged is an empty stub — mutators applied once at spawn, never re-applied as threat rises. Splitting mutator commented out.",
+        "source": "scripts/systems/EnemyMutatorSystem.cs:34-78 [code audit]"
+      }
+    ],
+    "testing": [
+      {
+        "status": "good",
+        "finding": "Both gates run locally: xUnit (345 tests, unfiltered) + Godot headless gate (13/13 PASS). Residual deprecated GetUninitializedObject fixtures exist in 4 suites but pass headlessly.",
+        "source": "AGENTS.md Testing; README.md Testing [Tier 1: project convention]"
+      },
+      {
+        "status": "bad",
+        "finding": "Godot headless gate cannot run in this workspace (mono binary cannot execute C#). Only xUnit is a local gate.",
+        "source": "AGENTS.md Testing note [project doc]"
+      }
+    ],
+    "security": [
+      {
+        "status": "good",
+        "finding": "No secrets, auth, or network code in the codebase — single-player offline game. No external API keys or credentials.",
+        "source": "codebase audit [code audit]"
+      }
+    ],
+    "performance": [
+      {
+        "status": "good",
+        "finding": "ObjectPoolManager pre-allocates 5000 projectiles + 10000 decals at startup (zero runtime instantiation). SpatialHashGrid O(1) spatial queries. Flow-field pathfinding at ~4 Hz on background thread. MAX_SPAWNS_PER_FRAME=20 throttle.",
+        "source": "scripts/core/ObjectPoolManager.cs, SpatialHashGrid.cs, FlowFieldPathfinder.cs, WaveManager.cs:15 [code audit]"
+      }
+    ],
+    "documentation": [
+      {
+        "status": "bad",
+        "finding": "docs/research-findings.mmd and docs/entire-project.mmd are stale: they describe 'NO tutorial', 'NO difficulty selector', '17 of 20 perks are no-ops' — all already fixed in PRs #18/#19 per AGENTS.md.",
+        "source": "docs/research-findings.mmd vs AGENTS.md audit history [project doc]"
+      },
+      {
+        "status": "warn",
+        "finding": "CI has never run (GitHub account locked, issue #23). Local gates mirror CI but Godot gate does not run in this workspace.",
+        "source": "AGENTS.md CI section [project doc]"
+      }
+    ]
   },
   "optimality": {
-    "algorithm": "Weibull wave curve appropriate; SpatialHashGrid O(1); FlowFieldPathfinder on background thread.",
-    "complexity": "Linear spawning capped at 2000 enemies; 20 spawns/frame throttle. No obvious N+1 or quadratic loops.",
-    "resources": "ObjectPoolManager pre-allocates 5000 projectiles + 10000 decals (zero runtime instantiation).",
-    "alternatives": "None needed for core systems.",
-    "scalability": "Holds at current load; 2000-enemy cap provides ceiling."
+    "algorithm": "Weibull intensity curve for wave spawning is appropriate for horde-shooter density ramps (rises from 0, peaks ~wave 5). SpatialHashGrid O(1) queries optimal for collision-heavy arena combat. However Weibull decays after wave 5 — late waves get easier, contradicting 'escalating threat'.",
+    "complexity": "Spawn capped at MAX_ENEMIES=2000 with MAX_SPAWNS_PER_FRAME=20 throttle — O(cap) per frame, bounded. Flow field on background thread at ~4 Hz avoids main-thread stalls.",
+    "resources": "Object pool eliminates runtime GC pressure from projectile/decal instantiation.",
+    "alternatives": [
+      "Replace decaying Weibull late-game with additive per-wave HP/damage multiplier (RoR2/Brotato pattern).",
+      "Replace flat per-perk stats with prerequisite-driven synergies (Hades Duo Boons pattern)."
+    ],
+    "scalability": "2000 enemy cap is a hard backstop; at 10x spawn demand the spawn loop runs zero times once full (WaveFormulas.cs:48-50). Acceptable as safety valve but late-wave intensity plateaus."
   },
+  "agentFiles": [
+    {
+      "type": "docs",
+      "path": "docs/research-findings.mmd",
+      "status": "stale",
+      "notes": "Describes features already fixed (tutorial, difficulty selector, perks) per AGENTS.md PRs #18/#19."
+    },
+    {
+      "type": "docs",
+      "path": "docs/entire-project.mmd",
+      "status": "stale",
+      "notes": "Same stale claims as above."
+    },
+    {
+      "type": "docs",
+      "path": "docs/recommendations.md",
+      "status": "current",
+      "notes": "Cumulative recommendations log, updated this investigation."
+    },
+    {
+      "type": "config",
+      "path": "AGENTS.md",
+      "status": "current",
+      "notes": "Authoritative agent conventions; audit history references PRs #18/#19."
+    }
+  ],
   "externalResearch": [
-    {"strategy":"targeted-docs","query":"Hades God Mode difficulty design Greg Kasavin GDC interview","source":"Inverse interview / caniplaythat.com","tier":2,"finding":"God Mode = player damage resistance 20% start, +2%/death, caps 80%, toggleable anytime, doesn't block achievements/content. Difficulty settings 'may need to be proprietary to the game.'","url":"https://www.inverse.com/gaming/hades-god-mode-interview"},
-    {"strategy":"targeted-docs","query":"Vampire Survivors onboarding first level-up XP wave timing","source":"Vampire Survivors Wiki (community) / Android Police dev interview","tier":3,"finding":"5 XP to level 2 (first level-up ~30-60s); 3-4 level-up options (Galante's sweet spot); learn-by-doing, no tutorial level.","url":"https://vampire.survivors.wiki/w/Level_up"},
-    {"strategy":"targeted-docs","query":"Brotato danger levels difficulty scaling enemy stats spawn","source":"Brotato Wiki (community, mirrors game files)","tier":3,"finding":"Danger scales BOTH enemy HP/damage/speed AND spawn composition (new types, elites, hordes, bosses). Danger 3: +12% dmg/hp; Danger 5: +40%; Nightmare: +60% dmg/hp +10% speed.","url":"https://brotato.fandom.com/wiki/Danger_Levels"},
-    {"strategy":"community-pulse","query":"perk upgrade menu UX forced choice 3 options synergies roguelite","source":"Hades 2 Wiki / VS Wiki / Digital Trends Brotato / kokutech","tier":3,"finding":"Icon + name + explicit effect line; 3 options default; forced choice (skip/reroll gated behind currency); synergies via prerequisite badges not spelled-out optimal builds.","url":"https://vampire.survivors.wiki/w/Level_up"}
+    {
+      "strategy": "pattern-driven",
+      "query": "wave survival horde shooter difficulty curve late game escalation Vampire Survivors RoR2 Brotato",
+      "source": "Arcade Artificer Substack — The Secret Sauce of Vampire Survivors",
+      "tier": 3,
+      "finding": "Trickling stat progression maintains pacing; game's difficulty catches up to maintain pressure; meta-progression keeps gold between runs, eliminates zero-progress runs (~2.5x damage / 2x health cumulative).",
+      "url": "https://jboger.substack.com/p/the-secret-sauce-of-vampire-survivors"
+    },
+    {
+      "strategy": "community-pulse",
+      "query": "reverse difficulty curve bad game design reddit",
+      "source": "Reddit r/gamedesign — The reverse difficulty curve is fundamentally bad game design",
+      "tier": 4,
+      "finding": "Reverse/decaying difficulty curves flagged as bad design.",
+      "url": "https://www.reddit.com/r/gamedesign/comments/s645fz/the_reverse_difficulty_curve_is_fundamentally_bad/"
+    },
+    {
+      "strategy": "pattern-driven",
+      "query": "roguelike item synergy system design build variety",
+      "source": "Bugnet — How to Design a Roguelike Item and Synergy System",
+      "tier": 3,
+      "finding": "Items should meaningfully change runs; synergies combine into exciting emergent power; combinatorial possibilities create vast build variety.",
+      "url": "https://bugnet.io/blog/how-to-design-a-roguelike-item-and-synergy-system"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Vampire Survivors Endless Mode enemy HP scaling formulas",
+      "source": "Vampire Survivors tuning doc (teemo.dev) + rogueranker curse guide",
+      "tier": 2,
+      "finding": "Time-based HP scalar; Curse stacks additively no upper bound; Endless Mode additive per-cycle HP (+1x/cycle), spawn (+0.5x/cycle), damage (+0.25x/cycle) scaling; 2000-ish on-screen cap.",
+      "url": "https://teemo.dev/game-design/vampire-survivors/systems/balancing-levers-and-tuning-matrix/"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Brotato Endless Factor scaling formulas wiki",
+      "source": "Brotato Wiki (spellsandguns) — Endless Mode & Dangers",
+      "tier": 2,
+      "finding": "Endless Factor from Wave 21: Endless_mult = 2.0 + max(0,(wave-35)*0.2); HP scaled by 1+EndlessFactor*2.25; damage by 1+EndlessFactor; i-frames shrink; +1 elite per 10 waves.",
+      "url": "https://brotato.wiki.spellsandguns.com/Endless_Mode"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Risk of Rain 2 Difficulty Coefficient stages time scaling",
+      "source": "Risk of Rain 2 Wiki (wiki.gg) — Difficulty",
+      "tier": 2,
+      "finding": "Difficulty Coefficient governed by stages completed (most impactful), time elapsed, player count, initial difficulty; HUD bar communicates ramp.",
+      "url": "https://riskofrain2.wiki.gg/wiki/Difficulty"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Hades Duo Boons perk synergy pairs list",
+      "source": "TheGamer — Hades Duo Boons List",
+      "tier": 2,
+      "finding": "28 Duo Boons requiring one boon from each of two prerequisite gods; emergent effects (e.g., Sea Storm knockaway + 40 lightning damage); ~12% offer chance; UI signals combo one piece away.",
+      "url": "https://www.thegamer.com/hades-duo-boons-list-how-to-get/"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Vampire Survivors meta progression gold PowerUp shop pricing",
+      "source": "Vampire Survivors wiki of record + rogueranker",
+      "tier": 2,
+      "finding": "Gold kept on death; 19 stackable PowerUp lines capped 1-5 ranks; Price = InitialPrice*(1+Bought) + floor(20*1.1^TotalBought); full respec button; maxing all ranks costs 27,148,513 gold.",
+      "url": "https://rogueranker.com/vampire-survivors-curse/"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Hades Mirror of Night meta progression Darkness Chthonic Keys",
+      "source": "TheGamer — Hades Mirror Of Night Best Upgrades",
+      "tier": 2,
+      "finding": "Darkness earned per run; Mirror of Night skill tree; branches gated by Chthonic Keys (5/10 keys); full respec for 1 key; max achievable ~50 runs.",
+      "url": "https://www.thegamer.com/hades-mirror-of-night-best-upgrades/"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Risk of Rain 2 Survivors 4-skill layout stat growth unlocks",
+      "source": "Risk of Rain 2 Wiki (wiki.gg) — Survivors",
+      "tier": 2,
+      "finding": "Each survivor has 4 active skills (Primary/Secondary/Utility/Special) + alternate loadouts; stat growth per level; classes unlocked via challenges.",
+      "url": "https://riskofrain2.wiki.gg/wiki/Survivors"
+    },
+    {
+      "strategy": "targeted-docs",
+      "query": "Enter the Gungeon Gungeoneers unique starting loadout passive traits",
+      "source": "Enter the Gungeon Wiki (wiki.gg) — Gungeoneers",
+      "tier": 2,
+      "finding": "Each Gungeoneer has unique starting loadout and passive traits shaping run strategy; others unlocked via specific actions/achievements.",
+      "url": "https://enterthegungeon.wiki.gg/wiki/Gungeoneers"
+    }
   ],
   "recommendations": [
     {
-      "priority":"critical",
-      "title":"R3 - Perk Transparency + Practice/Sandbox Mode",
-      "why":"17 of 20 perks are no-ops in UpgradeMenu.ApplyPerk() (silent bug); no safe place to experiment under permadeath.",
-      "what":"Implement all 20 perks with real effects; add PerkDescription() + synergy tags shown as icon+name+one-line effect per perk card (3 options, forced choice); add Sandbox mode (no waves/GameOver, spawn dummies, god mode, try all heroes/perks, reset stats).",
-      "endpoint":"MainMenu.OpenSandbox() -> scenes/maps/Sandbox.tscn + scripts/maps/Sandbox.cs { SpawnDummy(Vector2?), SetGodMode(bool), ApplyPerk(PerkType), ResetHero() }; scripts/ui/UpgradeMenu.cs { PerkDescription(PerkType), ApplyPerk() all 20 perks }",
-      "interactiveControl":"Sandbox toolbar: Spawn Dummy / Toggle God Mode / Apply Perk dropdown / Reset Hero; UpgradeMenu perk cards with icon+name+description+synergy badge",
-      "payload":"PerkMeta[(string Name, string Description, string SynergyTag)] array of 20 entries; DifficultySettings struct (R2) reused by Sandbox god-mode resistance",
-      "effort":"~4-5 days (1 dev)",
-      "gate":"ApplyPerk all-20-perks effect tests (headless xUnit); PerkDescription pure test (headless xUnit)",
-      "sources":"[T2] Android Police VS interview; [T3] VS Wiki Level up/Powerup; [T2] Digital Trends Brotato; [T3] Hades 2 Wiki Boons; [T3] kokutech Hades design"
+      "priority": "high",
+      "title": "R1 — Replace decaying late-game Weibull with sustained/escalating intensity",
+      "why": "Late waves get easier, contradicting the 'escalating threat' mission. Vampire Survivors keeps pressure via time-based HP scalars that make difficulty catch up (Tier 3: Arcade Artificer). RoR2 scales difficulty coefficient with stages/time (Tier 2). Brotato's Endless Factor adds multiplicative HP/damage escalation past wave 20 (Tier 2: Brotato Wiki).",
+      "what": "Add a per-wave HP/damage multiplier that scales with wave number (e.g., +1x base HP per boss cycle, additive not compounding). Keep the 2000 enemy cap as hard backstop. Add an optional 'Curse'-style toggle trading enemy HP/speed/density for gold/XP. Expose a visible threat-level meter driven by waves cleared (RoR2 HUD bar pattern).",
+      "endpoint": "Modify scripts/core/WaveFormulas.cs (CalculateWaveEnemyCount) and scripts/core/WaveManager.cs (BeginNextWave spawner); add threat-meter UI to scripts/ui/HUD.cs.",
+      "interactiveControl": "Difficulty toggle 'Curse mode' in MainMenu difficulty selector; threat-level progress bar on HUD.",
+      "effort": "2-3 days",
+      "source": "scripts/core/WaveFormulas.cs:26-51; Arcade Artificer Substack (Tier 3); RoR2 Difficulty (Tier 2); Brotato Wiki Endless Mode (Tier 2)"
     },
     {
-      "priority":"high",
-      "title":"R1 - Guided 'First Wave' Onboarding Mode",
-      "why":"New players receive no instruction; Wave 1 spawns mixed enemies at full speed; no GameState.Tutorial.",
-      "what":"Start directly in Wave 1 (no tutorial level - Hades/Vs philosophy); Wave 1 is soft (1-3 slow Drones one at a time); teach 3 verbs (move/dodge, attack, collect XP) in first 60s; auto-pause at first level-up (~5 XP); on-screen control prompts; 3-perk forced-choice UpgradeMenu.",
-      "endpoint":"MainMenu.StartTutorial() -> PendingTutorial flag -> GameManager.StartTutorial() -> GameState.Tutorial; scripts/ui/Tutorial.cs { enum Step{Move,Attack,Dodge,Ability,LevelUp,Done}, SpawnNextDrone(), ShowPrompt(Step), MarkStepDone(Step) }; scenes/ui/Tutorial.tscn",
-      "interactiveControl":"Center-screen gold prompt label (font_size 30, outline); progress dots 'Step X of 5'; forced-choice perk modal on first level-up",
-      "effort":"~3-4 days (1 dev)",
-      "gate":"New GameState.Tutorial; tutorial-complete flag unlocks Normal mode in save data",
-      "sources":"[T1] GDC/Hades Kasavin interview; [T2] Android Police VS interview; [T2] Superjump Brotato; [T3] VS Wiki Level up"
+      "priority": "high",
+      "title": "R2 — Implement real perk synergy combos (prerequisite-driven emergent effects)",
+      "why": "Perks carry SynergyTag but no synergy mechanics; nine effects are declared but unconsumed. Hades' 28 Duo Boons show prerequisite-driven perk pairs create emergent power and thrilling discoveries (Tier 2: TheGamer). Vampire Survivors' weapon evolutions (max level + passive prereq) are a discrete synergy lever (Tier 2: teemo.dev).",
+      "what": "Add 4-6 two-perk synergy triggers with emergent results (e.g., FrostAura + SlowOnHit → brief freeze; BurnOnHit + ExplosiveRounds → exploding burning-corpse chain). Gate each emergent perk behind two base perks already taken. Show synergy hints on perk cards when one perk away from unlocking. Consume the nine dead effects (HealthRegen regen tick, ExplosiveRounds projectile flag, LifeSteal heal-on-kill, CritChance roll, SlowOnHit/BurnOnHit/FrostAura/ThornArmor/DoubleJump consumers).",
+      "endpoint": "Extend scripts/core/PerkSystem.cs ApplyPerk with a synergy table; add synergy hints to scripts/ui/UpgradeMenu.cs perk cards; wire consumers in hero attack/dodge/take-damage paths (HeroBase.cs, Atlas.cs, Zephyr.cs, Synapse.cs, Volt.cs).",
+      "interactiveControl": "Perk-card synergy badges/hints in UpgradeMenu; 'evolution' perk flagged in offer pool when prerequisites met.",
+      "effort": "4-5 days",
+      "source": "scripts/core/PerkSystem.cs:13-87; scripts/core/HeroStats.cs:10-29; Hades Duo Boons (Tier 2); Vampire Survivors weapon evolutions (Tier 2)"
     },
     {
-      "priority":"high",
-      "title":"R2 - Difficulty Selector (Easy / Normal / Hard)",
-      "why":"Single fixed Weibull + karma + mutator curve punishes novices; destroying environment raises threat.",
-      "what":"Difficulty enum in GameManagerState persisted to save; two orthogonal levers: spawn/density curve (Weibull multiplier) AND per-enemy stats (HP/damage) + threat interval + mutator scale + XP multiplier + breather seconds; optional Hades-style player damage-resistance toggle (20%->80% cap) that doesn't block progression.",
-      "endpoint":"GameManagerState.SetDifficulty(Difficulty) + GetSettings(Difficulty) -> DifficultySettings{EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier, ThreatInterval, MutatorScale, XpMultiplier, BreatherSeconds, PlayerDamageResistance}; WaveManager.BeginNextWave() reads GameManager.Instance.DifficultySettings; EnemyMutatorSystem.ApplyMutators(enemy, threatLevel, mutatorScale)",
-      "interactiveControl":"MainMenu difficulty buttons Easy/Normal/Hard with visual highlight on selected; optional God Mode resistance toggle",
-      "payload":"DifficultySettings { float EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier; int ThreatInterval; float MutatorScale, XpMultiplier, BreatherSeconds, PlayerDamageResistance }",
-      "effort":"~2-3 days (1 dev)",
-      "gate":"GetSettings() pure -> headless xUnit; WaveFormulas.CalculateWaveEnemyCount(wave, active, multiplier) headless xUnit",
-      "sources":"[T2] Inverse Hades God Mode interview; [T2] Access-Ability Hades analysis; [T3-4] Brotato Wiki Danger Levels; [T4] VS Nexus curse"
+      "priority": "medium",
+      "title": "R3 — Add meta-progression between runs (gold kept on death, permanent stat shop)",
+      "why": "No meta-progression means every run starts from zero — 'zero progress' runs. Vampire Survivors' meta-progression (gold kept on death, escalating stat shop at 1.1^TotalBought pricing, full respec) eliminates this and drives immediate retries (~2.5x damage / 2x health cumulative; Tier 3: Arcade Artificer). Hades Mirror of Night shows Darkness + Chthonic Keys gating with refundable unlocks, max achievable in ~50 runs (Tier 2: TheGamer).",
+      "what": "Award run currency (scrap) based on kills/destruction/wave reached, kept after death. Spend in a main-menu permanent node tree for starting-stat bonuses (+max health, +move speed, +starting damage) and hero unlocks. Add slow tiny-stat 'egg' track for long-term accumulation. Include full-respec button.",
+      "endpoint": "New scripts/core/MetaProgressionState.cs (Godot-free, headless-testable) + scripts/ui/MainMenu.cs meta-progression screen; save to user://meta.cfg via ConfigFile (mirroring MenuDifficultyState pattern).",
+      "interactiveControl": "Meta-progression node tree in MainMenu; scrap currency display on HUD/run-end screen; respec button.",
+      "effort": "5-6 days",
+      "source": "Arcade Artificer Substack (Tier 3); Vampire Survivors PowerUp shop (Tier 2); Hades Mirror of Night (Tier 2); scripts/core/MenuDifficultyState.cs (existing pattern)"
+    },
+    {
+      "priority": "medium",
+      "title": "R4 — Re-apply mutators as threat rises (EnemyMutatorSystem.OnThreatChanged)",
+      "why": "Mutators applied once at spawn only; rising threat never re-mutates live enemies. OnThreatChanged is an empty stub. Splitting mutator commented out. Wastes the threat system's escalation potential.",
+      "what": "Implement OnThreatChanged to re-apply stacking mutators to live enemies as threat increases (capped per-mutator to avoid runaway). Un-comment and implement the splitting mutator as a high-threat elite wave mechanic (Brotato: +1 elite per 10 waves).",
+      "endpoint": "Implement scripts/systems/EnemyMutatorSystem.cs OnThreatChanged(int) + ApplySingleMutator extension for live enemies; add splitting mutator.",
+      "interactiveControl": "Threat-level-driven mutator intensity visible on HUD threat meter.",
+      "effort": "2-3 days",
+      "source": "scripts/systems/EnemyMutatorSystem.cs:34-78; Brotato Danger Levels (Tier 2)"
+    },
+    {
+      "priority": "low",
+      "title": "R5 — Refresh stale docs (research-findings.mmd, entire-project.mmd)",
+      "why": "Docs describe features already fixed (tutorial R1, difficulty R2, perk transparency R3, all 20 perks working). Stale docs mislead contributors and contradict AGENTS.md audit history (PRs #18/#19).",
+      "what": "Update docs/research-findings.mmd and docs/entire-project.mmd to reflect current state: tutorial exists, difficulty selector exists, all 20 perks have real effects, sandbox mode exists, Godot gate passes 13/13.",
+      "endpoint": "Edit docs/research-findings.mmd and docs/entire-project.mmd.",
+      "interactiveControl": "None (documentation only).",
+      "effort": "0.5 day",
+      "source": "AGENTS.md audit history; README.md Features; docs/research-findings.mmd (stale)"
     }
   ],
   "diagrams": {
@@ -80,17 +303,5 @@
     "frontend": "docs/frontend-architecture.mmd",
     "research": "docs/research-findings.mmd",
     "entire": "docs/entire-project.mmd"
-  },
-  "deliverables": [
-    "docs/surgical-investigation-report.html",
-    "docs/surgical-investigation-report.json",
-    "docs/surgical-investigation-report.md",
-    "docs/surgical-investigation-report.sarif",
-    "docs/backend-architecture.mmd",
-    "docs/frontend-architecture.mmd",
-    "docs/research-findings.mmd",
-    "docs/entire-project.mmd",
-    "docs/investigation-notes/2026-10-17-novice-onboarding.md",
-    "docs/recommendations.md"
-  ]
+  }
 }

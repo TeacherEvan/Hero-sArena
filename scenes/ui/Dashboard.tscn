@@ -1,0 +1,76 @@
+[gd_scene load_steps=12 format=3 uid="uid://dashboard"]
+
+[ext_resource type="Script" path="res://scripts/ui/Dashboard.cs" id="1"]
+
+[node name="Dashboard" type="Control" node_paths=PackedStringArray("ScoreLabel", "KillsLabel", "WavesLabel", "DifficultyLabel", "PlayTimeLabel", "LifetimeKillsLabel", "LifetimeScoreLabel", "LifetimeWavesLabel", "LifetimePlayTimeLabel", "BackButton")]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+ScoreLabel = NodePath("Container/SessionCard/ScoreLabel")
+KillsLabel = NodePath("Container/SessionCard/KillsLabel")
+WavesLabel = NodePath("Container/SessionCard/WavesLabel")
+DifficultyLabel = NodePath("Container/SessionCard/DifficultyLabel")
+PlayTimeLabel = NodePath("Container/SessionCard/PlayTimeLabel")
+LifetimeKillsLabel = NodePath("Container/LifetimeCard/LifetimeKillsLabel")
+LifetimeScoreLabel = NodePath("Container/LifetimeCard/LifetimeScoreLabel")
+LifetimeWavesLabel = NodePath("Container/LifetimeCard/LifetimeWavesLabel")
+LifetimePlayTimeLabel = NodePath("Container/LifetimeCard/LifetimePlayTimeLabel")
+BackButton = NodePath("Container/BackButton")
+
+[node name="Background" type="ColorRect" parent="."]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+color = Color(0.043, 0.051, 0.078, 0.95)
+
+[node name="Container" type="VBoxContainer" parent="."]
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -360.0
+offset_top = -300.0
+offset_right = 360.0
+offset_bottom = 300.0
+alignment = 1
+custom_constants/separation = 20
+
+[node name="TitleLabel" type="Label" parent="Container"]
+text = "DASHBOARD"
+
+[node name="SectionSession" type="Label" parent="Container"]
+text = "Current Run"
+
+[node name="SessionCard" type="VBoxContainer" parent="Container"]
+custom_constants/separation = 8
+[node name="ScoreLabel" type="Label" parent="Container/SessionCard"]
+text = "Score: 0"
+[node name="KillsLabel" type="Label" parent="Container/SessionCard"]
+text = "Kills: 0"
+[node name="WavesLabel" type="Label" parent="Container/SessionCard"]
+text = "Waves Survived: 0"
+[node name="DifficultyLabel" type="Label" parent="Container/SessionCard"]
+text = "Difficulty: Normal"
+[node name="PlayTimeLabel" type="Label" parent="Container/SessionCard"]
+text = "Play Time: 0m 0s"
+
+[node name="SectionLifetime" type="Label" parent="Container"]
+text = "Lifetime"
+
+[node name="LifetimeCard" type="VBoxContainer" parent="Container"]
+custom_constants/separation = 8
+[node name="LifetimeKillsLabel" type="Label" parent="Container/LifetimeCard"]
+text = "Lifetime Kills: 0"
+[node name="LifetimeScoreLabel" type="Label" parent="Container/LifetimeCard"]
+text = "Lifetime Score: 0"
+[node name="LifetimeWavesLabel" type="Label" parent="Container/LifetimeCard"]
+text = "Lifetime Waves: 0"
+[node name="LifetimePlayTimeLabel" type="Label" parent="Container/LifetimeCard"]
+text = "Lifetime Play Time: 0m 0s"
+
+[node name="BackButton" type="Button" parent="Container"]
+text = "Back"
+custom_minimum_size = Vector2(140, 0)

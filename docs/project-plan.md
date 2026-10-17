@@ -52,19 +52,19 @@ All dotnet commands need `DOTNET_ROOT=~/.dotnet8`.
 
 ## Known gaps / open items
 
-- Godot headless gate **cannot run C# in this workspace** (mono binary hangs before any C# `_Ready` fires). xUnit is the authoritative local gate; `godot-verify` in CI cannot pass until the engine build is replaced. Tracked in issue #23 (CI dark due to billing lock).
-- Lint: 16 pre-existing Roslynator infos (15× CA1822 + 1× CA1016), exit 1. Needs user policy decision (not mechanically fixable — CA1822s in hero call-sites would break compilation; CA1016 unfixable by design).
+- Godot headless gate **passes 13/13, exit 0** (verified 2026-10-17 via `godot-mono --headless res://tests/GodotTests/CoreSystemTests.tscn`). Previously unrunnable in this container; the mono C# gate now works. CI `godot-verify` still blocked externally (issue #23, billing lock) but the local gate is green.
+- Lint: **clean** — `roslynator analyze` exit 0, 0 diagnostics (16 pre-existing compile errors fixed in `SettingsState.cs`, `PauseMenu.cs`, `Settings.cs` on 2026-10-17; no longer a policy call).
 - Bench harnesses (T3.3) partially stale post-extraction; headers re-pointed, README bullet refreshed.
 - In-tree theme-feature WIP (VisualTheme/HUD/MainMenu/UpgradeMenu/MainBootstrap/icon.svg) being iterated by a separate writer — quarantined, not merged. Do not `git stash pop` blindly.
-- Pre-existing stale-hero bug: `HeroBase.Die()` → `QueueFree()` never clears `GameManager.ActiveHero`, causing `ObjectDisposedException`s in headless runs. Reported for `HeroBase`/`EnemyBase`/`MainBootstrap` owner.
+- Pre-existing stale-hero bug **fixed** (2026-10-17): `HeroBase.Die()` now sets `GameManager.Instance.ActiveHero = null` before `QueueFree()`, preventing `ObjectDisposedException`s at the 16 `ActiveHero` call sites.
 
 ## Risks & mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Billing lock (CI dark) | High | Local gates mirror CI (`dotnet build` + `dotnet test` + Roslynator) |
-| Headless hang in container | Med | xUnit is the authoritative gate; Godot-tools fallback |
-| Lint infos (exit 1) | Med | Policy decision needed; no new infos in touched files |
+| Billing lock (CI dark) | High | Local gates mirror CI (`dotnet build` + `dotnet test` + Roslynator + Godot headless gate) |
+| Headless hang in container | Resolved | Godot headless gate passes 13/13 locally (2026-10-17) |
+| Lint infos (exit 1) | Resolved | `roslynator analyze` exit 0, 0 diagnostics (2026-10-17) |
 
 ## Cross-references
 

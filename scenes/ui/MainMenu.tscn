@@ -3,10 +3,12 @@
 [ext_resource type="Script" path="res://scripts/ui/MainMenu.cs" id="1"]
 [ext_resource type="PackedScene" path="res://scenes/Main.tscn" id="2"]
 [ext_resource type="PackedScene" path="res://scenes/maps/Sandbox.tscn" id="3"]
+[ext_resource type="PackedScene" path="res://scenes/ui/Settings.tscn" id="4"]
+[ext_resource type="PackedScene" path="res://scenes/ui/Dashboard.tscn" id="5"]
 
 [sub_resource type="ButtonGroup" id="ButtonGroup_difficulty"]
 
-[node name="MainMenu" type="Control" node_paths=PackedStringArray("AtlasButton", "ZephyrButton", "SynapseButton", "VoltButton", "StartButton", "OptionsButton", "QuitButton", "SandboxButton", "TutorialButton", "HeroDescLabel", "EasyButton", "NormalButton", "HardButton", "DifficultyLabel")]
+[node name="MainMenu" type="Control" node_paths=PackedStringArray("AtlasButton", "ZephyrButton", "SynapseButton", "VoltButton", "IgnisButton", "ToxisButton", "HavocButton", "StartButton", "OptionsButton", "DashboardButton", "QuitButton", "SandboxButton", "TutorialButton", "HeroDescLabel", "EasyButton", "NormalButton", "HardButton", "DifficultyLabel")]
 anchor_right = 1.0
 anchor_bottom = 1.0
 script = ExtResource("1")
@@ -14,13 +16,19 @@ AtlasButton = NodePath("VBoxContainer/AtlasButton")
 ZephyrButton = NodePath("VBoxContainer/ZephyrButton")
 SynapseButton = NodePath("VBoxContainer/SynapseButton")
 VoltButton = NodePath("VBoxContainer/VoltButton")
+IgnisButton = NodePath("VBoxContainer/IgnisButton")
+ToxisButton = NodePath("VBoxContainer/ToxisButton")
+HavocButton = NodePath("VBoxContainer/HavocButton")
 StartButton = NodePath("VBoxContainer/StartButton")
 OptionsButton = NodePath("VBoxContainer/OptionsButton")
+DashboardButton = NodePath("VBoxContainer/DashboardButton")
 QuitButton = NodePath("VBoxContainer/QuitButton")
 HeroDescLabel = NodePath("VBoxContainer/HeroDescLabel")
 GameScene = ExtResource("2")
 SandboxButton = NodePath("VBoxContainer/SandboxButton")
 SandboxScene = ExtResource("3")
+SettingsScene = ExtResource("4")
+DashboardScene = ExtResource("5")
 TutorialButton = NodePath("VBoxContainer/TutorialButton")
 EasyButton = NodePath("VBoxContainer/DifficultyRow/EasyButton")
 NormalButton = NodePath("VBoxContainer/DifficultyRow/NormalButton")
@@ -33,9 +41,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -250.0
+offset_top = -290.0
 offset_right = 200.0
-offset_bottom = 250.0
+offset_bottom = 290.0
 
 [node name="Title" type="Label" parent="VBoxContainer"]
 text = "Hero's Arena"
@@ -56,6 +64,15 @@ text = "Synapse (Intelligence)"
 [node name="VoltButton" type="Button" parent="VBoxContainer"]
 text = "Volt (Speed)"
 
+[node name="IgnisButton" type="Button" parent="VBoxContainer"]
+text = "Ignis (Fire)"
+
+[node name="ToxisButton" type="Button" parent="VBoxContainer"]
+text = "Toxis (Acid)"
+
+[node name="HavocButton" type="Button" parent="VBoxContainer"]
+text = "Havoc (Explosive)"
+
 [node name="StartButton" type="Button" parent="VBoxContainer"]
 text = "Start Game"
 
@@ -70,6 +87,9 @@ text = "Sandbox / Practice"
 
 [node name="TutorialButton" type="Button" parent="VBoxContainer"]
 text = "Tutorial / First Wave"
+
+[node name="DashboardButton" type="Button" parent="VBoxContainer"]
+text = "Dashboard"
 
 [node name="DifficultyRow" type="HBoxContainer" parent="VBoxContainer"]
 

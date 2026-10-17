@@ -1,31 +1,33 @@
 flowchart TD
     subgraph Core["Core Systems (scripts/core/)"]
-        GM[GameManager<br/>Autoload - state, score, wave]
-        GMS[GameManagerState<br/>Pure: state machine, score/threat math]
-        WM[WaveManager<br/>Weibull spawning, 2000 cap, boss timer]
-        WF[WaveFormulas<br/>Pure: Weibull intensity + enemy count]
-        LP[LevelProgression<br/>XP, damage, karma, perk offers]
-        PF[ProgressionFormulas<br/>Pure: damage/XP/perk math]
+        GM[GameManager<br/>Autoload: state, score, wave, threat]
+        GMS[GameManagerState<br/>HEADLESS: state machine, score/threat math]
+        WM[WaveManager<br/>GODOT-NODE: Weibull spawning, 2000 cap, boss timer]
+        WF[WaveFormulas<br/>HEADLESS: Weibull intensity + enemy count]
+        LP[LevelProgression<br/>HYBRID: XP, damage, karma, perk offers]
+        PF[ProgressionFormulas<br/>HEADLESS: damage/XP/perk math]
         EB[EventBus<br/>Decoupled event hub]
         OPM[ObjectPoolManager<br/>5000 projectiles + 10000 decals pre-allocated]
-        SHG[SpatialHashGrid<br/>O(1) spatial queries]
-        FF[FlowFieldPathfinder<br/>128x128 flow field, bg thread]
-        CK[CollateralKarma<br/>Destruction count -> threat]
-        DT[DestructionTracker<br/>Pure: destruction counting]
-        EMS[EnemyMutatorSystem<br/>Stacking enemy mutators by threat]
-        IB[InputBuffer / InputBufferState<br/>6-frame action buffer]
+        SHG[SpatialHashGrid<br/>HEADLESS: O(1) spatial queries]
+        FF[FlowFieldPathfinder<br/>HEADLESS: 128x128 flow field, bg thread]
+        CK[CollateralKarma<br/>HYBRID: destruction count -> threat]
+        DT[DestructionTracker<br/>HEADLESS: destruction counting]
+        EMS[EnemyMutatorSystem<br/>HYBRID: stacking enemy mutators by threat]
+        IB[InputBuffer / InputBufferState<br/>HEADLESS: 6-frame action buffer]
+        PS[PerkSystem<br/>HEADLESS: all 20 perks, names/descriptions/tags]
+        HS[HeroStats<br/>HEADLESS: stat container]
     end
 
     subgraph Heroes["Heroes (scripts/heroes/)"]
-        HB[HeroBase<br/>move, dodge, i-frames, leveling]
-        AT[Atlas - Strength]
-        ZE[Zephyr - Agility]
-        SY[Synapse - Intelligence]
-        VO[Volt - Speed]
+        HB[HeroBase<br/>GODOT-NODE: move, dodge, i-frames, leveling]
+        AT[Atlas - Strength<br/>Slam, Tectonic Plating]
+        ZE[Zephyr - Agility<br/>Plasma Blades, Hyper Dash]
+        SY[Synapse - Intelligence<br/>Chain Laser, Overclock mind control]
+        VO[Volt - Speed<br/>Arc Lightning, Static Field]
     end
 
     subgraph Enemies["Enemies (scripts/enemies/)"]
-        EN[EnemyBase<br/>AI at 10Hz, flow field, spatial grid]
+        EN[EnemyBase<br/>GODOT-NODE: AI at 10Hz, flow field, spatial grid]
         BR[Brute]
         SP[Sprinter]
         AR[Artillery]
@@ -34,7 +36,7 @@ flowchart TD
         EX[Exploder]
         BU[Burrower]
         PA[Parasite]
-        AP[Apex - boss]
+        AP[Apex - boss 3-phase]
     end
 
     subgraph VFX["VFX (scripts/vfx/)"]
@@ -42,6 +44,12 @@ flowchart TD
         SS[ScreenShake]
         HS[HitStop]
         DS[DecalSystem / DecalInstance]
+    end
+
+    subgraph UI["UI (scripts/ui/)"]
+        MM[MainMenu<br/>hero select, start, difficulty]
+        HUD[HUD<br/>health/XP/wave/score/threat/level]
+        UM[UpgradeMenu<br/>3 random perks, pauses game]
     end
 
     GM --> GMS
@@ -54,10 +62,13 @@ flowchart TD
     CK --> DT
     HB --> AT & ZE & SY & VO
     EN --> BR & SP & AR & SH & HE & EX & BU & PA & AP
-    GM -.-> SHG & FF & OPM & CK & IB
+    GM -.-> SHG & FF & OPM & CK & IB & PS & HS
     EB -.-> HF & SS & HS & DS
+    MM -.-> UM & HUD
+    UM -->|PerkSystem.ApplyPerk| HS
 
     style Core fill:#131620,stroke:#e3c76a,color:#fff
     style Heroes fill:#1f2433,stroke:#38bdf8,color:#fff
     style Enemies fill:#1f2433,stroke:#ef4444,color:#fff
     style VFX fill:#1f2433,stroke:#c084fc,color:#fff
+    style UI fill:#1f2433,stroke:#f0883e,color:#fff

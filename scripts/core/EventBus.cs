@@ -35,6 +35,9 @@ namespace HeroArena
         public event Action<Vector2, DamageType>? OnProjectileHit;
         public event Action<Vector2, DecalType, float>? OnDecalRequested;
 
+        // ── Game Over ─────────────────────────────────────────────────────────
+        public event Action? OnGameOver;
+
         // ── Wave warning ──────────────────────────────────────────────────────
         // Emitted during the inter-wave breather so the HUD can show a
         // "Wave N incoming" banner before enemies spawn. isBoss flags a boss
@@ -65,5 +68,6 @@ namespace HeroArena
         public void EmitProjectileHit(Vector2 pos, DamageType type) => OnProjectileHit?.Invoke(pos, type);
         public void EmitDecalRequested(Vector2 pos, DecalType type, float size) => OnDecalRequested?.Invoke(pos, type, size);
         public void EmitWaveIncoming(int wave, bool isBoss) => OnWaveIncoming?.Invoke(wave, isBoss);
+        public void EmitGameOver() => OnGameOver?.Invoke();
     }
 }

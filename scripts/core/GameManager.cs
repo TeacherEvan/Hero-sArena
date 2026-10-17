@@ -132,6 +132,7 @@ namespace HeroArena
         public void TriggerGameOver()
         {
             _state.SetState(GameState.GameOver);
+            EventBus.Instance.EmitGameOver();
         }
 
         public void AddScore(long points)

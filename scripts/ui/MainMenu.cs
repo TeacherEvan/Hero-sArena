@@ -10,6 +10,9 @@ namespace HeroArena
         [Export] public Button ZephyrButton { get; set; } = null!;
         [Export] public Button SynapseButton { get; set; } = null!;
         [Export] public Button VoltButton { get; set; } = null!;
+        [Export] public Button IgnisButton { get; set; } = null!;
+        [Export] public Button ToxisButton { get; set; } = null!;
+        [Export] public Button HavocButton { get; set; } = null!;
         [Export] public Button StartButton { get; set; } = null!;
         [Export] public Button OptionsButton { get; set; } = null!;
         [Export] public Button QuitButton { get; set; } = null!;
@@ -22,10 +25,15 @@ namespace HeroArena
         [Export] public Button NormalButton { get; set; } = null!;
         [Export] public Button HardButton { get; set; } = null!;
         [Export] public Label DifficultyLabel { get; set; } = null!;
+        [Export] public Button DashboardButton { get; set; } = null!;
+        [Export] public PackedScene SettingsScene { get; set; } = null!;
+        [Export] public PackedScene DashboardScene { get; set; } = null!;
 
         private HeroClass _selectedHero = HeroClass.Atlas;
         private Difficulty _difficulty = Difficulty.Normal;
         private const string SettingsPath = "user://settings.cfg";
+        private Settings? _settingsOverlay;
+        private Dashboard? _dashboardOverlay;
 
         public override void _Ready()
         {
@@ -33,9 +41,13 @@ namespace HeroArena
             ZephyrButton.Pressed += () => SelectHero(HeroClass.Zephyr);
             SynapseButton.Pressed += () => SelectHero(HeroClass.Synapse);
             VoltButton.Pressed += () => SelectHero(HeroClass.Volt);
+            IgnisButton.Pressed += () => SelectHero(HeroClass.Ignis);
+            ToxisButton.Pressed += () => SelectHero(HeroClass.Toxis);
+            HavocButton.Pressed += () => SelectHero(HeroClass.Havoc);
             StartButton.Pressed += StartGame;
             TutorialButton.Pressed += StartTutorial;
-            OptionsButton.Pressed += OpenOptions;
+            OptionsButton.Pressed += OpenSettings;
+            DashboardButton.Pressed += OpenDashboard;
             SandboxButton.Pressed += OpenSandbox;
             QuitButton.Pressed += () => GetTree().Quit();
 
@@ -56,6 +68,9 @@ namespace HeroArena
                 HeroClass.Zephyr => "Zephyr – Agility\nPlasma Blades: piercing projectiles\nUnique: Hyper-Dash (0.3× enemy time, 300% speed)",
                 HeroClass.Synapse => "Synapse – Intelligence\nNeural Lasers: chaining beams (5 targets)\nUnique: Overclock (mind-control 50 enemies)",
                 HeroClass.Volt => "Volt – Speed\nArc Lightning: forks to 8 enemies\nUnique: Static Field (EMP zone, stun 3s)",
+                HeroClass.Ignis => "Ignis – Pyromancer\nFlame Stream: rapid fire streams\nUnique: Inferno Nova (360° thermal shockwave)",
+                HeroClass.Toxis => "Toxis – Alchemist\nAcid Lob: corrosive piercing canisters\nUnique: Caustic Eruption (12-way burst + chemical field)",
+                HeroClass.Havoc => "Havoc – Demolitionist\nCluster Rocket: high-impact explosive ordnance\nUnique: Orbital Barrage (heavy artillery strike)",
                 _ => ""
             };
         }
@@ -138,9 +153,42 @@ namespace HeroArena
             }
         }
 
-        private void OpenOptions()
+        private void OpenSettings()
         {
-            // Options menu stub
+            if (SettingsScene == null) return;
+            _settingsOverlay = SettingsScene.Instantiate<Settings>();
+            _settingsOverlay.OnBack += CloseSettings;
+            AddChild(_settingsOverlay);
+            _settingsOverlay.Open();
+        }
+
+        private void CloseSettings()
+        {
+            if (_settingsOverlay != null)
+            {
+                RemoveChild(_settingsOverlay);
+                _settingsOverlay.QueueFree();
+                _settingsOverlay = null;
+            }
+        }
+
+        private void OpenDashboard()
+        {
+            if (DashboardScene == null) return;
+            _dashboardOverlay = DashboardScene.Instantiate<Dashboard>();
+            _dashboardOverlay.OnBack += CloseDashboard;
+            AddChild(_dashboardOverlay);
+            _dashboardOverlay.Open();
+        }
+
+        private void CloseDashboard()
+        {
+            if (_dashboardOverlay != null)
+            {
+                RemoveChild(_dashboardOverlay);
+                _dashboardOverlay.QueueFree();
+                _dashboardOverlay = null;
+            }
         }
 
         private void OpenSandbox()

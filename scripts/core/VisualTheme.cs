@@ -1,4 +1,5 @@
 using Godot;
+using System;
 
 namespace HeroArena
 {
@@ -74,12 +75,93 @@ namespace HeroArena
             button.AddThemeColorOverride("font_color_disabled", TextMuted);
         }
 
+        /// <summary>Primary CTA button: gold base, dark text.</summary>
+        public static void StyleButtonPrimary(Button button)
+        {
+            button.AddThemeStyleboxOverride("normal", PanelStyle(Gold, Border));
+            button.AddThemeStyleboxOverride("hover", PanelStyle(Gold, Border));
+            button.AddThemeStyleboxOverride("pressed", PanelStyle(GoldDim, Gold));
+            button.AddThemeStyleboxOverride("disabled", PanelStyle(Panel, TextMuted));
+            button.AddThemeColorOverride("font_color", Background);
+            button.AddThemeColorOverride("font_color_hover", Background);
+            button.AddThemeColorOverride("font_color_pressed", Text);
+            button.AddThemeColorOverride("font_color_disabled", TextMuted);
+        }
+
+        /// <summary>Danger button: red-tinted base.</summary>
+        public static void StyleButtonDanger(Button button)
+        {
+            var danger = new Color(0.6f, 0.2f, 0.2f, 1f);
+            var dangerHover = new Color(0.8f, 0.3f, 0.3f, 1f);
+            button.AddThemeStyleboxOverride("normal", PanelStyle(danger, Border));
+            button.AddThemeStyleboxOverride("hover", PanelStyle(dangerHover, Gold));
+            button.AddThemeStyleboxOverride("pressed", PanelStyle(danger, Gold));
+            button.AddThemeStyleboxOverride("disabled", PanelStyle(Panel, TextMuted));
+            button.AddThemeColorOverride("font_color", Text);
+            button.AddThemeColorOverride("font_color_hover", Text);
+            button.AddThemeColorOverride("font_color_pressed", Background);
+            button.AddThemeColorOverride("font_color_disabled", TextMuted);
+        }
+
         /// <summary>ProgressBar: dark track, godlike fill.</summary>
         public static void StyleProgressBar(ProgressBar bar, Color? fill = null)
         {
             bar.AddThemeStyleboxOverride("bg", PanelStyle(Panel, Border));
             bar.AddThemeStyleboxOverride("fill", PanelStyle(fill ?? Gold, Border));
             bar.AddThemeColorOverride("font_color", Text);
+        }
+
+        /// <summary>Section header: gold, small-caps feel, letter-spaced.</summary>
+        public static void StyleSectionHeader(Label label)
+        {
+            label.AddThemeColorOverride("font_color", Gold);
+            label.AddThemeFontSizeOverride("font_size", 14);
+            label.CustomMinimumSize = new Vector2(0, 24);
+        }
+
+        /// <summary>Stat card value: large cyan/gold number.</summary>
+        public static void StyleStatValue(Label label, Color? color = null)
+        {
+            label.AddThemeColorOverride("font_color", color ?? Cyan);
+            label.AddThemeFontSizeOverride("font_size", 28);
+        }
+
+        /// <summary>Stat card label: muted small text.</summary>
+        public static void StyleStatLabel(Label label)
+        {
+            label.AddThemeColorOverride("font_color", TextMuted);
+            label.AddThemeFontSizeOverride("font_size", 12);
+        }
+
+        /// <summary>Volume/slider row value label.</summary>
+        public static void StyleSliderValue(Label label)
+        {
+            label.AddThemeColorOverride("font_color", Text);
+            label.AddThemeFontSizeOverride("font_size", 14);
+            label.CustomMinimumSize = new Vector2(40, 0);
+            label.HorizontalAlignment = HorizontalAlignment.Right;
+        }
+
+        /// <summary>Apply panel styling to a stat card container.</summary>
+        public static void StyleStatCard(Control card)
+        {
+            card.AddThemeStyleboxOverride("panel", PanelStyle(PanelHighlight, Border));
+        }
+
+        /// <summary>Fade a CanvasLayer/Control alpha via tween, then optionally hide.</summary>
+        public static void Fade(CanvasLayer layer, float fromAlpha, float toAlpha, float duration,
+            Action? onComplete = null, bool hideWhenDone = false)
+        {
+            // Alpha is applied as a self-modulate on the topmost color rect child.
+            var bg = layer.GetNodeOrNull<ColorRect>("Background");
+            if (bg == null) return;
+
+            var tween = layer.CreateTween();
+            tween.TweenProperty(bg, "color:a", toAlpha, duration);
+            if (onComplete != null)
+                tween.TweenCallback(Callable.From(onComplete));
+            if (hideWhenDone)
+                tween.TweenCallback(Callable.From(() => layer.Visible = false));
         }
     }
 }
