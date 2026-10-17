@@ -8,6 +8,8 @@
 # C# / .NET
 bin/
 obj/
+*.sln
+*.slnx
 .vs/
 *.user
 *.suo

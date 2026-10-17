@@ -5,7 +5,7 @@
 # One window, basic settings, then "Play HeroArena" on your desktop icon.
 #
 # What it does:
-#   * Copies the pre-built Linux game (HeroArena.x86_64 + .pck) to an
+#   * Copies the pre-built Linux game (HeroArena.x86_64 + .pck + .NET assemblies) to an
 #     install location you choose.
 #   * Makes the binary executable.
 #   * Generates a "Play HeroArena" desktop icon + applications-menu entry.
@@ -14,6 +14,7 @@
 # Requirements:
 #   * zenity            (GUI dialogs) — present on this machine
 #   * build/linux/HeroArena.x86_64  +  build/linux/HeroArena.pck
+#   * build/linux/data_Hero-sArena_linuxbsd_x86_64  (.NET assemblies)
 #   * icon.svg          (window icon, copied into the install folder)
 #
 # Exit codes:
@@ -34,6 +35,13 @@ APP_ID="play-heroarena"
 SOURCE_BIN="build/linux/HeroArena.x86_64"
 SOURCE_PCK="build/linux/HeroArena.pck"
 SOURCE_ICON="icon.svg"
+SOURCE_DATA_DIR="build/linux/data_Hero-sArena_linuxbsd_x86_64"
+if [ ! -d "$SOURCE_DATA_DIR" ]; then
+    discovered_data_dir="$(find build/linux -maxdepth 1 -type d -name "data_*_linuxbsd*" 2>/dev/null | head -n 1)"
+    if [ -n "$discovered_data_dir" ] && [ -d "$discovered_data_dir" ]; then
+        SOURCE_DATA_DIR="$discovered_data_dir"
+    fi
+fi
 LOG_FILE="$HOME/.local/share/HeroArena/install.log"
 
 # ── Uninstall ─────────────────────────────────────────────────────────────
@@ -88,16 +96,16 @@ die() {
 # ── Verify source artifacts exist ─────────────────────────────────────────
 verify_sources() {
     local missing=0
-    for f in "$SOURCE_BIN" "$SOURCE_PCK" "$SOURCE_ICON"; do
+    for f in "$SOURCE_BIN" "$SOURCE_PCK" "$SOURCE_ICON" "$SOURCE_DATA_DIR"; do
         if [ ! -e "$f" ]; then
             log "MISSING source artifact: $f"
             missing=1
         fi
     done
     if [ "$missing" -ne 0 ]; then
-        die "Build artifacts not found. Run the game build first (expected: $SOURCE_BIN, $SOURCE_PCK, $SOURCE_ICON)." 2
+        die "Build artifacts not found. Run the game build first (expected: $SOURCE_BIN, $SOURCE_PCK, $SOURCE_ICON, and $SOURCE_DATA_DIR)." 2
     fi
-    log "Source artifacts verified: $SOURCE_BIN, $SOURCE_PCK, $SOURCE_ICON"
+    log "Source artifacts verified: $SOURCE_BIN, $SOURCE_PCK, $SOURCE_ICON, $SOURCE_DATA_DIR"
 }
 
 # ── GUI: welcome ──────────────────────────────────────────────────────────
@@ -154,7 +162,9 @@ do_install() {
     cp "$SOURCE_BIN" "$install_location/HeroArena.x86_64" || die "Failed to copy game binary."
     cp "$SOURCE_PCK" "$install_location/HeroArena.pck"     || die "Failed to copy game data pack."
     cp "$SOURCE_ICON" "$install_location/icon.png"           || die "Failed to copy game icon."
+    cp -r "$SOURCE_DATA_DIR" "$install_location/"          || die "Failed to copy .NET assemblies directory."
     chmod +x "$install_location/HeroArena.x86_64"          || die "Failed to make binary executable."
+    rm -f "$install_location/Hero-sArena.x86_64" "$install_location/Hero-sArena.pck" 2>/dev/null || true
     log "Artifacts installed to $install_location"
 
     # Write desktop entry (applications menu)
@@ -167,6 +177,7 @@ Name=$DESKTOP_NAME
 GenericName=$GAME_NAME
 Comment=A top-down arena shooter built with Godot 4.3 and C# (.NET 8)
 Exec=$install_location/HeroArena.x86_64
+Path=$install_location
 Icon=$install_location/icon.png
 Type=Application
 Categories=Game;ActionGame;
@@ -189,6 +200,7 @@ Name=$DESKTOP_NAME
 GenericName=$GAME_NAME
 Comment=A top-down arena shooter built with Godot 4.3 and C# (.NET 8)
 Exec=$install_location/HeroArena.x86_64
+Path=$install_location
 Icon=$install_location/icon.png
 Type=Application
 Categories=Game;ActionGame;

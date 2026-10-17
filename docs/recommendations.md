@@ -480,3 +480,30 @@ Scope: make the arena feel alive — biome identity, weather, wildlife with emer
 **Follow-ups:** ecosystem event deck (`MomentDirector`) and reactive prop kit — designed in the investigation doc; disturbance memory shipped (scar layer + director avoidance, R-LA6; see implementation notes for the deviation from the planned ImageTexture layer).
 
 **Audit notes (same-day re-run):** the engine probes surfaced a pre-existing stale-hero bug outside this pass — hero death (`HeroBase.Die()` → `QueueFree()`) never clears `GameManager.ActiveHero`, and cached readers guard with `hero == null`, which is false for a disposed Godot wrapper → ~9.5k `ObjectDisposedException`s per 10 s of headless run in enemies and camera follow. Reported for the `HeroBase`/`EnemyBase`/`MainBootstrap` owner; evidence in the investigation doc. A transient `MainMenu.tscn` ↔ `Sandbox.tscn` cross-reference seen mid-session no longer reproduces (the sandbox writer's edit removed it).
+
+---
+
+# Recommendations Log — Hero's Arena (Cumulative)
+
+## Investigation 2026-10-17 — Gameplay mechanics (external research)
+
+### R1 — Replace the decaying late-game Weibull with sustained/escalating intensity
+- **Priority:** high
+- **What:** Stop difficulty from tapering after wave 5. Add a wave HP/damage multiplier that scales with wave number (overtime escalation), and/or an "overtime" mode after ~wave 20 where difficulty re-ramps. Keep breather waves but raise the floor.
+- **Why:** Vampire Survivors keeps pressure by having difficulty catch up to maintain tension (Arcade Artificer, Tier 3). Reddit r/gamedesign flags reverse/decaying difficulty curves as bad design (Tier 4). Hero's Arena's Weibull peaks at wave 5 then decays, so late waves get easier.
+- **Effort:** ~1-2 days (modify WaveFormulas / add wave multiplier in WaveManager).
+- **Gate:** WaveFormulasTests pin the new curve; Godot gate wave-completion behavior unchanged.
+
+### R2 — Implement real perk synergy combos (build variety)
+- **Priority:** high
+- **What:** Perks carry synergy TAGS but no combo effects. Add 4-6 two-perk synergy triggers with emergent results (e.g., FrostAura + SlowOnHit → brief freeze; BurnOnHit + ExplosiveRounds → exploding burning corpses chain). Show synergy hints on perk cards.
+- **Why:** Synergies create emergent power, thrilling discoveries, and build variety (Bugnet, Tier 3, 2026-06-11). Vampire Survivors' strategy comes from "selecting the right combo items" (Arcade Artificer, Tier 3).
+- **Effort:** ~3-4 days (synergy rules in PerkSystem + perk-card UI hints).
+- **Gate:** PerkSystemTests cover each synergy combo; no regression on existing 20 perk effects.
+
+### R3 — Add meta-progression between runs (retention / replayability)
+- **Priority:** medium
+- **What:** Award run currency (scrap) based on kills/destruction/wave reached, kept after death. Spend in a main-menu node tree for permanent starting-stat bonuses (+max health, +move speed, +starting damage) and hero unlocks. Even short runs grant something.
+- **Why:** Vampire Survivors' meta-progression eliminates "zero progress" runs and drives immediate retries (~2.5x damage / 2x health cumulative; Arcade Artificer, Tier 3).
+- **Effort:** ~3-5 days (currency + user:// save file + menu node tree).
+- **Gate:** MenuDifficultyState-style parse/serialize tests for the save file; MainMenu integration.

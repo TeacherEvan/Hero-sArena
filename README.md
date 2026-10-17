@@ -65,7 +65,7 @@ Run the included GUI installer:
 
 It opens a single window: **Install** → choose basic settings (install location, desktop icon, applications-menu entry, launch after install) → **Install**. When it finishes you get a **"Play HeroArena"** icon on your desktop and in your applications menu. Double-click it to play.
 
-- Installer: `install.sh` (uses `zenity`; requires the pre-built `build/linux/Hero-sArena.x86_64` + `.pck`)
+- Installer: `install.sh` (uses `zenity`; requires the pre-built `build/linux/HeroArena.x86_64` + `.pck` + `data_Hero-sArena_linuxbsd_x86_64`)
 - Uninstall: `./install.sh --uninstall` (removes the game and all icons cleanly)
 - Install log: `~/.local/share/HeroArena/install.log`
 The xUnit test project is excluded from the main build via
