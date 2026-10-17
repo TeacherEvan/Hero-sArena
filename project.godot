@@ -40,4 +40,5 @@ common/max_physics_steps_per_frame=8
 
 [rendering]
 
+environment/defaults/default_clear_color=Color(0.043, 0.051, 0.078, 1)
 textures/canvas_textures/default_texture_filter=0

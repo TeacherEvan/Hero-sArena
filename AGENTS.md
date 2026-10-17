@@ -1,196 +1,48 @@
 # AGENTS.md
 
-Project conventions for autonomous agents (Jules / Copilot / Codex).
+Project conventions for autonomous agents working on Hero's Arena (Godot 4.3 + C#).
 
-## Stack
-- Godot 4.3 + C# (.NET 8). `dotnet` 8 in CI; local SDK may be newer (10) — do not pin to 10.
-- Root namespace `HeroArena`. Nullable enabled.
-- Godot SDK: `Godot.NET.Sdk/4.3.0` (no `.sln` file; single csproj).
-- Lint: Roslynator via `dotnet tool run roslynator` (config in `.config/dotnet-tools.json`).
-- Local toolchain: .NET 8 SDK at `~/.dotnet8` — prefix every dotnet command
-  with `DOTNET_ROOT=~/.dotnet8` (snap `dotnet` shim is broken; `~/.dotnet`
-  is v10, never use it). C#-capable Godot at `~/.local/bin/godot-mono`;
-  the standard (non-mono) binary cannot load `.cs` — never use it for
-  run/test, only the mono build.
-- `Hero-sArena.csproj` sets `GenerateAssemblyInfo=false` and
-  `GenerateTargetFrameworkAttribute=false`: Godot.NET.Sdk supplies both
-  generated files, and the SDK defaults duplicate them on incremental
-  builds (CS0579). Do NOT re-enable.
+## Stack & local toolchain (read first — easy to get wrong)
+- Engine: Godot 4.3. Language: C# / .NET 8 (`TargetFramework=net8.0`, `Nullable=enable`). SDK: `Godot.NET.Sdk/4.3.0`. Single csproj (`Hero-sArena.csproj`), no `.sln`. Root namespace `HeroArena`.
+- **`dotnet` on PATH is .NET 10 (broken snap shim) and `~/.dotnet` is also v10 — never use either.** Prefix every dotnet command with `DOTNET_ROOT=~/.dotnet8` (.NET 8 SDK at `~/.dotnet8`).
+- **Godot:** use `~/.local/bin/godot-mono` (C#-enabled mono build). The standard/non-mono Godot cannot load `.cs` scripts — never use it to run or test.
+- `Hero-sArena.csproj` sets `GenerateAssemblyInfo=false` and `GenerateTargetFrameworkAttribute=false` because `Godot.NET.Sdk` supplies both. Do NOT re-enable — incremental builds duplicate them (CS0579).
+- Excluded from the shipped build (via `<Compile Remove>` in `Hero-sArena.csproj`): `tests/HeroArena.Tests/**/*.cs`, `bench_test/**/*.cs`, `CheckProcessMode.cs`, `FindPhysics.cs`, `FrameTimeBenchmark.cs`, `WaveManagerBenchmark.cs`.
 
 ## Repo layout
-- Game code: `scripts/**/*.cs` (Godot `Node` subclasses + a few pure C# classes).
-- Autoloads (project.godot): `EventBus`, `GameManager`, `ObjectPoolManager`.
-- Benchmarks: `bench_test/`, `FrameTimeBenchmark.cs`, `WaveManagerBenchmark.cs` (NOT part of shipped build).
-- Exports: `export_presets.cfg` presets "Linux/X11", "Windows Desktop", "macOS".
+- Game code: `scripts/**/*.cs` (Godot `Node` subclasses plus pure C# classes in `scripts/core/`).
+- Autoloads (registered in `project.godot`): `EventBus`, `GameManager`, `ObjectPoolManager`.
+- Exports: `export_presets.cfg` presets "Linux/X11", "Windows Desktop", "macOS" → `build/`. Preset names must match exactly: `godot --headless --export-release "<preset>" <out>`.
 
-## Testing — TWO harnesses, different runtimes (READ CAREFULLY)
-1. **xUnit** — `tests/HeroArena.Tests/` (project `HeroArena.Tests.csproj`).
-    - Run locally: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj`
-      (prefix `DOTNET_ROOT=~/.dotnet8`; 131 tests pass under the default filter;
-      131 pass unfiltered — no `[Trait]`-skipped suites remain).
-    - Headless coverage: tests that merely *construct* a Godot `Node`
-      subclass pass (GodotSharp types are plain managed objects; fixtures
-      built on `FormatterServices.GetUninitializedObject` work, though that
-      bypass is deprecated — see below). Tests that need `_Ready`,
-      `_ExitTree`, or SceneTree callbacks do not run headlessly and belong
-      in the Godot gate.
-      PASS: SpatialHashGridTests, SpatialHashGridBenchmarkTests, HeroBaseTests,
-             ObjectPoolManagerTests, ProgressionFormulasTests, KarmaAmplifierTests,
-             EnemyMutatorSystemTests, EventBusTests, WaveFormulasTests, EntityRegistryTests,
-             HitFlashPaletteTests, DestructionTrackerTests, GameManagerStateTests,
-             InputBufferStateTests, PowerupBannerSlotsTests.
-    - Godot-free classes extracted from `Node` wrappers so the suite can cover
-      what used to be gate-only (each `Node` delegates 1:1):
-      `scripts/core/EntityRegistry.cs` (F-1 registry),
-      `scripts/core/HitFlashPalette.cs` (F-31 colors + fade),
-      `scripts/core/DestructionTracker.cs` (CollateralKarma counting),
-      `scripts/core/PowerupBannerSlots.cs` (HUD banner selection),
-      `scripts/core/WaveFormulas.cs` (Weibull wave-intensity curve),
-      `scripts/core/GameManagerState.cs` (run transitions/threat/score, T3.1-rest),
-      `scripts/core/InputBufferState.cs` (frame input buffer, T3.1-rest).
-    - NO suites remain under `[Trait("Category","GodotRuntime")]` — as of
-      2026-10-16 every test suite runs under the default command; the trait
-      filter is now a no-op kept purely for git history. `GameManagerTests`
-      + `GameManagerTests_State` retired into `GameManagerStateTests` +
-      a `TestGameManagerDelegation` gate check; `InputBufferTests`
-      retired into `InputBufferStateTests` + a
-      `TestInputBufferDelegation` gate check (Node keeps the StringName
-      boundary and the tick→expire ordering).
-    - RETIRED: `LevelProgressionTests` → `ProgressionFormulasTests` and
-      `CollateralKarmaTests` (with its `RuntimeHelpers.GetUninitializedObject`
-      bypass) → `KarmaAmplifierTests`. `GameManagerTests` /
-      `GameManagerTests_State` (incl. `GameManagerThreatLevelTests` and
-      `TestableGameManager`) → `GameManagerStateTests` + a
-      `TestGameManagerDelegation` gate check. Pure math lives in
-      `scripts/core/ProgressionFormulas.cs`.
-      Do NOT add new tests on Godot `Node` types via the bypass trick; extract
-      pure logic or add `[Trait("Category","GodotRuntime")]` and grow the
-      Godot headless gate instead.
-      NOTE: the bypass is deprecated, not gone — **7 construction call sites
-      remain in 4 suites** (`HeroBaseTests` 4, `FlowFieldPathfinderTests` 1,
-      `EventBusTests` 1, `EnemyMutatorSystemTests` 1 — recounted twice on
-      2026-10-16, finally with comment mentions excluded; earlier figures
-      "14 in 7" and "11 in 6" both inflated by doc-comment hits
-      (KarmaAmplifierTests and part of FlowFieldPathfinderTests carry only
-      comment mentions, zero live sites)). All pass headlessly; none
-      should be extended. Remove them as each suite is extracted.
-    - The xUnit project is EXCLUDED from the main build via
-      `<Compile Remove="tests/HeroArena.Tests/**/*.cs" />` in `Hero-sArena.csproj`.
-  2. **Godot headless gate** — `tests/GodotTests/CoreSystemTests.tscn`
-     (scene entry; script `CoreSystemTests.cs`, an assertions `Node` that
-     runs in `_Ready` and quits non-zero on failure).
-     - Correct invocation: `DOTNET_ROOT=~/.dotnet8 godot --headless res://tests/GodotTests/CoreSystemTests.tscn`
-       Run the SCENE, not `-s`: Godot 4's `-s <file>` requires a
-       `SceneTree`/`MainLoop` entry (the retired `GateRunner.cs` wrapper), and
-       **C# scripts cannot run at all in `-s` mode on this machine** (see the
-       blocked note). A scene entry exercises autoloads and `_Ready` normally.
-     - Requires a .NET/mono-enabled Godot 4.3 binary (NOT installed in plain
-       `dotnet` environments; locally at `~/.local/bin/godot-mono`).
-     - **⚠ THIS GATE HAS NEVER RUN in this workspace — the Godot mono binary
-       here cannot execute managed (C#) code.** Verified 2026-10-16; what works:
-       `--headless --quit`, `--headless --import`, and a GDScript `-s` entry.
-       What does not: ANY entry that instantiates a C# script — `-s
-       GateRunner.cs`, `CoreSystemTests.tscn`, a minimal 3-line C# scene with
-       no project dependencies, and the game's own `scenes/Main.tscn`. Every
-       C# entry prints only the engine banner, never reaches `_Ready`, and the
-       main thread spins at ~100% CPU inside unmanaged code while every .NET
-       runtime thread idles on futexes (gdb stack available in session notes;
-       no symbols). Not a missing library (`ldd` clean), not the runtime
-       version (hangs identically on .NET 8.0.31 and 10.0.5), not affected by
-       `DOTNET_EnableDiagnostics` / `gcServer` / `EnableEventPipe` overrides,
-       and not the project's own code (minimal C# scene hangs too).
-       An earlier diagnosis here blaming an engine "self-fork + SIGSEGV" was
-       WRONG — that was the harness wrapper shell; remove it before re-using.
-       Until the engine is fixed/replaced, xUnit is the ONLY authoritative
-       gate — which is why the gate-only logic listed above now lives in
-       Godot-free classes.
-     - Covers SpatialHashGrid, WaveManager, FlowFieldPathfinder, LevelProgression,
-       EntityRegistry (F-1 regression), CollateralKarma math + Node behavior,
-       PowerupBannerSlots (HUD delegation guard; it replaced an older check that
-      grepped a `scripts/ui/PowerupBannerFactory.cs` file which NEVER EXISTED —
-      that check would have failed instantly had the gate ever run),
-      HitFlash (F-31 consumer).
+## Commands (CI order: lint → typecheck → build → test → godot-verify → export → quality-gates)
+All dotnet commands need `DOTNET_ROOT=~/.dotnet8`.
 
-## CI (`.github/workflows/ci.yml`)
-- Must use `${{ github.workspace }}` — NEVER hardcode local absolute paths.
-- Jobs (run in order): `lint` → `typecheck` → `build` → `test` → `godot-verify` → `export` → `quality-gates`
-- Exact commands used in CI:
-  - Lint: `dotnet roslynator analyze Hero-sArena.csproj`
-  - Typecheck: `dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true`
-  - Build: `dotnet build Hero-sArena.csproj --configuration Release --no-restore`
-  - Test: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj --configuration Release --no-restore --filter "Category!=GodotRuntime"`
-   - Godot verify: setup-dotnet 8.0.x, download Godot 4.3 MONO headless
-     (standard binary cannot load C#), then `DOTNET_ROOT=… godot --headless res://tests/GodotTests/CoreSystemTests.tscn`
-     (see the gate note above: unrunnable in this workspace today).
-  - Export: `godot --headless --export-release "<preset>" <output_path>` (presets must match export_presets.cfg exactly)
-  - Quality gates: must FAIL on any `TODO|FIXME` in `scripts/*.cs`, e.g.
-    `grep -rni --include="*.cs" -E "TODO|FIXME" scripts/` (grep's exit
-    code). The previous form — `find scripts -name "*.cs" -exec grep ...`
-    — evaluated `find`'s exit code, NOT grep's, so it passed vacuously
-    even with TODO/FIXME markers present.
-- **Note:** GitHub account currently locked (billing); CI not running. Tracked in issue #23.
+- Lint: `dotnet tool run roslynator analyze Hero-sArena.csproj` (config `.config/dotnet-tools.json`; restore tools with `dotnet tool restore`).
+- Typecheck: `dotnet build Hero-sArena.csproj --configuration Release --no-restore /p:RunAnalyzers=true`
+- Build: `dotnet build Hero-sArena.csproj --configuration Release --no-restore`
+- Test: `dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj` (default filter — no suites are filtered out). The test project references the main csproj, so a main-project build failure fails the test run.
 
-## Agent-branch hygiene
-- Jules branches: `bolt/`, `palette/`, `sentinel/`. Memory in `.jules/` (not .gitignore).
-- Before merging any agent branch: check `git merge-base --is-ancestor <tip> main`.
-  If true (SUPERSEDED) → do NOT merge, prune instead.
-  Large "deletion" counts vs main = stale base, NOT real removals. Never merge those.
+## Testing
+- **Both gates run locally.** xUnit via `dotnet test`; the Godot headless gate via `env DOTNET_ROOT=~/.dotnet8 ~/.local/bin/godot-mono --headless --path . res://tests/GodotTests/CoreSystemTests.tscn` (prints PASS/FAIL lines, exits non-zero on failure, ~5s). Run `dotnet build` first — non-exported runs load the **Debug** assembly. The former "mono hangs in unmanaged code" note was a misdiagnosis of the ObjectPoolManager pre-warm stall (fixed in `2cd98dd`); the gate passes 13/13 (the R-FX surroundings smoke and the enemy target-disposal regression were added to it).
+- Convention: extract pure logic out of `Node` wrappers into Godot-free classes in `scripts/core/` (e.g. `GameManagerState`, `InputBufferState`, `ProgressionFormulas`, `WaveFormulas`, `EntityRegistry`, `HitFlashPalette`, `DestructionTracker`, `PowerupBannerSlots`); the `Node` delegates 1:1.
+- Do NOT add new tests on Godot `Node` types via `RuntimeHelpers.GetUninitializedObject` — that bypass is deprecated. Extract pure logic or add `[Trait("Category","GodotRuntime")]` and grow the Godot gate.
+- Residual deprecated bypass fixtures exist in `HeroBaseTests`, `FlowFieldPathfinderTests`, `EventBusTests`, `EnemyMutatorSystemTests` — they pass headlessly; do not extend them, remove them as each suite is extracted.
+- `[Trait("Category","GodotRuntime")]` is a no-op kept for git history; no xUnit suite carries it anymore. CI still passes `--filter "Category!=GodotRuntime"` harmlessly.
+
+## Quality gates
+- Must FAIL on any `TODO|FIXME` in `scripts/*.cs`:
+  `if grep -rni --include="*.cs" -E "TODO|FIXME" scripts/; then echo "Quality gate failed: TODO/FIXME markers found"; exit 1; fi`
+  Do not use `find ... -exec grep` — that returns `find`'s exit code and passes vacuously even with markers present.
+
+## Branch hygiene
+- Jules branches: `bolt/`, `palette/`, `sentinel/`; agent memory lives in `.jules/` (not `.gitignore`d).
+- Before merging any agent branch: `git merge-base --is-ancestor <tip> main`. If true (branch is SUPERSEDED by main) → prune, do NOT merge. Large deletion counts vs main = stale base, not real removals.
 - Do not re-fix already-merged work.
 
-## Known production gaps (do not reintroduce)
-- The Godot headless gate cannot run in this workspace (the mono binary
-  hangs in unmanaged code before any C# `_Ready` fires — full evidence in
-  the testing section above; an older "self-fork + SIGSEGV in
-  libcoreclr.so" diagnosis was WRONG and has been corrected there). So
-  `godot-verify` in CI would hang/fail, and nothing else executes the
-  gate's content. Repair the toolchain (or replace the engine build)
-  before relying on the gate for anything.
-- `InputBufferTests` is retired — no xUnit class carries
-  `[Trait("Category","GodotRuntime")]` anymore, so nothing is filtered out
-  of the default command or CI-less. The frame-buffer logic now lives in
-  the pure `InputBufferState` class, the `InputBuffer` Node delegates 1:1 keeping the StringName boundary and
-  tick ordering, and `TestInputBufferDelegation` guards the wiring in
-  the headless gate. The GameManager suites retired the same way
-  earlier on 2026-10-16 (pure `GameManagerState`). Residual bypass
-  fixtures (7 call sites in 4 suites — `HeroBaseTests`,
-  `FlowFieldPathfinderTests`, `EventBusTests`, `EnemyMutatorSystemTests`
-  — are deprecated-but-headless; `AGENTS.md` counts them precisely.
-  Tracked in issue #22.
-- `LevelProgression` / `CollateralKarma` math is DONE (pure
-  `ProgressionFormulas` + delegating Nodes), and the former gate-only systems
-  (EntityRegistry, HitFlash, DestructionTracker, PowerupBannerSlots,
-  WaveFormulas) are DONE — and since 2026-10-16 so are the GameManager
-  run-state machine (`GameManagerState`) and the InputBuffer
-  (`InputBufferState`): every xUnit suite now runs under the default
-  filter (no `Category=GodotRuntime`-tagged suites remain), with
-  Node-behavior guarded by `TestGameManagerDelegation` and
-  `TestInputBufferDelegation` in the gate.
-- The `RuntimeHelpers.GetUninitializedObject` bypass is DEPRECATED and
-  must not be extended: the retired pattern was `CollateralKarmaTests` →
-  `KarmaAmplifierTests`, and any NEW test that needs a `Node` subclass
-  adds `[Trait("Category","GodotRuntime")]` and lives in the Godot
-  headless gate. (11 construction-only call sites remain in existing
-  suites — see the testing section.)
-- README documents the test reality; keep it in sync.
-- CI has never run (GitHub account locked, billing, issue #23). Proven
-  green locally as of 2026-10-16: `dotnet build` (Debug and Release),
-  `dotnet test` (filtered and unfiltered), and
-  `dotnet roslynator analyze` — nothing beyond that.
-- Known intermittent (2026-10): exactly one `dotnet test` failure has been
-  observed twice, both times on the very first run immediately after a fresh
-  build (`Failed: 1, Passed: N-1`), with no failing test name printed and no
-  reproduction in ~50 subsequent runs (including 16 with forced rebuilds).
-  Most likely a cold-start race between MSBuild finishing writes into the
-  shared `.godot/mono/temp/bin/` output path and the test host loading the
-  assembly — benign, but treat a single unexplained failure right after a
-  build as "re-run before investigating".
+## Audit history (read before touching core systems)
+- PRs #18 (`fix/audit-critical-high`) and #19 (`fix/audit-medium-cleanup`) fixed three CRITICAL bugs: AoE abilities dealt zero damage, the mutator system was dead code, wave-completion was never emitted. Read those PRs before re-fighting that work.
 
-## Audit history (read before touching anything)
-- `audit_report.md` / `review_findings.md` / `fix_summary.md` are advisory artifacts
-  generated by the code-review skill. They are GITIGNORED but the audit-driven
-  fix branches (e.g. `fix/audit-critical-high`, `fix/audit-medium-cleanup`) are
-  on origin and have PRs.
-- Three CRITICAL bugs were found and fixed in `fix/audit-critical-high`
-  (merged as PR #18; medium cleanup merged as PR #19):
-  AoE abilities dealt zero damage, mutator system was dead code, wave-completion
-  was never emitted. Read the PRs before re-fixing that work.
+## Known gotchas
+- CI has never run (GitHub account locked, billing; issue #23). Verify locally with `dotnet build` + `dotnet test` + the Godot gate scene (see Testing) + `dotnet roslynator analyze`.
+- Pool pre-warm is order-sensitive: pooled nodes must be deactivated BEFORE `AddChild` (`ObjectPoolManager`) and `ProjectileBase.Deactivate()` must keep parking its `CollisionShape2D` + `Monitoring`/`Monitorable`. Misordering re-creates the super-linear (hours) boot stall (fixed in `2cd98dd`).
+- Intermittent: a single unexplained `dotnet test` failure has occurred on the very first run right after a fresh build, with no failing test name and no reproduction on re-run (likely a cold-start MSBuild/test-host race). Re-run before investigating.

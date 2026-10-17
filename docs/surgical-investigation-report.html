@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Surgical Investigation Report — Hero's Arena (Novice Onboarding)</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<script>mermaid.initialize({startOnLoad:true,theme:'dark'});</script>
+<style>
+  :root{--bg:#0b0d14;--panel:#131620;--panel-hi:#1f2433;--gold:#e3c76a;--cyan:#38bdf8;--text:#e2e8f0;--muted:#94a3b8;--border:#1e293b;--red:#ef4444;--green:#22c55e;--amber:#f59e0b;}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+  a{color:var(--cyan)}
+  header{background:linear-gradient(135deg,#0b0d14 0%,#131620 100%);border-bottom:1px solid var(--border);padding:1.5rem 2rem;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:1.5rem;letter-spacing:-0.02em;color:var(--gold)}
+  header p{margin:.35rem 0 0;color:var(--muted);font-size:.9rem}
+  .container{max-width:1200px;margin:0 auto;padding:2rem}
+  .meta{display:flex;gap:1rem;flex-wrap:wrap;margin-bottom:2rem;color:var(--muted);font-size:.85rem}
+  .meta span{background:var(--panel);border:1px solid var(--border);border-radius:.5rem;padding:.35rem .75rem}
+  .section{background:var(--panel);border:1px solid var(--border);border-radius:.75rem;padding:1.5rem 1.75rem;margin-bottom:1.5rem;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+  .section h2{margin:0 0 1rem;font-size:1.15rem;color:var(--gold);border-bottom:1px solid var(--border);padding-bottom:.5rem}
+  .section h3{margin:1rem 0 .5rem;font-size:.95rem;color:var(--cyan)}
+  .tag{display:inline-block;font-size:.75rem;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:.25rem;padding:.1rem .5rem;margin-right:.4rem}
+  .tag-good{background:#164e31;color:#86efac;border:1px solid #22c55e}
+  .tag-warn{background:#4d2a03;color:#fcd34d;border:1px solid #f59e0b}
+  .tag-bad{background:#450a0a;color:#fecaca;border:1px solid #ef4444}
+  table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.9rem}
+  th,td{border:1px solid var(--border);padding:.5rem .75rem;text-align:left;vertical-align:top}
+  th{background:var(--panel-hi);color:var(--gold)}
+  tr:nth-child(even)td{background:#0f121a}
+  .rec{border-left:4px solid var(--gold);padding-left:1rem;margin:1rem 0}
+  .rec h3{margin-top:0}
+  .rec .meta-row{display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin:.5rem 0}
+  .mermaid{background:var(--panel);border:1px solid var(--border;border-radius:.75rem;padding:1rem;margin:1rem 0}
+  .mermaid b{color:var(--gold)}
+  .diagram-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:1rem;margin:1rem 0}
+  .diagram-card{border:1px solid var(--border);border-radius:.5rem;background:#0f121a;padding:1rem}
+  .diagram-card h4{margin:0 0 .75rem;font-size:.85rem;color:var(--cyan)}
+  .btn{display:inline-block;background:var(--gold);color:#131620;font-weight:700;border:none;border-radius:.5rem;padding:.6rem 1.2rem;cursor:pointer;text-decoration:none;margin:.25rem .5rem .25rem 0}
+  .btn:hover{opacity:.9}
+  .btn-outline{background:transparent;color:var(--gold);border:1px solid var(--gold)}
+  .btn-outline:hover{background:var(--gold);color:#131620}
+  .imp-badge{font-size:.8rem;font-weight:700;color:var(--amber)}
+  .effort{color:var(--muted);font-size:.85rem}
+  footer{border-top:1px solid var(--border);padding:1.5rem 2rem;color:var(--muted);font-size:.85rem}
+  .kicker{color:var(--cyan);font-size:.8rem;font-weight:700;text-transform:uppercase;letter-spacing:.08em;display:block;margin-bottom:.25rem}
+  .two-col{display:grid;grid-template-columns:1fr 1fr;gap:1.5rem}
+  @media(max-width:900px){.two-col{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <span class="kicker">Surgical Investigation · Investigator Mode</span>
+  <h1>Hero's Arena — Gameplay &amp; Mechanics Recommendations</h1>
+  <p>Attracting amateur → novice players through onboarding, difficulty, and perk transparency.</p>
+</header>
+
+<div class="container">
+  <div class="meta">
+    <span><b>Project:</b> Hero's Arena</span>
+    <span><b>Mode:</b> Investigator — escalation pass (findings for review)</span>
+    <span><b>Strategy:</b> codebase-first + targeted-docs + community-pulse</span>
+    <span><b>Date:</b> 2026-10-17</span>
+    <span><b>Engine:</b> Godot 4.3 + C# .NET 8</span>
+    <span><b>Gate:</b> xUnit (131 tests pass headlessly)</span>
+    <span><b>Formats:</b> html · json · md · sarif</span>
+  </div>
+  <div class="section" style="background:#1b2d1b;border-color:#22c55e">
+    <h2 style="color:#22c55e">⚠ Escalation Pass — "Best You Can Do"</h2>
+    <p>This report was re-issued after a depth challenge. It now includes:</p>
+    <ul>
+      <li><b>All four output formats</b>: <code>html</code> (this file), <code>json</code>, <code>md</code>, <code>sarif</code> — identical core findings in each.</li>
+      <li><b>External verification (Tier 1–2 grounded):</b> Hades God Mode / Greg Kasavin GDC interviews; Vampire Survivors developer interview + wiki; Brotato Danger Levels (Godot-built peer); design guidance on perk menus and forced choice. Every claim carries a source tier.</li>
+      <li><b>Concrete endpoint/control specs:</b> exact C# method signatures, payload structs, and UI widget specs for every recommendation (detailed in <code>docs/recommendations.md</code> and <code>docs/surgical-investigation-report.json</code>).</li>
+    </ul>
+  </div>
+
+  <!-- SECTION 1: Mission -->
+  <section class="section">
+    <h2>1. Project Mission — Stated vs Actual</h2>
+    <p><b>Stated mission (README):</b> "A top-down arena shooter built with Godot 4.3 and C# (.NET 8). Fight waves of enemies across 4 hero classes; environmental destruction escalates threat via the Collateral Karma system."</p>
+    <p><b>Actual state:</b> A horde / top-down arena shooter (Vampire Survivors / Brotato / Hades-like) with 4 heroes, 10 enemy types, Weibull wave-spawning curve, 2000-enemy cap, 5s breather between waves, boss every 300s, XP-driven level-up into a 20-perk upgrade menu, and a Collateral Karma threat escalation.</p>
+    <div class="two-col">
+      <div>
+        <h3>Success criteria (how we know it's working)</h3>
+        <ul>
+          <li>Player survives escalating waves and builds score.</li>
+          <li>Player levels up and picks meaningful perks.</li>
+          <li>Threat escalates via environmental destruction (Collateral Karma).</li>
+          <li>Enemy mutators stack as threat rises.</li>
+        </ul>
+      </div>
+      <div>
+        <h3>Stated vs actual gap</h3>
+        <ul>
+          <li><b>No tutorial / onboarding.</b> New players are dropped into Wave 1 with 4 opaque heroes and 20 cryptic perks.</li>
+          <li><b>No difficulty selector.</b> One fixed curve (Weibull + karma threat + stacking mutators) — novices cannot soften the challenge.</li>
+          <li><b>No perk transparency.</b> Perks show names only; 17 of 20 perks are no-ops in <code>UpgradeMenu.ApplyPerk()</code>.</li>
+          <li><b>No practice / sandbox mode.</b> Permadeath GameOver gives novices no room to experiment.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 2: Architecture diagrams -->
+  <section class="section">
+    <h2>2. Project Architecture</h2>
+    <div class="diagram-grid">
+      <div class="diagram-card"><h4>Backend architecture</h4><div class="mermaid" id="d1">
+      %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#e3c76a', 'primaryTextColor': '#131620', 'primaryBorderColor': '#e3c76a', 'lineColor': '#94a3b8', 'secondaryColor': '#38bdf8', 'tertiaryColor': '#c084fc'}}}%%
+      flowchart TD
+        subgraph Core["Core Systems"]
+          GM[GameManager]
+          WM[WaveManager]
+          LP[LevelProgression]
+          EB[EventBus]
+          PF[ProgressionFormulas]
+          CK[CollateralKarma]
+          EMS[EnemyMutatorSystem]
+        end
+        subgraph Heroes["Heroes"]
+          HB[HeroBase]
+          AT[Atlas]
+          ZE[Zephyr]
+          SY[Synapse]
+          VO[Volt]
+        end
+        subgraph Enemies["Enemies"]
+          EN[EnemyBase]
+          AP[Apex boss]
+        end
+        GM --> WM & LP & EB
+        WM --> EMS
+        LP --> PF
+        HB --> AT & ZE & SY & VO
+        EN --> AP
+      </div></div>
+      <div class="diagram-card"><h4>Frontend / UI</h4><div class="mermaid" id="d2">
+      %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#e3c76a', 'primaryTextColor': '#131620', 'primaryBorderColor': '#e3c76a', 'lineColor': '#94a3b8', 'secondaryColor': '#38bdf8', 'tertiaryColor': '#c084fc'}}}%%
+      flowchart TD
+        MM[MainMenu] --> MT[Main.tscn]
+        MT --> HUD[HUD]
+        MT --> UM[UpgradeMenu]
+        HUD --> UM
+        VT[VisualTheme] --> MM & HUD & UM
+      </div></div>
+      <div class="diagram-card"><h4>Research findings → recommendations</h4><div class="mermaid" id="d3">
+      %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#ef4444', 'primaryTextColor': '#131620', 'primaryBorderColor': '#ef4444', 'lineColor': '#94a3b8', 'secondaryColor': '#22c55e', 'tertiaryColor': '#e3c76a'}}}%%
+      flowchart LR
+        G1[No tutorial] --> R1[R1 Tutorial]
+        G2[No difficulty] --> R2[R2 Easy/Normal/Hard]
+        G3[17 dead perks] --> R3[R3 Perk fix + Sandbox]
+        G4[No sandbox] --> R3
+      </div></div>
+      <div class="diagram-card"><h4>Entire project</h4><div class="mermaid" id="d4">
+      %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#e3c76a', 'primaryTextColor': '#131620', 'primaryBorderColor': '#e3c76a', 'lineColor': '#94a3b8', 'secondaryColor': '#38bdf8', 'tertiaryColor': '#c084fc'}}}%%
+      flowchart TB
+        Scripts[scripts/**/*.cs] --> Scenes[scenes/*.tscn]
+        Scripts --> Tests[tests/ (xUnit)]
+        Scripts --> Config[project.godot + docs]
+      </div></div>
+    </div>
+    <p class="effort">Standalone Mermaid sources: <code>docs/backend-architecture.mmd</code>, <code>docs/frontend-architecture.mmd</code>, <code>docs/research-findings.mmd</code>, <code>docs/entire-project.mmd</code></p>
+  </section>
+
+  <!-- SECTION 3: Best practices -->
+  <section class="section">
+    <h2>3. Engineering Best-Practices Assessment</h2>
+    <table>
+      <tr><th>Dimension</th><th>Rating</th><th>Finding</th></tr>
+      <tr><td>Code quality</td><td><span class="tag tag-good">good</span></td><td>Clean, consistent style; pure logic extracted from <code>Node</code> wrappers (ProgressionFormulas, WaveFormulas, GameManagerState, InputBufferState, etc.) — headlessly testable per AGENTS.md extraction pattern.</td></tr>
+      <tr><td>Architecture</td><td><span class="tag tag-good">good</span></td><td>Clear separation of concerns; EventBus decoupling; ObjectPoolManager pre-allocates 5000 projectiles + 10000 decals; SpatialHashGrid O(1); FlowFieldPathfinder on background thread.</td></tr>
+      <tr><td>Testing</td><td><span class="tag tag-good">good</span></td><td>131 xUnit tests pass headlessly; pure-logic extraction is the house style. Godot headless gate cannot run C# in this workspace (known toolchain gap).</td></tr>
+      <tr><td>Security</td><td><span class="tag tag-good">good</span></td><td>No external services, no secrets, no network dependencies. Local-only build.</td></tr>
+      <tr><td>Performance</td><td><span class="tag tag-good">good</span></td><td>Object pooling, spatial hash grid, capped spawns/frame (20), 2000 enemy cap. No obvious N+1 or quadratic loops.</td></tr>
+      <tr><td>Documentation</td><td><span class="tag tag-warn">warn</span></td><td>AGENTS.md and README are accurate; <code>docs/ux-feedback-spec.md</code> is a detailed combat-feedback spec but covers <b>nothing</b> for new-player onboarding.</td></tr>
+      <tr><td>Gameplay completeness</td><td><span class="tag tag-bad">bad</span></td><td><code>UpgradeMenu.ApplyPerk()</code> implements only 3 of 20 perks (DamageUp is a commented no-op; SpeedUp &amp; MaxHealthUp work). Picking the other 17 perks has <b>no effect</b> — erodes player trust in progression.</td></tr>
+    </table>
+  </section>
+
+  <!-- SECTION 4: Recommendations -->
+  <section class="section">
+    <h2>4. Recommendations — Attract Amateur → Novice Players</h2>
+    <p class="effort">Recommended order: R3 → R1 → R2. Each now includes concrete C# endpoint/control signatures, payload structs, UI widget specs, effort estimates, and tier-weighted source citations. Full specs: <code>docs/recommendations.md</code> and <code>docs/surgical-investigation-report.json</code>. All pure logic is headlessly testable (xUnit extraction pattern); UI scenes verified on real hardware once the Godot mono toolchain is repaired.</p>
+
+    <div class="rec">
+      <h3>R1 · Guided Tutorial / "First Wave" Onboarding Mode</h3>
+      <div class="meta-row">
+        <span class="imp-badge">Impact: High</span>
+        <span class="effort">Effort: ~3–4 days (1 dev)</span>
+        <span class="effort">Gate: New <code>GameState.Tutorial</code></span>
+        <span style="color:#38bdf8">[T1 Hades GDC · T2 VS/Android Police · T2 Brotato/Superjump · T3 VS Wiki]</span>
+      </div>
+      <p><b>Problem:</b> New players get no instruction — controls, dodge, abilities, and the level-up/perk flow are never explained; Wave 1 already spawns mixed enemies at full speed.</p>
+      <p><b>What (grounded):</b> No dedicated tutorial level — Hades / Vampire Survivors / Brotato all use learn-by-doing with minimal UI. Make Wave 1 the guided first experience: soft spawns (1–3 slow Drones, one at a time), teach 3 verbs in the first 60s (move/dodge, auto-attack, collect XP), auto-pause at first level-up (~5 XP, ~40–60s in), on-screen control prompts, then forced-choice 3-perk UpgradeMenu.</p>
+      <p><b>Endpoint / control:</b> <code>MainMenu.StartTutorial()</code> → sets tutorial flag, loads game scene → <code>GameManager.StartTutorial()</code> → enters <code>GameState.Tutorial</code>. New <code>scripts/ui/Tutorial.cs</code> { enum Step{Move,Attack,Dodge,Ability,LevelUp,Done}; SpawnNextDrone(); ShowPrompt(Step); MarkStepDone(Step) } + <code>scenes/ui/Tutorial.tscn</code> (center-screen gold prompt label, font_size 30, outline; progress dots "Step X of 5").</p>
+      <p class="effort">Sources: [T1] GDC/Hades Kasavin — https://www.youtube.com/watch?v=9LykrwmUu8I · [T2] Android Police VS interview — https://www.androidpolice.com/vampire-survivors-developer-interview · [T2] Superjump Brotato — https://www.superjumpmagazine.com/brotato-is-a-tasty-roguelike-snack · [T3] VS Wiki Level up — https://vampire.survivors.wiki/w/Level_up</p>
+    </div>
+
+    <div class="rec">
+      <h3>R2 · Difficulty Selector (Easy / Normal / Hard)</h3>
+      <div class="meta-row">
+        <span class="imp-badge">Impact: High</span>
+        <span class="effort">Effort: ~2–3 days (1 dev)</span>
+        <span class="effort">Gate: <code>GameManagerState.Difficulty</code> enum + GetSettings()</span>
+        <span style="color:#38bdf8">[T2 Inverse Hades God Mode · T2 Access-Ability · T3-4 Brotato Wiki · T4 VS Nexus]</span>
+      </div>
+      <p><b>Problem:</b> A single fixed curve (Weibull wave intensity + CollateralKarma threat every 10 destructions + stacking EnemyMutatorSystem mutators) punishes novices. Destroying the environment raises threat and strengthens enemies — novices snowball into an unwinnable state within minutes.</p>
+      <p><b>What (grounded):</b> Two orthogonal levers (per Brotato/Vampire Survivors): (a) spawn/density curve via Weibull multiplier, (b) per-enemy stats via HP/damage multiplier. Plus threat interval, mutator scale, XP multiplier, breather seconds. Optional Hades-style player damage-resistance toggle (20% → 80% cap, +2%/death) that doesn't block progression. Persisted in save, chosen from MainMenu dropdown.</p>
+      <p><b>Endpoint / control:</b> <code>GameManagerState.SetDifficulty(Difficulty)</code> + <code>GetSettings(Difficulty)</code> → <code>DifficultySettings{EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier, ThreatInterval, MutatorScale, XpMultiplier, BreatherSeconds, PlayerDamageResistance}</code>. <code>WaveManager.BeginNextWave()</code> reads <code>GameManager.Instance.DifficultySettings</code>. <code>EnemyMutatorSystem.ApplyMutators(enemy, threatLevel, mutatorScale)</code>.</p>
+      <p class="effort">Sources: [T2] Inverse Hades God Mode — https://www.inverse.com/gaming/hades-god-mode-interview · [T2] Access-Ability — https://access-ability.uk/2022/04/25/hades-god-mode-is-a-great-approach-to-difficulty/ · [T3-4] Brotato Wiki Danger Levels — https://brotato.fandom.com/wiki/Danger_Levels · [T4] VS Nexus curse — https://www.nexusmods.com/vampiresurvivors/mods/120</p>
+    </div>
+
+    <div class="rec">
+      <h3>R3 · Perk Transparency + Practice / Sandbox Mode</h3>
+      <div class="meta-row">
+        <span class="imp-badge">Impact: Critical</span>
+        <span class="effort">Effort: ~4–5 days (1 dev)</span>
+        <span class="effort">Gate: fix <code>ApplyPerk()</code> for all 20 perks</span>
+        <span style="color:#38bdf8">[T2 Android Police VS · T3 VS Wiki · T2 Digital Trends Brotato · T3 Hades 2 Wiki · T3 kokutech]</span>
+      </div>
+      <p><b>Problem (two parts):</b> (1) Perk choices are meaningless — <code>ApplyPerk()</code> implements only DamageUp (commented no-op), SpeedUp, and MaxHealthUp; the other 17 perks do nothing. (2) No safe place to experiment — permadeath GameOver on first death gives novices no room to learn.</p>
+      <p><b>What (grounded):</b> Perk cards show icon + name + explicit one-line effect line (+ synergy tag badge if player holds a prerequisite); 3 options (Galante's sweet spot); forced choice by default (skip/reroll gated, never free); synergies surfaced via tags not spelled-out optimal builds. Fix <code>ApplyPerk()</code> to implement all 20 perks with real effects. Add Sandbox mode: no waves, no GameOver; spawn dummies, god mode, try any hero/perk, reset stats.</p>
+      <p><b>Endpoint / control:</b> <code>MainMenu.OpenSandbox()</code> → loads Sandbox scene; <code>Sandbox.SpawnDummy(Vector2?)</code>, <code>Sandbox.SetGodMode(bool)</code>, <code>Sandbox.ApplyPerk(PerkType)</code>, <code>Sandbox.ResetHero()</code>. New <code>scripts/maps/Sandbox.cs</code> + <code>scenes/maps/Sandbox.tscn</code> (toolbar: Spawn Dummy / Toggle God Mode / Apply Perk dropdown / Reset Hero / Back to Menu). <code>UpgradeMenu.PerkDescription(PerkType)</code> + <code>ApplyPerk()</code> all 20 perks.</p>
+      <p class="effort">Sources: [T2] Android Police VS interview — https://www.androidpolice.com/vampire-survivors-developer-interview · [T3] VS Wiki Level up/Powerup — https://vampire.survivors.wiki/w/Level_up · [T2] Digital Trends Brotato — https://www.digitaltrends.com/gaming/brotato-hands-on-impressions-pc/ · [T3] Hades 2 Wiki Boons — https://hades2.wiki.fextralife.com/Boons · [T3] kokutech Hades design — https://www.kokutech.com/blog/gamedev/design-patterns/power-fantasy/hades</p>
+    </div>
+
+    <div class="rec" style="margin-top:1.5rem">
+      <h3>Prioritization &amp; total estimate</h3>
+      <table>
+        <tr><th>Order</th><th>ID</th><th>Recommendation</th><th>Impact</th><th>Effort</th></tr>
+        <tr><td>1</td><td>R3</td><td>Perk transparency + Sandbox mode</td><td>Critical</td><td>~4–5 days</td></tr>
+        <tr><td>2</td><td>R1</td><td>Guided "First Wave" tutorial</td><td>High</td><td>~3–4 days</td></tr>
+        <tr><td>3</td><td>R2</td><td>Difficulty selector Easy/Normal/Hard</td><td>High</td><td>~2–3 days</td></tr>
+      </table>
+      <p><b>Recommended first step: R3</b> — fixes the silent bug (17 dead perks) that undermines every run and gives novices the immediate payoff of "progression feels real." All pure logic follows the AGENTS.md extraction pattern (headless xUnit); UI scenes verified on real hardware once the Godot mono toolchain is repaired.</p>
+      <div>
+        <a class="btn" onclick="alert('Implementation would begin with R3 (fix ApplyPerk() + add PerkDescription()), which is fully headlessly testable via xUnit. Full C# endpoint specs and payload structs are in docs/recommendations.md and docs/surgical-investigation-report.json.')">IMPLEMENT FINDINGS / RECOMMENDATIONS</a>
+        <a class="btn btn-outline" href="#section-notes">View investigation notes</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- SECTION 5: Notes & Sources -->
+  <section id="section-notes" class="section">
+    <h2>5. Investigation Notes &amp; Sources</h2>
+    <p>Full notes: <code>docs/investigation-notes/2026-10-17-novice-onboarding.md</code>. Cumulative recommendations log: <code>docs/recommendations.md</code>.</p>
+    <p><b>Internal sources (Tier 1, workspace):</b></p>
+    <ul>
+      <li><code>scripts/core/GameManager.cs</code>, <code>GameManagerState.cs</code> — run state machine, threat/score math.</li>
+      <li><code>scripts/core/WaveManager.cs</code>, <code>WaveFormulas.cs</code> — Weibull wave intensity, 2000 cap, boss timer.</li>
+      <li><code>scripts/core/LevelProgression.cs</code>, <code>ProgressionFormulas.cs</code> — XP curve, damage, karma amplifier, perk selection.</li>
+      <li><code>scripts/ui/UpgradeMenu.cs</code> — perk menu; only 3 of 20 perks implemented.</li>
+      <li><code>scripts/ui/MainMenu.cs</code>, <code>HUD.cs</code> — hero select, HUD, no difficulty/tutorial UI.</li>
+      <li><code>scripts/heroes/HeroBase.cs</code> + <code>Atlas.cs</code>; <code>scripts/enemies/EnemyBase.cs</code> + <code>Brute.cs</code> — hero/enemy bases.</li>
+      <li><code>scripts/systems/EnemyMutatorSystem.cs</code>, <code>CollateralKarma.cs</code> — mutators, threat escalation.</li>
+      <li><code>project.godot</code> — autoloads: EventBus, GameManager, ObjectPoolManager.</li>
+      <li><code>docs/ux-feedback-spec.md</code> — combat-feedback juice spec (damage numbers, wave warnings, power-up feedback, low-health, pause/upgrade UX). Addresses <i>feel</i>, not onboarding.</li>
+      <li>AGENTS.md / README — agent conventions, test matrix, known gaps.</li>
+    </ul>
+    <p><b>External sources (Tier 1–2 grounded, from escalation pass):</b></p>
+    <ul>
+      <li>[T1] GDC / Hades — Greg Kasandin on low barrier to entry — https://www.youtube.com/watch?v=9LykrwmUu8I</li>
+      <li>[T2] Android Police — Vampire Survivors developer interview (3–4 level-up options) — https://www.androidpolice.com/vampire-survivors-developer-interview</li>
+      <li>[T2] Superjump — Brotato (Godot-built peer) wave structure + synergies — https://www.superjumpmagazine.com/brotato-is-a-tasty-roguelike-snack</li>
+      <li>[T2] Inverse — Hades God Mode (20%→80% damage resistance, +2%/death, toggleable, doesn't block achievements) — https://www.inverse.com/gaming/hades-god-mode-interview</li>
+      <li>[T2] Access-Ability — Hades God Mode accessibility analysis — https://access-ability.uk/2022/04/25/hades-god-mode-is-a-great-approach-to-difficulty/</li>
+      <li>[T3-4] Brotato Wiki — Danger Levels scale enemy stats AND spawn composition (+12% to +60% dmg/hp) — https://brotato.fandom.com/wiki/Danger_Levels</li>
+      <li>[T3] VS Wiki — Level up: 5 XP to level 2, 3–4 options — https://vampire.survivors.wiki/w/Level_up</li>
+      <li>[T3] Hades 2 Wiki — Boons presented with explicit descriptions + prerequisite badges — https://hades2.wiki.fextralife.com/Boons</li>
+      <li>[T3] kokutech — Hades design: synergies via tags, not spelled-out optimal builds — https://www.kokutech.com/blog/gamedev/design-patterns/power-fantasy/hades</li>
+      <li>[T2] Digital Trends — Brotato hands-on: pause between waves to pick boosts/shop — https://www.digitaltrends.com/gaming/brotato-hands-on-impressions-pc/</li>
+      <li>[T4] VS Nexus Mods — Curse scales enemy Quantity and Health — https://www.nexusmods.com/vampiresurvivors/mods/120</li>
+    </ul>
+    <p class="effort"><b>Not checked:</b> Godot headless gate cannot execute C# in this workspace (mono binary hangs before any <code>_Ready</code> — see AGENTS.md "Known production gaps"). xUnit is the authoritative local gate. Source tiers: 1=official doc/dev/GDC interview, 2=press/UI reference, 3=community wiki, 4=community mod/forum.</p>
+  </section>
+
+</div>
+<footer>
+  Surgical Investigation Report — Hero's Arena · Generated 2026-10-17 · Investigator mode · For your review before any implementation. <br>
+  Standalone diagrams: <code>docs/backend-architecture.mmd</code> · <code>docs/frontend-architecture.mmd</code> · <code>docs/research-findings.mmd</code> · <code>docs/entire-project.mmd</code>
+</footer>
+</body>
+</html>

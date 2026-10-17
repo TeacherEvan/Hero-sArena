@@ -46,12 +46,12 @@ namespace HeroArena
         {
             if (_fireCooldown > 0f) return;
             FireBlades();
-            _fireCooldown = FIRE_COOLDOWN;
+            _fireCooldown = FIRE_COOLDOWN * Stats.AttackCooldownMult;
         }
 
         public override void Dodge()
         {
-            StartDodge(0.2f, 0.6f);
+            StartDodge(0.2f, 0.6f * Stats.DodgeCooldownMult);
         }
 
         public override void UseAbility()
@@ -65,10 +65,19 @@ namespace HeroArena
             var pool = GameManager.Instance.PoolManager;
             if (pool == null) return;
             Vector2 dir = GetAimDirection();
-            float dmg = _levelProg.CalcKineticDamage(BLADE_DAMAGE, Level);
+            float dmg = LevelProgression.CalcKineticDamage(BLADE_DAMAGE, Level)
+                * Stats.DamageMult * Stats.KineticDamageMult;
             var data = new ProjectileData(GlobalPosition, dir, BLADE_SPEED, dmg, DamageType.Kinetic);
             var p = pool.GetProjectile(data);
-            if (p != null) p.PiercingCount = 3;
+            if (p != null)
+            {
+                p.PiercingCount = Stats.ProjectilePiercing ? 3 : 0;
+                for (int i = 0; i < Stats.ProjectileCountBonus; i++)
+                {
+                    var extra = pool.GetProjectile(data);
+                    if (extra != null) extra.PiercingCount = Stats.ProjectilePiercing ? 3 : 0;
+                }
+            }
         }
 
         private void ActivateHyperDash()

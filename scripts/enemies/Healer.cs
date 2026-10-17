@@ -27,7 +27,7 @@ namespace HeroArena
         {
             base._PhysicsProcess(delta);
             float dt = (float)delta;
-            if (_aiState == HealerState.ChannelAura)
+            if (_aiState == HealerState.ChannelAura && !IsMindControlled)
             {
                 _healTick += dt;
                 if (_healTick >= HEAL_TICK)

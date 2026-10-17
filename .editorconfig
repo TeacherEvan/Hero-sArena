@@ -14,3 +14,9 @@ trim_trailing_whitespace = true
 # `dotnet tool run roslynator analyze` in CI.
 dotnet_diagnostic.IDE0161.severity = none
 dotnet_diagnostic.IDE0130.severity = none
+
+# CA1016 wants an explicit AssemblyVersion attribute. Godot.NET.Sdk supplies
+# assembly info while GenerateAssemblyInfo=false is set in Hero-sArena.csproj
+# (re-enabling duplicates the attributes → CS0579; see AGENTS.md), so this
+# rule is noise for this project.
+dotnet_diagnostic.CA1016.severity = none

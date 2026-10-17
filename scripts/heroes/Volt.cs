@@ -37,12 +37,12 @@ namespace HeroArena
         {
             if (_fireCooldown > 0f) return;
             FireArcLightning();
-            _fireCooldown = FIRE_COOLDOWN;
+            _fireCooldown = FIRE_COOLDOWN * Stats.AttackCooldownMult;
         }
 
         public override void Dodge()
         {
-            StartDodge(0.18f, 0.5f);
+            StartDodge(0.18f, 0.5f * Stats.DodgeCooldownMult);
         }
 
         public override void UseAbility()
@@ -56,10 +56,12 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
 
-            float dmg = _levelProg.CalcEnergyDamage(LIGHTNING_DAMAGE, Level);
-            int[] hits = grid.QueryRadius(GlobalPosition, LIGHTNING_RANGE, out int count);
+            float dmg = LevelProgression.CalcEnergyDamage(LIGHTNING_DAMAGE, Level)
+                * Stats.DamageMult * Stats.EnergyDamageMult;
+            int[] hits = grid.QueryRadius(GlobalPosition, LIGHTNING_RANGE * Stats.AoeRadiusMult, out int count);
             int forked = 0;
-            for (int i = 0; i < count && forked < MAX_FORKS; i++)
+            int forkLimit = MAX_FORKS + Stats.ProjectileCountBonus;
+            for (int i = 0; i < count && forked < forkLimit; i++)
             {
                 if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
                     && enemy.State != EnemyAIState.Dead)

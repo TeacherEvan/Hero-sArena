@@ -1,0 +1,79 @@
+[gd_scene load_steps=9 format=3 uid="uid://sandbox"]
+
+[ext_resource type="Script" path="res://scripts/maps/Sandbox.cs" id="1"]
+
+[node name="Sandbox" type="Node2D" node_paths=PackedStringArray("BtnAtlas", "BtnZephyr", "BtnSynapse", "BtnVolt", "BtnSpawnDummy", "BtnGodMode", "BtnApplyPerk", "BtnResetStats", "BtnBack", "HeroLabel", "PerkLabel", "HeroSpawnPoint", "DummyContainer")]
+script = ExtResource("1")
+BtnAtlas = NodePath("UI/Panel/VBoxContainer/BtnAtlas")
+BtnZephyr = NodePath("UI/Panel/VBoxContainer/BtnZephyr")
+BtnSynapse = NodePath("UI/Panel/VBoxContainer/BtnSynapse")
+BtnVolt = NodePath("UI/Panel/VBoxContainer/BtnVolt")
+BtnSpawnDummy = NodePath("UI/Panel/VBoxContainer/BtnSpawnDummy")
+BtnGodMode = NodePath("UI/Panel/VBoxContainer/BtnGodMode")
+BtnApplyPerk = NodePath("UI/Panel/VBoxContainer/BtnApplyPerk")
+BtnResetStats = NodePath("UI/Panel/VBoxContainer/BtnResetStats")
+BtnBack = NodePath("UI/Panel/VBoxContainer/BtnBack")
+HeroLabel = NodePath("UI/Panel/VBoxContainer/HeroLabel")
+PerkLabel = NodePath("UI/Panel/VBoxContainer/PerkLabel")
+HeroSpawnPoint = NodePath("HeroSpawnPoint")
+DummyContainer = NodePath("EntitiesLayer/DummyContainer")
+
+[node name="Camera" type="Camera2D" parent="."]
+current = true
+
+[node name="HeroSpawnPoint" type="Marker2D" parent="."]
+position = Vector2(0, 0)
+
+[node name="EntitiesLayer" type="Node2D" parent="."]
+
+[node name="DummyContainer" type="Node2D" parent="EntitiesLayer"]
+
+[node name="UI" type="CanvasLayer" parent="."]
+[node name="Panel" type="PanelContainer" parent="UI"]
+anchor_preset = 15
+margin_left = 20
+margin_top = 20
+margin_right = 20
+margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="UI/Panel"]
+alignment = 1
+[node name="TitleLabel" type="Label" parent="UI/Panel/VBoxContainer"]
+text = "Sandbox / Practice"
+custom_fonts/font/font_size = 28
+
+[node name="HeroLabel" type="Label" parent="UI/Panel/VBoxContainer"]
+text = "Hero: Atlas"
+
+[node name="BtnAtlas" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Atlas"
+
+[node name="BtnZephyr" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Zephyr"
+
+[node name="BtnSynapse" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Synapse"
+
+[node name="BtnVolt" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Volt"
+
+[node name="BtnSpawnDummy" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Spawn Dummy"
+
+[node name="BtnGodMode" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "God Mode: Off"
+
+[node name="BtnApplyPerk" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Apply Next Perk"
+
+[node name="PerkLabel" type="Label" parent="UI/Panel/VBoxContainer"]
+text = ""
+
+[node name="BtnResetStats" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Reset Stats"
+
+[node name="BtnBack" type="Button" parent="UI/Panel/VBoxContainer"]
+text = "Back to Main Menu"
+
+[node name="DecalLayer" type="Node2D" parent="."]
+[node name="ProjectilesLayer" type="Node2D" parent="."]

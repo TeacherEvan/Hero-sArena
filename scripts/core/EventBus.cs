@@ -21,6 +21,7 @@ namespace HeroArena
         public event Action<float>? OnHeroDamaged;
         public event Action<int>? OnLevelUp;
         public event Action<string>? OnPowerupCollected;
+        public event Action<PerkType>? OnPerkChosen;
 
         // ── Environment ───────────────────────────────────────────────────────
         public event Action<Vector2, float>? OnEnvironmentDestroyed;
@@ -57,6 +58,7 @@ namespace HeroArena
         public void EmitWaveStarted(int wave) => OnWaveStarted?.Invoke(wave);
         public void EmitWaveCompleted(int wave) => OnWaveCompleted?.Invoke(wave);
         public void EmitLevelUp(int level) => OnLevelUp?.Invoke(level);
+        public void EmitPerkChosen(PerkType perk) => OnPerkChosen?.Invoke(perk);
         public void EmitPowerupCollected(string type) => OnPowerupCollected?.Invoke(type);
         public void EmitEnvironmentDestroyed(Vector2 pos, float radius) => OnEnvironmentDestroyed?.Invoke(pos, radius);
         public void EmitThreatLevelChanged(int level) => OnThreatLevelChanged?.Invoke(level);

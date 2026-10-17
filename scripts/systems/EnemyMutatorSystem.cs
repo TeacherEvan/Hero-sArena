@@ -33,9 +33,9 @@ namespace HeroArena
 
         private void OnThreatChanged(int threatLevel) { /* future: re-apply scaling to live enemies */ }
 
-        public void ApplyMutators(EnemyBase enemy, int threatLevel)
+        public void ApplyMutators(EnemyBase enemy, int threatLevel, float mutatorScale = 1f)
         {
-            int mutatorCount = Mathf.Min(threatLevel, AllMutators.Length);
+            int mutatorCount = Mathf.CeilToInt(Mathf.Min(threatLevel, AllMutators.Length) * mutatorScale);
 
             Span<MutatorType> pool = stackalloc MutatorType[AllMutators.Length];
             AllMutators.AsSpan().CopyTo(pool);

@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 namespace HeroArena
 {
     /// <summary>
@@ -12,6 +14,8 @@ namespace HeroArena
         private const float FIRE_COOLDOWN = 0.3f;
         private const float OVERCLOCK_DURATION = 10f;
         private const float OVERCLOCK_COOLDOWN = 45f;
+        private const int MAX_MIND_CONTROL = 50;
+        private const float OVERCLOCK_RADIUS = 1200f;
 
         private float _fireCooldown = 0f;
         private float _overclockTimer = 0f;
@@ -36,12 +40,12 @@ namespace HeroArena
         {
             if (_fireCooldown > 0f) return;
             FireChainLaser();
-            _fireCooldown = FIRE_COOLDOWN;
+            _fireCooldown = FIRE_COOLDOWN * Stats.AttackCooldownMult;
         }
 
         public override void Dodge()
         {
-            StartDodge(0.25f, 0.8f);
+            StartDodge(0.25f, 0.8f * Stats.DodgeCooldownMult);
         }
 
         public override void UseAbility()
@@ -55,10 +59,12 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
 
-            float dmg = _levelProg.CalcEnergyDamage(LASER_DAMAGE, Level);
-            int[] hits = grid.QueryRadius(GlobalPosition, LASER_RANGE, out int count);
+            float dmg = LevelProgression.CalcEnergyDamage(LASER_DAMAGE, Level)
+                * Stats.DamageMult * Stats.EnergyDamageMult;
+            int[] hits = grid.QueryRadius(GlobalPosition, LASER_RANGE * Stats.AoeRadiusMult, out int count);
             int chained = 0;
-            for (int i = 0; i < count && chained < MAX_CHAIN; i++)
+            int chainLimit = MAX_CHAIN + Stats.ProjectileCountBonus;
+            for (int i = 0; i < count && chained < chainLimit; i++)
             {
                 if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
                     && enemy.State != EnemyAIState.Dead)
@@ -78,7 +84,30 @@ namespace HeroArena
             _overclockTimer = OVERCLOCK_DURATION;
             _overclockCooldown = OVERCLOCK_COOLDOWN;
             EventBus.Instance.EmitPowerupCollected("Overclock");
-            // Mind control nearest 50 enemies - flag them via a component/signal
+
+            var grid = GameManager.Instance.SpatialGrid;
+            if (grid == null) return;
+
+            // Candidate screening happens here (live enemies only); the
+            // nearest-N ordering and cap rules live in the pure
+            // MindControlTargets helper (covered headlessly in tests).
+            int[] hits = grid.QueryRadius(GlobalPosition, OVERCLOCK_RADIUS, out int count);
+            var candidates = new List<EnemyBase>();
+            var distancesSq = new List<float>();
+            for (int i = 0; i < count; i++)
+            {
+                if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
+                    && enemy.State != EnemyAIState.Dead)
+                {
+                    candidates.Add(enemy);
+                    distancesSq.Add(GlobalPosition.DistanceSquaredTo(enemy.GlobalPosition));
+                }
+            }
+
+            foreach (int index in MindControlTargets.SelectNearest(distancesSq, MAX_MIND_CONTROL))
+            {
+                candidates[index].ApplyMindControl(OVERCLOCK_DURATION);
+            }
         }
     }
 }

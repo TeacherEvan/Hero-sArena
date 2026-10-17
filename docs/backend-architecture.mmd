@@ -1,0 +1,63 @@
+flowchart TD
+    subgraph Core["Core Systems (scripts/core/)"]
+        GM[GameManager<br/>Autoload - state, score, wave]
+        GMS[GameManagerState<br/>Pure: state machine, score/threat math]
+        WM[WaveManager<br/>Weibull spawning, 2000 cap, boss timer]
+        WF[WaveFormulas<br/>Pure: Weibull intensity + enemy count]
+        LP[LevelProgression<br/>XP, damage, karma, perk offers]
+        PF[ProgressionFormulas<br/>Pure: damage/XP/perk math]
+        EB[EventBus<br/>Decoupled event hub]
+        OPM[ObjectPoolManager<br/>5000 projectiles + 10000 decals pre-allocated]
+        SHG[SpatialHashGrid<br/>O(1) spatial queries]
+        FF[FlowFieldPathfinder<br/>128x128 flow field, bg thread]
+        CK[CollateralKarma<br/>Destruction count -> threat]
+        DT[DestructionTracker<br/>Pure: destruction counting]
+        EMS[EnemyMutatorSystem<br/>Stacking enemy mutators by threat]
+        IB[InputBuffer / InputBufferState<br/>6-frame action buffer]
+    end
+
+    subgraph Heroes["Heroes (scripts/heroes/)"]
+        HB[HeroBase<br/>move, dodge, i-frames, leveling]
+        AT[Atlas - Strength]
+        ZE[Zephyr - Agility]
+        SY[Synapse - Intelligence]
+        VO[Volt - Speed]
+    end
+
+    subgraph Enemies["Enemies (scripts/enemies/)"]
+        EN[EnemyBase<br/>AI at 10Hz, flow field, spatial grid]
+        BR[Brute]
+        SP[Sprinter]
+        AR[Artillery]
+        SH[Shielder]
+        HE[Healer]
+        EX[Exploder]
+        BU[Burrower]
+        PA[Parasite]
+        AP[Apex - boss]
+    end
+
+    subgraph VFX["VFX (scripts/vfx/)"]
+        HF[HitFlash / HitFlashPalette]
+        SS[ScreenShake]
+        HS[HitStop]
+        DS[DecalSystem / DecalInstance]
+    end
+
+    GM --> GMS
+    GM --> WM
+    GM --> LP
+    GM --> EB
+    WM --> WF
+    WM --> EMS
+    LP --> PF
+    CK --> DT
+    HB --> AT & ZE & SY & VO
+    EN --> BR & SP & AR & SH & HE & EX & BU & PA & AP
+    GM -.-> SHG & FF & OPM & CK & IB
+    EB -.-> HF & SS & HS & DS
+
+    style Core fill:#131620,stroke:#e3c76a,color:#fff
+    style Heroes fill:#1f2433,stroke:#38bdf8,color:#fff
+    style Enemies fill:#1f2433,stroke:#ef4444,color:#fff
+    style VFX fill:#1f2433,stroke:#c084fc,color:#fff

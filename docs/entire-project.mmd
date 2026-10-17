@@ -1,0 +1,47 @@
+graph TB
+    subgraph Repo["Hero's Arena repo"]
+        subgraph Scripts["scripts/**/*.cs (game code)"]
+            Core[core/ - GameManager, WaveManager, LevelProgression,<br/>EventBus, ObjectPoolManager, SpatialHashGrid, FlowFieldPathfinder,<br/>ProgressionFormulas, WaveFormulas, GameManagerState, InputBufferState]
+            Heroes[heroes/ - HeroBase, Atlas, Zephyr, Synapse, Volt]
+            Enemies[enemies/ - EnemyBase + 10 types incl. Apex boss]
+            Systems[systems/ - EnemyMutatorSystem, CollateralKarma]
+            UI[ui/ - MainMenu, HUD, UpgradeMenu]
+            VFX[vfx/ - HitFlash, ScreenShake, HitStop, DecalSystem]
+            Maps[maps/ - MapBase, DestructibleObject]
+            Projectiles[projectiles/ - ProjectileBase, ProjectileData]
+        end
+
+        subgraph Scenes["scenes/"]
+            Main[Main.tscn - entry]
+            HeroScenes[heroes/]
+            EnemyScenes[enemies/]
+            MapScenes[maps/]
+            ProjScenes[projectiles/]
+            UIScenes[ui/]
+            VFXScenes[vfx/]
+        end
+
+        subgraph Tests["tests/"]
+            XUnit[xUnit - HeroArena.Tests.csproj (131 tests, headless)]
+            GodotGate[GodotTests/CoreSystemTests.tscn - unrunnable<br/>mono binary cannot execute C# in this workspace]
+            Benches[bench_test/ - frame-time benchmarks]
+        end
+
+        subgraph Config["Config & docs"]
+            PG[project.godot - autoloads: EventBus, GameManager, ObjectPoolManager]
+            EP[export_presets.cfg - Linux/Windows/macOS]
+            AG[AGENTS.md - agent conventions]
+            RD[README.md]
+            UX[docs/ux-feedback-spec.md - combat-feedback juice spec]
+        end
+    end
+
+    Scripts --> Scenes
+    Scripts --> Tests
+    Scripts --> Config
+
+    style Repo fill:#131620,stroke:#e3c76a,color:#fff
+    style Scripts fill:#1f2433,stroke:#38bdf8,color:#fff
+    style Scenes fill:#1f2433,stroke:#c084fc,color:#fff
+    style Tests fill:#1f2433,stroke:#ef4444,color:#fff
+    style Config fill:#1f2433,stroke:#e3c76a,color:#fff

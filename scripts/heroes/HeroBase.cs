@@ -10,8 +10,11 @@ namespace HeroArena
     public abstract partial class HeroBase : CharacterBody2D
     {
         // ── Stats ─────────────────────────────────────────────────────────────
-        [Export] public float MaxHealth { get; set; } = 100f;
-        [Export] public float MoveSpeed { get; set; } = 200f;
+        /// <summary>All modifiable hero stats, shared with <see cref="PerkSystem"/>.</summary>
+        public HeroStats Stats { get; } = new HeroStats();
+
+        [Export] public float MaxHealth { get => Stats.MaxHealth; set => Stats.MaxHealth = value; }
+        [Export] public float MoveSpeed { get => Stats.MoveSpeed; set => Stats.MoveSpeed = value; }
 
         public float CurrentHealth { get; protected set; }
         public int Level { get; protected set; } = 1;
@@ -25,15 +28,15 @@ namespace HeroArena
 
         // ── Subsystems ────────────────────────────────────────────────────────
         protected InputBuffer _inputBuffer = null!;
-        protected LevelProgression _levelProg = null!;
+
+        /// <summary>When true, <see cref="TakeDamage"/> ignores all incoming damage (used by god mode / i-frame effects).</summary>
+        public bool Invulnerable { get; set; }
 
         public override void _Ready()
         {
             CurrentHealth = MaxHealth;
             _inputBuffer = new InputBuffer();
             AddChild(_inputBuffer);
-            _levelProg = new LevelProgression();
-            AddChild(_levelProg);
             OnReady();
         }
 
@@ -83,6 +86,7 @@ namespace HeroArena
         // ── Damage / death ─────────────────────────────────────────────────────
         public virtual void TakeDamage(float amount, DamageType type)
         {
+            if (Invulnerable) return; // god mode / invulnerability
             if (_isDodging) return; // i-frames during dodge
             CurrentHealth -= amount;
             EventBus.Instance.EmitHeroDamaged(amount);
@@ -102,12 +106,12 @@ namespace HeroArena
         public void AddExperience(int xp)
         {
             Experience += xp;
-            int required = _levelProg.XpRequiredForLevel(Level + 1);
+            int required = LevelProgression.XpRequiredForLevel(Level + 1);
             while (Experience >= required)
             {
                 Experience -= required;
                 LevelUp();
-                required = _levelProg.XpRequiredForLevel(Level + 1);
+                required = LevelProgression.XpRequiredForLevel(Level + 1);
             }
         }
 

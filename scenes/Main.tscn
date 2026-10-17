@@ -1,4 +1,4 @@
-[gd_scene load_steps=17 format=3 uid="uid://main"]
+[gd_scene load_steps=24 format=3 uid="uid://main"]
 
 [ext_resource type="Script" path="res://scripts/vfx/ScreenShake.cs" id="2"]
 [ext_resource type="Script" path="res://scripts/vfx/HitFlash.cs" id="3"]
@@ -16,6 +16,13 @@
 [ext_resource type="PackedScene" path="res://scenes/maps/RuinedMetropolis.tscn" id="15"]
 [ext_resource type="PackedScene" path="res://scenes/ui/HUD.tscn" id="16"]
 [ext_resource type="Script" path="res://scripts/core/MainBootstrap.cs" id="17"]
+[ext_resource type="Script" path="res://scripts/vfx/LivingLightRig.cs" id="18"]
+[ext_resource type="Script" path="res://scripts/vfx/DestructionDrama.cs" id="19"]
+[ext_resource type="Script" path="res://scripts/vfx/ScreenDistortionFX.cs" id="20"]
+[ext_resource type="Script" path="res://scripts/vfx/LivingGround.cs" id="21"]
+[ext_resource type="Script" path="res://scripts/vfx/BiomeAtmosphere.cs" id="22"]
+[ext_resource type="Script" path="res://scripts/vfx/AmbientWildlife.cs" id="23"]
+[ext_resource type="Script" path="res://scripts/vfx/ScarLayer.cs" id="24"]
 
 [node name="Main" type="Node2D"]
 
@@ -24,21 +31,46 @@ script = ExtResource("2")
 
 [node name="Map" parent="." instance=ExtResource("15")]
 
+[node name="LivingGround" type="Node2D" parent="."]
+script = ExtResource("21")
+
+[node name="ScarLayer" type="Node2D" parent="."]
+script = ExtResource("24")
+
+[node name="BiomeAtmosphere" type="Node2D" parent="."]
+script = ExtResource("22")
+
+[node name="AmbientWildlife" type="Node2D" parent="."]
+script = ExtResource("23")
+
+[node name="LivingLightRig" type="Node2D" parent="."]
+script = ExtResource("18")
+
 [node name="WaveManager" type="Node" parent="."]
 script = ExtResource("4")
 EnemyScenes = Array[PackedScene]([ExtResource("5"), ExtResource("6"), ExtResource("7"), ExtResource("8"), ExtResource("9"), ExtResource("10"), ExtResource("11"), ExtResource("12"), ExtResource("13"), ExtResource("14")])
 
 [node name="DecalLayer" type="Node2D" parent="."]
 
+[node name="DestructionDrama" type="Node2D" parent="."]
+script = ExtResource("19")
+
 [node name="ProjectilesLayer" type="Node2D" parent="."]
 
 [node name="EntitiesLayer" type="Node2D" parent="."]
 
+[node name="ScreenDistortionFX" type="CanvasLayer" parent="."]
+layer = 1
+script = ExtResource("20")
+
 [node name="HUD" parent="." instance=ExtResource("16")]
+layer = 2
 
 [node name="UI" type="CanvasLayer" parent="."]
+layer = 3
 
 [node name="HitFlash" type="CanvasLayer" parent="."]
+layer = 4
 script = ExtResource("3")
 
 [node name="Bootstrap" type="Node" parent="."]

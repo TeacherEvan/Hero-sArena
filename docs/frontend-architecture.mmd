@@ -1,0 +1,34 @@
+flowchart TD
+    subgraph UI["UI Layer (scripts/ui/)"]
+        MM[MainMenu<br/>hero select, start, options, quit]
+        HUD[HUD<br/>health/XP/wave/score/threat/level,<br/>powerup banners, wave warning, low-health vignette]
+        UM[UpgradeMenu<br/>3 random perks, pauses game, forced choice]
+    end
+
+    subgraph Frontend["Frontend / Presentation (scenes/)"]
+        MT[scenes/Main.tscn<br/>entry scene]
+        HS[scenes/heroes/<br/>Atlas, Zephyr, Synapse, Volt]
+        ES[scenes/enemies/<br/>10 enemy types + Apex boss]
+        MS[scenes/maps/<br/>MapBase, DestructibleObject]
+        PS[scenes/projectiles/<br/>ProjectileBase, ProjectileData]
+        VS[scenes/vfx/<br/>decal, hitflash, screenshake]
+        UIS[scenes/ui/<br/>HUD, UpgradeMenu, MainMenu]
+    end
+
+    subgraph Theme["Styling (scripts/core/VisualTheme.cs)"]
+        VT[Dark void palette<br/>#0b0d14 bg, gold/cyan accents,<br/>StylePanel / StyleButton / StyleProgressBar]
+    end
+
+    MM -->|SelectHero + StartGame| MT
+    MM -->|ChangeSceneToPacked| MT
+    MT -->|_Ready wires| HUD & UM
+    HUD -->|EventBus binds| UM
+    UM -->|PauseGame / ResumeGame| MT
+    VT -->|runtime styling| MM & HUD & UM
+    HS -->|HeroBase| MT
+    ES -->|EnemyBase| MT
+    MS -->|Destructible / karma| MT
+
+    style UI fill:#131620,stroke:#e3c76a,color:#fff
+    style Frontend fill:#1f2433,stroke:#38bdf8,color:#fff
+    style Theme fill:#1f2433,stroke:#c084fc,color:#fff

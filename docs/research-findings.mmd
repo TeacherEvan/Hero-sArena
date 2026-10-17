@@ -1,0 +1,25 @@
+flowchart LR
+    subgraph Gaps["Confirmed gaps for novice players"]
+        G1[NO tutorial / onboarding<br/>Wave 1 with no instruction]
+        G2[NO difficulty selector<br/>single fixed Weibull + karma curve]
+        G3[NO perk transparency<br/>names only, no descriptions/synergies]
+        G4[17 of 20 perks are no-ops<br/>ApplyPerk() implements only 3]
+        G5[NO practice / sandbox mode<br/>permadeath GameOver, no experimentation]
+        G6[XP bar has no MaxValue<br/>progress-to-next-level unreadable]
+    end
+
+    subgraph Recommendations["3 recommendations"]
+        R1[R1 - Guided Tutorial /<br/>"First Wave" onboarding<br/>GameState.Tutorial, controlled spawns,<br/>on-screen prompts, guaranteed level-up]
+        R2[R2 - Difficulty Selector<br/>Easy / Normal / Hard<br/>scales enemy count, threat, mutators, XP]
+        R3[R3 - Perk Transparency +<br/>Sandbox Mode<br/>fix ApplyPerk (all 20 perks),<br/>perk descriptions, risk-free practice]
+    end
+
+    G1 --> R1
+    G2 --> R2
+    G3 --> R3
+    G4 --> R3
+    G5 --> R3
+    G6 --> R3
+
+    style Gaps fill:#2d1b1b,stroke:#ef4444,color:#fecaca
+    style Recommendations fill:#1b2d1b,stroke:#22c55e,color:#dcfce7

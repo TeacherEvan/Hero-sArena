@@ -1,0 +1,39 @@
+[gd_scene load_steps=4 format=3 uid="uid://tutorial"]
+
+[ext_resource type="Script" path="res://scripts/ui/Tutorial.cs" id="1"]
+
+[node name="Tutorial" type="Node" node_paths=PackedStringArray("PromptLabel", "ProgressLabel")]
+script = ExtResource("1")
+PromptLabel = NodePath("PromptLabel")
+ProgressLabel = NodePath("ProgressLabel")
+
+[node name="PromptLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.15
+anchor_right = 0.5
+anchor_bottom = 0.15
+offset_left = -300.0
+offset_top = -40.0
+offset_right = 300.0
+offset_bottom = 0.0
+align = 2
+valign = 1
+custom_fonts/font/font_size = 32
+custom_fonts/font/outline_size = 2
+custom_fonts/font/outline_color = Color(0, 0, 0, 1)
+
+[node name="ProgressLabel" type="Label" parent="."]
+anchor_left = 0.5
+anchor_top = 0.22
+anchor_right = 0.5
+anchor_bottom = 0.22
+offset_left = -200.0
+offset_top = -10.0
+offset_right = 200.0
+offset_bottom = 0.0
+align = 2
+valign = 1
+custom_fonts/font/font_size = 18
+custom_fonts/font/outline_size = 1
+custom_fonts/font/outline_color = Color(0, 0, 0, 1)
+modulate = Color(0.7, 0.7, 0.8, 1)

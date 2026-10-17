@@ -1,0 +1,96 @@
+{
+  "project": "Hero's Arena",
+  "timestamp": "2026-10-17",
+  "mode": "investigator",
+  "strategy": "codebase-first + targeted-docs + community-pulse (escalation pass)",
+  "escalationTrigger": "user asked 'is this the best you can do?'",
+  "mission": {
+    "stated": "A top-down arena shooter built with Godot 4.3 and C# (.NET 8). Fight waves of enemies across 4 hero classes; environmental destruction escalates threat via the Collateral Karma system.",
+    "actual": "A horde / top-down arena shooter (Vampire Survivors / Brotato / Hades-like) with 4 heroes, 10 enemy types, Weibull wave-spawning curve, 2000-enemy cap, 5s breather between waves, boss every 300s, XP-driven level-up into a 20-perk upgrade menu, and Collateral Karma threat escalation.",
+    "gap": "No tutorial/onboarding, no difficulty selector, no perk transparency (17 of 20 perks are no-ops), no practice/sandbox mode, XP bar has no MaxValue."
+  },
+  "dependencies": [
+    {"name":"Godot Engine","version":"4.3","latest":"4.3","status":"stable","tier":1},
+    {"name":".NET SDK","version":"8","latest":"8","status":"stable","tier":1},
+    {"name":"Godot.NET.Sdk","version":"4.3.0","latest":"4.3.0","status":"stable","tier":1},
+    {"name":"xUnit","version":"(test project)","latest":"—","status":"stable","tier":1},
+    {"name":"Roslynator","version":"(lint tool)","latest":"—","status":"stable","tier":1}
+  ],
+  "practices": {
+    "codeQuality": [{"rating":"good","finding":"Clean style; pure logic extracted from Node wrappers per AGENTS.md pattern."}],
+    "architecture": [{"rating":"good","finding":"EventBus decoupling, object pooling, SpatialHashGrid O(1), FlowFieldPathfinder on background thread."}],
+    "testing": [{"rating":"good","finding":"131 xUnit tests pass headlessly. Godot headless gate cannot run C# in this workspace (toolchain gap)."}],
+    "security": [{"rating":"good","finding":"No external services, no secrets, no network deps."}],
+    "performance": [{"rating":"good","finding":"Object pooling, spatial hash grid, capped spawns/frame (20), 2000-enemy cap."}],
+    "documentation": [{"rating":"warn","finding":"AGENTS.md/README accurate; docs/ux-feedback-spec.md covers combat juice, not onboarding."}],
+    "gameplay": [{"rating":"bad","finding":"UpgradeMenu.ApplyPerk() implements only 3 of 20 perks; the other 17 are no-ops."}]
+  },
+  "optimality": {
+    "algorithm": "Weibull wave curve appropriate; SpatialHashGrid O(1); FlowFieldPathfinder on background thread.",
+    "complexity": "Linear spawning capped at 2000 enemies; 20 spawns/frame throttle. No obvious N+1 or quadratic loops.",
+    "resources": "ObjectPoolManager pre-allocates 5000 projectiles + 10000 decals (zero runtime instantiation).",
+    "alternatives": "None needed for core systems.",
+    "scalability": "Holds at current load; 2000-enemy cap provides ceiling."
+  },
+  "externalResearch": [
+    {"strategy":"targeted-docs","query":"Hades God Mode difficulty design Greg Kasavin GDC interview","source":"Inverse interview / caniplaythat.com","tier":2,"finding":"God Mode = player damage resistance 20% start, +2%/death, caps 80%, toggleable anytime, doesn't block achievements/content. Difficulty settings 'may need to be proprietary to the game.'","url":"https://www.inverse.com/gaming/hades-god-mode-interview"},
+    {"strategy":"targeted-docs","query":"Vampire Survivors onboarding first level-up XP wave timing","source":"Vampire Survivors Wiki (community) / Android Police dev interview","tier":3,"finding":"5 XP to level 2 (first level-up ~30-60s); 3-4 level-up options (Galante's sweet spot); learn-by-doing, no tutorial level.","url":"https://vampire.survivors.wiki/w/Level_up"},
+    {"strategy":"targeted-docs","query":"Brotato danger levels difficulty scaling enemy stats spawn","source":"Brotato Wiki (community, mirrors game files)","tier":3,"finding":"Danger scales BOTH enemy HP/damage/speed AND spawn composition (new types, elites, hordes, bosses). Danger 3: +12% dmg/hp; Danger 5: +40%; Nightmare: +60% dmg/hp +10% speed.","url":"https://brotato.fandom.com/wiki/Danger_Levels"},
+    {"strategy":"community-pulse","query":"perk upgrade menu UX forced choice 3 options synergies roguelite","source":"Hades 2 Wiki / VS Wiki / Digital Trends Brotato / kokutech","tier":3,"finding":"Icon + name + explicit effect line; 3 options default; forced choice (skip/reroll gated behind currency); synergies via prerequisite badges not spelled-out optimal builds.","url":"https://vampire.survivors.wiki/w/Level_up"}
+  ],
+  "recommendations": [
+    {
+      "priority":"critical",
+      "title":"R3 - Perk Transparency + Practice/Sandbox Mode",
+      "why":"17 of 20 perks are no-ops in UpgradeMenu.ApplyPerk() (silent bug); no safe place to experiment under permadeath.",
+      "what":"Implement all 20 perks with real effects; add PerkDescription() + synergy tags shown as icon+name+one-line effect per perk card (3 options, forced choice); add Sandbox mode (no waves/GameOver, spawn dummies, god mode, try all heroes/perks, reset stats).",
+      "endpoint":"MainMenu.OpenSandbox() -> scenes/maps/Sandbox.tscn + scripts/maps/Sandbox.cs { SpawnDummy(Vector2?), SetGodMode(bool), ApplyPerk(PerkType), ResetHero() }; scripts/ui/UpgradeMenu.cs { PerkDescription(PerkType), ApplyPerk() all 20 perks }",
+      "interactiveControl":"Sandbox toolbar: Spawn Dummy / Toggle God Mode / Apply Perk dropdown / Reset Hero; UpgradeMenu perk cards with icon+name+description+synergy badge",
+      "payload":"PerkMeta[(string Name, string Description, string SynergyTag)] array of 20 entries; DifficultySettings struct (R2) reused by Sandbox god-mode resistance",
+      "effort":"~4-5 days (1 dev)",
+      "gate":"ApplyPerk all-20-perks effect tests (headless xUnit); PerkDescription pure test (headless xUnit)",
+      "sources":"[T2] Android Police VS interview; [T3] VS Wiki Level up/Powerup; [T2] Digital Trends Brotato; [T3] Hades 2 Wiki Boons; [T3] kokutech Hades design"
+    },
+    {
+      "priority":"high",
+      "title":"R1 - Guided 'First Wave' Onboarding Mode",
+      "why":"New players receive no instruction; Wave 1 spawns mixed enemies at full speed; no GameState.Tutorial.",
+      "what":"Start directly in Wave 1 (no tutorial level - Hades/Vs philosophy); Wave 1 is soft (1-3 slow Drones one at a time); teach 3 verbs (move/dodge, attack, collect XP) in first 60s; auto-pause at first level-up (~5 XP); on-screen control prompts; 3-perk forced-choice UpgradeMenu.",
+      "endpoint":"MainMenu.StartTutorial() -> PendingTutorial flag -> GameManager.StartTutorial() -> GameState.Tutorial; scripts/ui/Tutorial.cs { enum Step{Move,Attack,Dodge,Ability,LevelUp,Done}, SpawnNextDrone(), ShowPrompt(Step), MarkStepDone(Step) }; scenes/ui/Tutorial.tscn",
+      "interactiveControl":"Center-screen gold prompt label (font_size 30, outline); progress dots 'Step X of 5'; forced-choice perk modal on first level-up",
+      "effort":"~3-4 days (1 dev)",
+      "gate":"New GameState.Tutorial; tutorial-complete flag unlocks Normal mode in save data",
+      "sources":"[T1] GDC/Hades Kasavin interview; [T2] Android Police VS interview; [T2] Superjump Brotato; [T3] VS Wiki Level up"
+    },
+    {
+      "priority":"high",
+      "title":"R2 - Difficulty Selector (Easy / Normal / Hard)",
+      "why":"Single fixed Weibull + karma + mutator curve punishes novices; destroying environment raises threat.",
+      "what":"Difficulty enum in GameManagerState persisted to save; two orthogonal levers: spawn/density curve (Weibull multiplier) AND per-enemy stats (HP/damage) + threat interval + mutator scale + XP multiplier + breather seconds; optional Hades-style player damage-resistance toggle (20%->80% cap) that doesn't block progression.",
+      "endpoint":"GameManagerState.SetDifficulty(Difficulty) + GetSettings(Difficulty) -> DifficultySettings{EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier, ThreatInterval, MutatorScale, XpMultiplier, BreatherSeconds, PlayerDamageResistance}; WaveManager.BeginNextWave() reads GameManager.Instance.DifficultySettings; EnemyMutatorSystem.ApplyMutators(enemy, threatLevel, mutatorScale)",
+      "interactiveControl":"MainMenu difficulty buttons Easy/Normal/Hard with visual highlight on selected; optional God Mode resistance toggle",
+      "payload":"DifficultySettings { float EnemyCountMultiplier, EnemyHealthMultiplier, EnemyDamageMultiplier; int ThreatInterval; float MutatorScale, XpMultiplier, BreatherSeconds, PlayerDamageResistance }",
+      "effort":"~2-3 days (1 dev)",
+      "gate":"GetSettings() pure -> headless xUnit; WaveFormulas.CalculateWaveEnemyCount(wave, active, multiplier) headless xUnit",
+      "sources":"[T2] Inverse Hades God Mode interview; [T2] Access-Ability Hades analysis; [T3-4] Brotato Wiki Danger Levels; [T4] VS Nexus curse"
+    }
+  ],
+  "diagrams": {
+    "backend": "docs/backend-architecture.mmd",
+    "frontend": "docs/frontend-architecture.mmd",
+    "research": "docs/research-findings.mmd",
+    "entire": "docs/entire-project.mmd"
+  },
+  "deliverables": [
+    "docs/surgical-investigation-report.html",
+    "docs/surgical-investigation-report.json",
+    "docs/surgical-investigation-report.md",
+    "docs/surgical-investigation-report.sarif",
+    "docs/backend-architecture.mmd",
+    "docs/frontend-architecture.mmd",
+    "docs/research-findings.mmd",
+    "docs/entire-project.mmd",
+    "docs/investigation-notes/2026-10-17-novice-onboarding.md",
+    "docs/recommendations.md"
+  ]
+}

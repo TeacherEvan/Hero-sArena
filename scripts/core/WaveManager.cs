@@ -21,6 +21,7 @@ namespace HeroArena
         private float _bossTimer = 0f;
         private bool _waveInProgress = false;
         private float _breatherTimer = 0f;
+        private float _breatherSeconds = BREATHER_SECONDS;
         private int _currentWave = 0;
         private int _pendingEnemiesToSpawn = 0;
         private RandomNumberGenerator _rng = new RandomNumberGenerator();
@@ -38,6 +39,12 @@ namespace HeroArena
 
         public override void _PhysicsProcess(double delta)
         {
+            // During Tutorial (R1), WaveManager's Weibull spawning is
+            // suppressed — Tutorial.cs spawns drones one at a time instead.
+            if (GameManager.Instance != null
+                && GameManager.Instance.CurrentState != GameState.Playing)
+                return;
+
             float dt = (float)delta;
             _bossTimer += dt;
 
@@ -86,10 +93,15 @@ namespace HeroArena
             _waveWarningEmitted = false;
             EventBus.Instance.EmitWaveStarted(_currentWave);
 
+            var gameManager = GameManager.Instance;
+            var settings = gameManager?.DifficultySettings
+                ?? GameManagerState.GetSettings(Difficulty.Normal);
+            _breatherSeconds = settings.BreatherSeconds;
+
             // Weibull intensity, min floor, and the MaxEnemies clamp live in
             // WaveFormulas (covered headlessly in WaveFormulasTests).
             int totalEnemies = WaveFormulas.CalculateWaveEnemyCount(
-                _currentWave, GameManager.Instance.ActiveEnemyCount);
+                _currentWave, gameManager?.ActiveEnemyCount ?? 0, settings.EnemyCountMultiplier);
             SpawnWaveEnemies(totalEnemies);
         }
 
@@ -125,8 +137,12 @@ namespace HeroArena
             var enemy = scene.Instantiate<EnemyBase>();
             enemy.GlobalPosition = pos;
             GetTree().CurrentScene.AddChild(enemy);
-            EnemyMutatorSystem.Instance?.ApplyMutators(enemy, GameManager.Instance.ThreatLevel);
-            GameManager.Instance.IncrementEnemyCount();
+            var gameManager = GameManager.Instance;
+            var settings = gameManager?.DifficultySettings
+                ?? GameManagerState.GetSettings(Difficulty.Normal);
+            EnemyMutatorSystem.Instance?.ApplyMutators(
+                enemy, gameManager?.ThreatLevel ?? 0, settings.MutatorScale);
+            gameManager?.IncrementEnemyCount();
         }
 
         private void SpawnBoss()
@@ -141,7 +157,7 @@ namespace HeroArena
         private void OnWaveComplete(int wave)
         {
             _waveInProgress = false;
-            _breatherTimer = BREATHER_SECONDS;
+            _breatherTimer = _breatherSeconds;
             _waveWarningEmitted = false;
         }
 

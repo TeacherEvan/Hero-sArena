@@ -86,6 +86,36 @@ namespace HeroArena
             return true;
         }
 
+        // ── Tutorial (R1: Guided "First Wave" onboarding) ───────────────────
+
+        public bool InTutorial { get; private set; }
+
+        /// <summary>
+        /// Resets run metrics and drops the machine into Tutorial state.
+        /// Caller (GameManager) suppresses normal Weibull wave spawning while
+        /// in Tutorial and delegates spawning to Tutorial.cs.
+        /// </summary>
+        public void StartTutorial()
+        {
+            CurrentWave = 0;
+            Score = 0;
+            ThreatLevel = 0;
+            KillCount = 0;
+            DestructionCount = 0;
+            ActiveEnemyCount = 0;
+            InTutorial = true;
+            SetState(GameState.Tutorial);
+        }
+
+        /// <summary>
+        /// Leaves Tutorial, returns to MainMenu, and unlocks Normal mode.
+        /// </summary>
+        public void CompleteTutorial()
+        {
+            InTutorial = false;
+            SetState(GameState.MainMenu);
+        }
+
         /// <summary>
         /// One enemy kill: kill counter up, score up by expValue × 10, live
         /// enemy count down. Caller passes EnemyBase.ExpValue (int) and only
@@ -99,16 +129,17 @@ namespace HeroArena
         }
 
         /// <summary>
-        /// One environmental destruction. Threat steps up by one per 10
-        /// destructions (integer division) — but only forward, never back:
-        /// destruction that happens below the current threat level does not
-        /// lower anything. Returns true when the caller must emit
-        /// EventBus.OnThreatLevelChanged.
+        /// One environmental destruction. Threat steps up by one per
+        /// <see cref="DifficultySettings.ThreatInterval"/> destructions — but
+        /// only forward, never back: destruction below the current threat
+        /// level does not lower anything. Returns true when the caller must
+        /// emit EventBus.OnThreatLevelChanged.
         /// </summary>
         public bool RecordEnvironmentDestroyed()
         {
             DestructionCount++;
-            int newThreat = DestructionCount / 10;
+            var settings = GetSettings(CurrentDifficulty);
+            int newThreat = DestructionCount / settings.ThreatInterval;
             if (newThreat > ThreatLevel)
             {
                 ThreatLevel = newThreat;
@@ -116,8 +147,72 @@ namespace HeroArena
             }
             return false;
         }
+
+        // ── Difficulty ────────────────────────────────────────────────────────
+
+        public Difficulty CurrentDifficulty { get; private set; } = Difficulty.Normal;
+
+        public void SetDifficulty(Difficulty d)
+        {
+            if (CurrentDifficulty == d) return;
+            CurrentDifficulty = d;
+        }
+
+        /// <summary>
+        /// Per-difficulty settings payload applied at wave generation and by
+        /// the mutator system. Pure — headlessly testable via xUnit.
+        /// </summary>
+        public static DifficultySettings GetSettings(Difficulty d) => d switch
+        {
+            Difficulty.Easy => new DifficultySettings
+            {
+                EnemyCountMultiplier = 0.6f,
+                EnemyHealthMultiplier = 0.7f,
+                EnemyDamageMultiplier = 0.7f,
+                ThreatInterval = 20,
+                MutatorScale = 0.5f,
+                XpMultiplier = 1.5f,
+                BreatherSeconds = 8f,
+            },
+            Difficulty.Hard => new DifficultySettings
+            {
+                EnemyCountMultiplier = 1.4f,
+                EnemyHealthMultiplier = 1.3f,
+                EnemyDamageMultiplier = 1.3f,
+                ThreatInterval = 8,
+                MutatorScale = 1.5f,
+                XpMultiplier = 0.8f,
+                BreatherSeconds = 4f,
+            },
+            _ => new DifficultySettings
+            {
+                EnemyCountMultiplier = 1.0f,
+                EnemyHealthMultiplier = 1.0f,
+                EnemyDamageMultiplier = 1.0f,
+                ThreatInterval = 10,
+                MutatorScale = 1.0f,
+                XpMultiplier = 1.0f,
+                BreatherSeconds = 5f,
+            },
+        };
+    }
+
+    /// <summary>Per-difficulty settings payload applied at wave generation
+    /// and by the mutator system.</summary>
+    public struct DifficultySettings
+    {
+        public float EnemyCountMultiplier;   // spawn curve / density lever
+        public float EnemyHealthMultiplier;  // per-enemy stats lever
+        public float EnemyDamageMultiplier;  // per-enemy stats lever
+        public int   ThreatInterval;         // destructions per threat level
+        public float MutatorScale;           // mutator count scale
+        public float XpMultiplier;           // player XP gain
+        public float BreatherSeconds;        // between waves
     }
 
     /// <summary>Run-state contract of the GameManager autoload.</summary>
-    public enum GameState { MainMenu, Playing, Paused, GameOver, LevelUp }
+    public enum Difficulty { Easy, Normal, Hard }
+
+    /// <summary>Run-state contract of the GameManager autoload.</summary>
+    public enum GameState { MainMenu, Tutorial, Playing, Paused, GameOver, LevelUp }
 }

@@ -27,9 +27,9 @@ namespace HeroArena.Tests
     /// in-engine cross-covers of headlessly-tested logic, kept as a second
     /// harness for the day the engine runs. Only TestEntityRegistry,
     /// TestCollateralKarmaBehavior, TestGameManagerDelegation,
-    /// TestInputBufferDelegation, TestPowerupBannerDelegation and
-    /// TestPowerupBannerDelegation and TestHitFlash are genuinely
-    /// SceneTree-dependent.
+    /// TestInputBufferDelegation, TestPowerupBannerDelegation, TestHitFlash,
+    /// TestSurroundingsFx (R-FX1/2/3 runtime smoke) and TestEnemyTargetDisposal
+    /// are genuinely SceneTree-dependent.
     ///
     /// Note: the retired `GateRunner.cs` SceneTree wrapper used `-s` mode,
     /// which cannot run C# scripts on this machine. The scene entry above
@@ -77,6 +77,12 @@ namespace HeroArena.Tests
             try { TestHitFlash(); passed++; GD.Print("PASS: HitFlash tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: HitFlash - {e.Message}"); }
 
+            try { TestSurroundingsFx(); passed++; GD.Print("PASS: Surroundings FX runtime tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: Surroundings FX - {e.Message}"); }
+
+            try { TestEnemyTargetDisposal(); passed++; GD.Print("PASS: Enemy target-disposal tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: Enemy target disposal - {e.Message}"); }
+
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
 
             if (failed > 0)
@@ -89,7 +95,7 @@ namespace HeroArena.Tests
             }
         }
 
-        private void TestSpatialHashGrid()
+        private static void TestSpatialHashGrid()
         {
             var grid = new SpatialHashGrid(64, 64);
 
@@ -145,7 +151,7 @@ namespace HeroArena.Tests
         /// WaveFormulasTests in xUnit; this in-engine check cross-covers the
         /// values.
         /// </summary>
-        private void TestWaveManager()
+        private static void TestWaveManager()
         {
             // Test the Weibull distribution calculation directly
             const int MinWaveEnemies = 10;
@@ -175,7 +181,7 @@ namespace HeroArena.Tests
                 throw new Exception($"Wave 20 expected > {MinWaveEnemies}, got {count}");
         }
 
-        private void TestFlowFieldPathfinder()
+        private static void TestFlowFieldPathfinder()
         {
             var pathfinder = new FlowFieldPathfinder();
 
@@ -205,45 +211,45 @@ namespace HeroArena.Tests
                 throw new Exception("CELL_COUNT mismatch");
         }
 
-        private void TestLevelProgression()
+        private static void TestLevelProgression()
         {
             var progression = new LevelProgression();
 
             // Test kinetic damage
-            float kinetic = progression.CalcKineticDamage(100f, 1);
+            float kinetic = LevelProgression.CalcKineticDamage(100f, 1);
             if (MathF.Abs(kinetic - 115f) > 0.001f)
                 throw new Exception($"Kinetic damage level 1: expected 115, got {kinetic}");
 
-            kinetic = progression.CalcKineticDamage(100f, 5);
+            kinetic = LevelProgression.CalcKineticDamage(100f, 5);
             if (MathF.Abs(kinetic - 175f) > 0.001f)
                 throw new Exception($"Kinetic damage level 5: expected 175, got {kinetic}");
 
             // Test energy damage
-            float energy = progression.CalcEnergyDamage(100f, 1);
+            float energy = LevelProgression.CalcEnergyDamage(100f, 1);
             if (MathF.Abs(energy - 100f) > 1f)
                 throw new Exception($"Energy damage level 1: expected ~100, got {energy}");
 
-            energy = progression.CalcEnergyDamage(100f, 10);
+            energy = LevelProgression.CalcEnergyDamage(100f, 10);
             if (MathF.Abs(energy - 1995.3f) > 1f)
                 throw new Exception($"Energy damage level 10: expected ~1995, got {energy}");
 
             // Test karma amplifier
-            float karma0 = progression.CalcKarmaAmplifier(0);
+            float karma0 = LevelProgression.CalcKarmaAmplifier(0);
             if (MathF.Abs(karma0 - 1f) > 0.001f)
                 throw new Exception($"Karma 0: expected 1, got {karma0}");
 
-            float karma10 = progression.CalcKarmaAmplifier(10);
+            float karma10 = LevelProgression.CalcKarmaAmplifier(10);
             if (karma10 <= karma0)
                 throw new Exception("Karma should increase with destruction");
 
             // Test XP formula
-            if (progression.XpRequiredForLevel(1) != 100)
+            if (LevelProgression.XpRequiredForLevel(1) != 100)
                 throw new Exception("XP level 1");
-            if (progression.XpRequiredForLevel(2) != 160)
+            if (LevelProgression.XpRequiredForLevel(2) != 160)
                 throw new Exception("XP level 2");
-            if (progression.XpRequiredForLevel(5) != 460)
+            if (LevelProgression.XpRequiredForLevel(5) != 460)
                 throw new Exception("XP level 5");
-            if (progression.XpRequiredForLevel(10) != 1360)
+            if (LevelProgression.XpRequiredForLevel(10) != 1360)
                 throw new Exception("XP level 10");
 
             // Test perk selection
@@ -264,7 +270,7 @@ namespace HeroArena.Tests
         /// trip is asserted in EntityRegistryTests (xUnit, against the pure
         /// EntityRegistry directly).
         /// </summary>
-        private void TestEntityRegistry()
+        private static void TestEntityRegistry()
         {
             // Unknown id → null
             if (EnemyBase.TryGetById(int.MaxValue, out var unknown) && unknown != null)
@@ -281,7 +287,7 @@ namespace HeroArena.Tests
         /// Verifies the logarithmic amplifier formula at a few known points.
         /// (Also covered headlessly in KarmaAmplifierTests.)
         /// </summary>
-        private void TestCollateralKarma()
+        private static void TestCollateralKarma()
         {
             // The KarmaAmplifier formula lives on a Node, so we instantiate it
             // the same way xUnit does (reflection-based uninitialized object).
@@ -308,7 +314,11 @@ namespace HeroArena.Tests
         private void TestCollateralKarmaBehavior()
         {
             var karma = new CollateralKarma();
-            GetTree().Root.AddChild(karma);
+            // Add to this node, not /root: during the main scene's _Ready the
+            // root is still busy setting up children, so Root.AddChild fails
+            // ("Parent node is busy setting up children") and _Ready — the
+            // EventBus subscription — never runs.
+            AddChild(karma);
             if (karma.DestructionCount != 0)
                 throw new Exception($"Initial DestructionCount expected 0, got {karma.DestructionCount}");
             EventBus.Instance.EmitEnvironmentDestroyed(Vector2.Zero, 10f);
@@ -328,7 +338,7 @@ namespace HeroArena.Tests
         /// ConsumeAction false. BufferFrame-1 boundary and pure-queue
         /// mechanics are asserted headlessly in InputBufferStateTests.
         /// </summary>
-        private void TestInputBufferDelegation()
+        private static void TestInputBufferDelegation()
         {
             var buffer = new InputBuffer();
             var action = new StringName("attack");
@@ -368,7 +378,7 @@ namespace HeroArena.Tests
         /// The pure primitives themselves are asserted in
         /// GameManagerStateTests (xUnit, headless).
         /// </summary>
-        private void TestGameManagerDelegation()
+        private static void TestGameManagerDelegation()
         {
             var gm = new GameManager();
 
@@ -422,7 +432,7 @@ namespace HeroArena.Tests
         /// gate check only pins the delegation so the extracted logic stays
         /// wired into the HUD.
         /// </summary>
-        private void TestPowerupBannerDelegation()
+        private static void TestPowerupBannerDelegation()
         {
             const string slotsSource = "scripts/core/PowerupBannerSlots.cs";
             if (!System.IO.File.Exists(slotsSource))
@@ -465,7 +475,8 @@ namespace HeroArena.Tests
         {
             // 1. The Main scene must wire a HitFlash node so the event has
             //    a consumer at runtime.
-            const string mainScene = "res://scenes/Main.tscn";
+            // System.IO works on real filesystem paths, so globalize res:// first.
+            string mainScene = ProjectSettings.GlobalizePath("res://scenes/Main.tscn");
             if (!System.IO.File.Exists(mainScene))
                 throw new Exception($"Main scene not found: {mainScene}");
             string sceneText = System.IO.File.ReadAllText(mainScene);
@@ -473,7 +484,7 @@ namespace HeroArena.Tests
                 throw new Exception("Main.tscn does not wire a HitFlash node — OnProjectileHit is still unconsumed (F-31)");
 
             // 2. The HitFlash script must subscribe to OnProjectileHit.
-            const string hitFlashSource = "scripts/vfx/HitFlash.cs";
+            string hitFlashSource = ProjectSettings.GlobalizePath("res://scripts/vfx/HitFlash.cs");
             if (!System.IO.File.Exists(hitFlashSource))
                 throw new Exception($"HitFlash source not found: {hitFlashSource}");
             string hfText = System.IO.File.ReadAllText(hitFlashSource);
@@ -485,9 +496,11 @@ namespace HeroArena.Tests
             // 3. Construct a HitFlash, add it to the live tree, and verify
             //    that emitting OnProjectileHit enables _Process.
             var flash = new HitFlash();
-            GetTree().Root.AddChild(flash);
-            // _Ready fires on AddChild. Wait one frame so subscriptions
-            // take effect, then trigger.
+            // Same root-busy constraint as CollateralKarma: add to this node
+            // so _Ready (the subscription + overlay creation) runs now.
+            AddChild(flash);
+            // _Ready fires synchronously on AddChild, so the subscription is
+            // already in place; trigger the event.
             EventBus.Instance.EmitProjectileHit(Vector2.Zero, DamageType.Kinetic);
             if (!flash.IsProcessing())
                 throw new Exception("HitFlash should be processing after OnProjectileHit");
@@ -509,7 +522,7 @@ namespace HeroArena.Tests
             //    (defense against future enum additions silently using red).
             //    The branches live in the Godot-free HitFlashPalette; the
             //    mapping itself is asserted in HitFlashPaletteTests.
-            const string paletteSource = "scripts/core/HitFlashPalette.cs";
+            string paletteSource = ProjectSettings.GlobalizePath("res://scripts/core/HitFlashPalette.cs");
             if (!System.IO.File.Exists(paletteSource))
                 throw new Exception($"HitFlashPalette source not found: {paletteSource}");
             string paletteText = System.IO.File.ReadAllText(paletteSource);
@@ -522,6 +535,107 @@ namespace HeroArena.Tests
 
             flash.QueueFree();
             GD.Print("  HitFlash: subscribed to OnProjectileHit, fade lifecycle correct, all 6 DamageType colors mapped");
+        }
+
+        /// <summary>
+        /// Runtime smoke of the interactive-surroundings FX layer (R-FX1/2/3).
+        /// The three nodes must build their pools headlessly, react to their
+        /// EventBus signals, and use linear filtering for their code-generated
+        /// gradient textures (the project-wide default is Nearest). Also pins
+        /// the ScreenDistortionFX wake fix: hero damage and threat changes
+        /// must re-enable processing even when the layer had settled to idle
+        /// (previously the pulse was recorded but the overlay never woke to
+        /// draw it). The underlying math is asserted headlessly in
+        /// LightFXStateTests / ScreenRippleStateTests / DebrisBurstPlanTests.
+        /// </summary>
+        private void TestSurroundingsFx()
+        {
+            // --- LivingLightRig: pool built, hit reaction, linear filter ---
+            var rig = new LivingLightRig();
+            AddChild(rig);
+            if (rig.TextureFilter != CanvasItem.TextureFilterEnum.Linear)
+                throw new Exception("LivingLightRig must use Linear filtering (gradient banding fix)");
+            if (rig.GetChildCount() != 1 + LightFXState.SlotCount)
+                throw new Exception($"LivingLightRig expected {1 + LightFXState.SlotCount} children (veil + flash lights), got {rig.GetChildCount()}");
+            // Explosive impacts bypass the rate limit, so a light must light up.
+            EventBus.Instance.EmitProjectileHit(new Vector2(120f, 80f), DamageType.Explosive);
+            rig._Process(0.016);
+            bool lit = false;
+            for (int i = 1; i < rig.GetChildCount(); i++)
+            {
+                if (rig.GetChild<PointLight2D>(i).Enabled) { lit = true; break; }
+            }
+            if (!lit)
+                throw new Exception("LivingLightRig: no light enabled after an Explosive hit");
+            rig.QueueFree();
+
+            // --- DestructionDrama: pool built, destruction reaction ---
+            var drama = new DestructionDrama();
+            AddChild(drama);
+            if (drama.TextureFilter != CanvasItem.TextureFilterEnum.Linear)
+                throw new Exception("DestructionDrama must use Linear filtering (gradient banding fix)");
+            EventBus.Instance.EmitEnvironmentDestroyed(new Vector2(64f, 64f), 80f);
+            if (!drama.IsProcessing())
+                throw new Exception("DestructionDrama should process after OnEnvironmentDestroyed");
+            bool shardShown = false;
+            foreach (var child in drama.GetChildren())
+            {
+                if (child is Sprite2D sprite && sprite.Visible) { shardShown = true; break; }
+            }
+            if (!shardShown)
+                throw new Exception("DestructionDrama: no visible shard/ring sprite after destruction");
+            drama.QueueFree();
+
+            // --- ScreenDistortionFX: wake regression + event reactions ---
+            var fx = new ScreenDistortionFX();
+            AddChild(fx);
+            var overlay = fx.GetChild<ColorRect>(0);
+            EventBus.Instance.EmitHeroDamaged(10f);
+            if (!fx.IsProcessing())
+                throw new Exception("ScreenDistortionFX must process after OnHeroDamaged (wake regression)");
+            if (!overlay.Visible)
+                throw new Exception("ScreenDistortionFX overlay must show after OnHeroDamaged");
+            fx._Process(0.016);
+            EventBus.Instance.EmitThreatLevelChanged(12);
+            if (!fx.IsProcessing())
+                throw new Exception("ScreenDistortionFX must process after OnThreatLevelChanged");
+            EventBus.Instance.EmitProjectileHit(new Vector2(0f, 0f), DamageType.Kinetic);
+            fx._Process(0.016);
+            if (!overlay.Visible)
+                throw new Exception("ScreenDistortionFX overlay must stay visible while rippling");
+            fx.QueueFree();
+
+            GD.Print("  Surroundings FX: light rig + destruction drama + distortion layer built, react to events, linear-filtered");
+        }
+
+        /// <summary>
+        /// Regression for the enemy target cache: enemies capture
+        /// GameManager.ActiveHero at spawn and only ever test it for null.
+        /// A disposed reference (the hero is freed on death) is non-null, so
+        /// every enemy used to throw ObjectDisposedException from
+        /// Move/UpdateAI every physics frame — a permanent log/CPU flood
+        /// until restart (surfaced by the headless Main.tscn smoke run).
+        /// EnemyBase must drop invalid cached references instead.
+        /// </summary>
+        private void TestEnemyTargetDisposal()
+        {
+            var previousHero = GameManager.Instance.ActiveHero;
+            var hero = new Atlas();
+            GameManager.Instance.ActiveHero = hero;
+            AddChild(hero);
+
+            var drone = new Drone();
+            AddChild(drone); // caches the hero reference in _Ready
+
+            hero.Free(); // immediate disposal (game over path)
+
+            // Run past the AI interval so both UpdateAI and Move execute.
+            for (int i = 0; i < 20; i++)
+                drone._PhysicsProcess(0.05);
+
+            drone.QueueFree();
+            GameManager.Instance.ActiveHero = previousHero;
+            GD.Print("  Enemy targeting: disposed hero reference handled without exceptions");
         }
     }
 }

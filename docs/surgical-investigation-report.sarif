@@ -1,0 +1,199 @@
+{
+  "$schema": "https://docs.oasis-open.org/sarif/sarif-2.1.0/csprd01/schemas/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "surgical-investigation",
+          "version": "1.0.0",
+          "informationUri": "https://github.com/leandi-duplessis/Hero-sArena",
+          "rules": [
+            {
+              "id": "NOV-001",
+              "name": "Missing tutorial / onboarding",
+              "description": "New players are dropped into Wave 1 with no instruction on controls, dodge, abilities, or the level-up/perk flow.",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "help": {
+                "text": "Add GameState.Tutorial with controlled slow spawns and on-screen control prompts."
+              },
+              "properties": {
+                "category": "gameplay-onboarding",
+                "impact": "high",
+                "effort": "3-4 days",
+                "tier": 1
+              }
+            },
+            {
+              "id": "NOV-002",
+              "name": "No difficulty selector",
+              "description": "Single fixed Weibull wave curve + CollateralKarma threat escalation + stacking mutators punishes novices; no Easy/Normal/Hard levers.",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "help": {
+                "text": "Add GameManagerState.Difficulty enum; Easy/Normal/Hard scale enemy count, threat interval, mutator count, XP, breather."
+              },
+              "properties": {
+                "category": "gameplay-difficulty",
+                "impact": "high",
+                "effort": "2-3 days",
+                "tier": 1
+              }
+            },
+            {
+              "id": "NOV-003",
+              "name": "Perk transparency / dead perks",
+              "description": "UpgradeMenu.ApplyPerk() implements only 3 of 20 perks (DamageUp is a commented no-op, SpeedUp and MaxHealthUp work); the other 17 perks have no effect. No perk descriptions or synergy hints shown.",
+              "defaultConfiguration": {
+                "level": "error"
+              },
+              "help": {
+                "text": "Implement all 20 perks; add PerkDescription() + synergy hints; add Sandbox/practice mode (no waves/GameOver, spawn dummies, god mode, try all heroes/perks)."
+              },
+              "properties": {
+                "category": "gameplay-progression",
+                "impact": "critical",
+                "effort": "4-5 days",
+                "tier": 1
+              }
+            },
+            {
+              "id": "NOV-004",
+              "name": "No practice / sandbox mode",
+              "description": "Permadeath GameOver on first hero death gives novices no room to experiment with heroes, abilities, or perk combinations.",
+              "defaultConfiguration": {
+                "level": "warn"
+              },
+              "help": {
+                "text": "Add scenes/maps/Sandbox.tscn + scripts/maps/Sandbox.cs with SpawnDummy(), SetGodMode(), ApplyPerk(), ResetHero()."
+              },
+              "properties": {
+                "category": "gameplay-practice",
+                "impact": "medium",
+                "effort": "included in NOV-003",
+                "tier": 2
+              }
+            }
+          ]
+        }
+      },
+      "results": [
+        {
+          "ruleId": "NOV-003",
+          "level": "error",
+          "message": {
+            "text": "17 of 20 perks are no-ops in UpgradeMenu.ApplyPerk(); progression feels random to novices."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scripts/ui/UpgradeMenu.cs"
+                },
+                "region": {
+                  "startLine": 51,
+                  "endLine": 65,
+                  "snippet": {
+                    "text": "switch (perk) { case DamageUp: break; ... }"
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "impact": "critical",
+            "effort": "4-5 days",
+            "recommendationId": "R3"
+          }
+        },
+        {
+          "ruleId": "NOV-001",
+          "level": "error",
+          "message": {
+            "text": "No tutorial/onboarding; new players receive no instruction before Wave 1."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scripts/ui/MainMenu.cs"
+                },
+                "region": {
+                  "startLine": 44,
+                  "endLine": 65,
+                  "snippet": {
+                    "text": "StartGame() loads GameScene directly with no tutorial gate."
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "impact": "high",
+            "effort": "3-4 days",
+            "recommendationId": "R1"
+          }
+        },
+        {
+          "ruleId": "NOV-002",
+          "level": "error",
+          "message": {
+            "text": "No difficulty selector; single fixed curve punishes novices."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scripts/core/GameManagerState.cs"
+                },
+                "region": {
+                  "startLine": 20,
+                  "endLine": 123,
+                  "snippet": {
+                    "text": "GameManagerState has no Difficulty concept."
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "impact": "high",
+            "effort": "2-3 days",
+            "recommendationId": "R2"
+          }
+        },
+        {
+          "ruleId": "NOV-004",
+          "level": "warn",
+          "message": {
+            "text": "No practice/sandbox mode; permadeath GameOver blocks experimentation."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "scripts/heroes/HeroBase.cs"
+                },
+                "region": {
+                  "startLine": 95,
+                  "endLine": 99,
+                  "snippet": {
+                    "text": "Die() calls GameManager.Instance.TriggerGameOver() and QueueFree()."
+                  }
+                }
+              }
+            }
+          ],
+          "properties": {
+            "impact": "medium",
+            "effort": "included in R3",
+            "recommendationId": "R3"
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -25,11 +25,30 @@ escalates threat via the Collateral Karma system.
 - `LevelProgression.cs` — Kinetic (`D*(1+0.15L)`), energy (`D*L^gamma`), and karma (`ln(e+0.05K)`) formulas; XP curve; random perk offers.
 - `InputBuffer.cs` — 6-frame (100ms @ 60Hz) action buffer for responsive input.
 - `CollateralKarma.cs` — Tracks environmental destruction; feeds the karma amplifier.
+- `GameManagerState.cs` — Godot-free run-state machine (transitions, guards, score/threat math); `GameManager` delegates 1:1.
+- `InputBufferState.cs` — Godot-free 6-frame input buffer (membership, expiry window, refill-slot semantics); `InputBuffer` delegates 1:1.
+- `ProgressionFormulas.cs` — Kinetic/energy/karma formulas; `LevelProgression`/`CollateralKarma` delegate.
+- `WaveFormulas.cs` — Weibull wave-intensity curve + min floor + MaxEnemies clamp; `WaveManager` delegates.
+- `EntityRegistry.cs` — F-1 registry regression; `EnemyBase.TryGetById` delegates.
+- `HitFlashPalette.cs` — F-31 damage-type colors + fade curve; `HitFlash` delegates.
+- `DestructionTracker.cs` — CollateralKarma counting/amplifier state; `CollateralKarma` delegates.
+- `PowerupBannerSlots.cs` — HUD banner slot-selection rule; HUD delegates.
+- `PerkSystem.cs` — All 20 perks (names, descriptions, synergy tags, effects) — Godot-free; `UpgradeMenu` delegates.
+- `HeroStats.cs` — Perk-modifiable hero stat container; used by `PerkSystem`.
+- `MenuDifficultyState.cs` — Difficulty menu parse/serialize/highlight — Godot-free; `MainMenu` delegates.
+- `MindControlState.cs` — Mind-control timer + contact-hit cooldown — Godot-free; `EnemyBase`/`Synapse` delegate.
+- `MindControlTargets.cs` — Nearest-target selection for Synapse Overclock — Godot-free; `Synapse` delegates.
 
 ### Content
 - Heroes (4): `Atlas`, `Zephyr`, `Synapse`, `Volt` (`scripts/heroes/`, base `HeroBase.cs`).
 - Enemies (10): `Drone`, `Brute`, `Sprinter`, `Artillery`, `Shielder`, `Healer`, `Exploder`, `Burrower`, `Parasite`, `Apex` (`scripts/enemies/`, base `EnemyBase.cs`).
 - VFX: `DecalSystem`, `HitStop`, `ScreenShake` (`scripts/vfx/`).
+
+### Features
+- **Tutorial / "First Wave" onboarding (R1):** `GameState.Tutorial`; `StartTutorial`/`CompleteTutorial` reset run metrics and gate normal wave spawning; `Tutorial.cs` spawns one slow Drone at a time with on-screen prompts; returns to MainMenu and unlocks Normal mode on completion.
+- **Difficulty selector (R2):** `Difficulty` enum (Easy/Normal/Hard) persisted to `user://settings.cfg`; `DifficultySettings` payload (spawn density, health/damage, threat interval, mutator scale, XP, breather); applied in `WaveManager.BeginNextWave` and `EnemyMutatorSystem.ApplyMutators`; radio buttons in `MainMenu`.
+- **Perk transparency (R3):** All 20 perks now have real effects via `PerkSystem` (previously 17 were no-ops); explicit one-line descriptions + synergy tags on perk cards; `EventBus.OnPerkChosen` emitted on pick.
+- **Sandbox mode (R3):** `Sandbox.cs`/`Sandbox.tscn` — dummy spawn, God mode toggle, perk apply, hero reset; no waves, no GameOver.
 
 ## Building
 Open `project.godot` in the Godot 4.3 editor, or build the C# project:
@@ -70,8 +89,8 @@ Run with:
 ```
 dotnet test tests/HeroArena.Tests/HeroArena.Tests.csproj
 ```
-Under the default filter, **131 tests pass** — with no suite filtered
-out anymore (see below). They cover pure C# logic
+Under the default filter, **345 tests pass** — with no suite filtered
+out anymore. They cover pure C# logic
 (`SpatialHashGridTests`,
 `SpatialHashGridBenchmarkTests`, `HeroBaseTests`, `ObjectPoolManagerTests`,
 `ProgressionFormulasTests`, `KarmaAmplifierTests`, `EnemyMutatorSystemTests`,
@@ -87,6 +106,14 @@ and threat math), and
 window, refill-slot semantics — the T3.1-rest closure). Each of these was
 extracted from the `Node` wrapper into a Godot-free class that the wrapper
 delegates to, mirroring the `ProgressionFormulas` pattern.
+
+Newer pure extractions (also headless): `PerkSystemTests` (all 20 perks),
+`HeroStatsTests` (stat defaults + reset), `MenuDifficultyStateTests`
+(difficulty parse/serialize/highlight), `MindControlStateTests` (control
+timer + contact-hit cooldown), `MindControlTargetsTests` (nearest-target
+selection), `GameManagerStateDifficultyTests` (Easy/Normal/Hard settings +
+threat intervals), `GameManagerStateTutorialTests` (Tutorial transitions +
+guards).
 
 **No suite is filtered out anymore**: the last one carrying
 `[Trait("Category","GodotRuntime")]` (`InputBufferTests`, 5
@@ -107,28 +134,20 @@ A Godot `Node` that self-runs assertions for `SpatialHashGrid`,
 cross-cover + Node behavior), `PowerupBannerSlots` (HUD delegation
 guard — it replaces an older check that grepped for a
 `scripts/ui/PowerupBannerFactory.cs` file which never existed in the
-repo), and `HitFlash` (F-31 consumer), then quits non-zero on failure.
-Run the scene with a **.NET/mono-enabled** Godot 4.3 binary (the standard
-headless binary cannot load `.cs` scripts), with `DOTNET_ROOT` pointing at
-the 8.0 runtime so the engine finds the .NET host fxr:
+repo), `HitFlash` (F-31 consumer), `GameManager` delegation, `InputBuffer`
+delegation, surroundings FX (LivingLightRig + DestructionDrama +
+ScreenDistortionFX), and enemy target-disposal, then quits non-zero on
+failure. Run the scene with the **.NET/mono-enabled** Godot 4.3 binary
+(the standard headless binary cannot load `.cs` scripts), with `DOTNET_ROOT`
+pointing at the 8.0 runtime:
 ```
-DOTNET_ROOT=~/.dotnet8 godot --headless res://tests/GodotTests/CoreSystemTests.tscn
+DOTNET_ROOT=~/.dotnet8 ~/.local/bin/godot-mono --headless --path . res://tests/GodotTests/CoreSystemTests.tscn
 ```
-**⚠ This gate has never run in this workspace: the Godot mono binary here
-cannot execute managed (C#) code.** What works: `--headless --quit`,
-`--headless --import`, and a GDScript `-s` entry. What does not: any entry
-that instantiates a C# script — a scene, `-s` with a `SceneTree` wrapper, a
-minimal 3-line C# script with no project dependencies, and the game's own
-`scenes/Main.tscn`. C# entries print only the engine banner, never reach
-`_Ready`, and spin at ~100% CPU in unmanaged code while every .NET runtime
-thread idles on futexes. It is not a missing library (`ldd` is clean), not
-the runtime version (identical hang on .NET 8.0.31 and 10.0.5), not the
-`DOTNET_EnableDiagnostics` / `gcServer` / `EnableEventPipe` overrides, and
-not the project's code (a minimal C#-only scene hangs too). The CI
-`godot-verify` job therefore cannot pass until the engine build is fixed or
-replaced — treat the xUnit suite as the authoritative gate. An earlier note
-in this file blaming an engine "self-fork + SIGSEGV" was a misread of the
-test harness wrapper shell and has been removed.
+**Verified locally: 13/13 PASS, exit 0.** The earlier "mono hangs in
+unmanaged code" diagnosis was a misdiagnosis of the `ObjectPoolManager`
+pre-warm boot stall (fixed in `2cd98dd`). Treat the xUnit suite as the
+authoritative gate for pure logic; the Godot gate covers `Node`-behavior
+wiring that xUnit cannot reach headlessly.
 
 ## CI
 
@@ -136,7 +155,8 @@ test harness wrapper shell and has been removed.
 - `lint` (Roslynator) — must pass
 - `typecheck` — must pass
 - `build` — must pass
-- `test` (xUnit, `Category!=GodotRuntime`) — must pass
+- `test` (xUnit, default filter = unfiltered; no suite carries
+  `[Trait("Category","GodotRuntime")]` anymore) — must pass
 - `godot-verify` (downloads Godot 4.3 mono, runs the headless gate) — must pass
 - `export` (Linux/Windows/macOS) — must pass
 - `quality-gates` (fails on any `TODO|FIXME` in `scripts/`) — must pass

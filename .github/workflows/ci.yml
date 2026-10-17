@@ -93,6 +93,11 @@ jobs:
         # setup-dotnet 8.0.x put dotnet on PATH, so derive its root from there.
         run: DOTNET_ROOT=$(dirname "$(readlink -f "$(which dotnet)")") godot --headless res://tests/GodotTests/CoreSystemTests.tscn
 
+      - name: Scene smoke (headless boot of every main scene)
+        # Fails if any main scene throws C# exception frames at boot — catches
+        # missing node_paths wiring / invalid node types that unit tests miss.
+        run: DOTNET_ROOT=$(dirname "$(readlink -f "$(which dotnet)")") bash tools/smoke_scenes.sh
+
   export:
     name: Export (Linux/Windows/macOS)
     runs-on: ubuntu-latest

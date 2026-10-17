@@ -39,10 +39,6 @@ public class HeroBaseTests
 #pragma warning disable SYSLIB0050
         var hero = (DummyHero)FormatterServices.GetUninitializedObject(typeof(DummyHero));
 
-        var levelProgField = typeof(HeroBase).GetField("_levelProg", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var levelProg = (LevelProgression)FormatterServices.GetUninitializedObject(typeof(LevelProgression));
-        levelProgField.SetValue(hero, levelProg);
-
         var levelProp = typeof(HeroBase).GetProperty("Level")!;
         levelProp.SetValue(hero, 1);
 
@@ -64,10 +60,6 @@ public class HeroBaseTests
     {
 #pragma warning disable SYSLIB0050
         var hero = (DummyHero)FormatterServices.GetUninitializedObject(typeof(DummyHero));
-
-        var levelProgField = typeof(HeroBase).GetField("_levelProg", BindingFlags.Instance | BindingFlags.NonPublic)!;
-        var levelProg = (LevelProgression)FormatterServices.GetUninitializedObject(typeof(LevelProgression));
-        levelProgField.SetValue(hero, levelProg);
 
         var levelProp = typeof(HeroBase).GetProperty("Level")!;
         levelProp.SetValue(hero, 1);

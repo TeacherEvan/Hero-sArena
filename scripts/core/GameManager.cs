@@ -24,6 +24,12 @@ namespace HeroArena
         public int KillCount => _state.KillCount;
         public int DestructionCount => _state.DestructionCount;
         public int ActiveEnemyCount => _state.ActiveEnemyCount;
+        public Difficulty CurrentDifficulty => _state.CurrentDifficulty;
+        public bool InTutorial => _state.InTutorial;
+
+        // ── Difficulty (delegates 1:1 to GameManagerState) ────────────────────
+        public DifficultySettings DifficultySettings => GameManagerState.GetSettings(_state.CurrentDifficulty);
+        public void SetDifficulty(Difficulty d) => _state.SetDifficulty(d);
 
         // ── System references (assigned in _Ready or by scene) ────────────────
         public WaveManager? WaveManager { get; set; }
@@ -41,6 +47,10 @@ namespace HeroArena
         // MainBootstrap when the game scene loads. Defaults to Atlas so a
         // direct boot into Main.tscn still spawns a playable hero.
         public HeroClass PendingHeroClass { get; set; } = HeroClass.Atlas;
+
+        // Set by MainMenu.StartTutorial; consumed by MainBootstrap so the
+        // game scene boots directly into the guided first wave.
+        public bool PendingTutorial { get; set; } = false;
 
         private LevelProgression? _levelProgression;
 
@@ -84,6 +94,18 @@ namespace HeroArena
         {
             _state.StartGame();
             WaveManager?.BeginNextWave();
+        }
+
+        public void StartTutorial()
+        {
+            _state.StartTutorial();
+            PendingTutorial = true;
+        }
+
+        public void CompleteTutorial()
+        {
+            _state.CompleteTutorial();
+            PendingTutorial = false;
         }
 
         protected virtual void SetTreePaused(bool paused)

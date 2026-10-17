@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" path="res://scripts/ui/UpgradeMenu.cs" id="1"]
 
-[node name="UpgradeMenu" type="Control"]
+[node name="UpgradeMenu" type="Control" node_paths=PackedStringArray("Perk1Button", "Perk2Button", "Perk3Button")]
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
@@ -12,6 +12,9 @@ offset_top = -150.0
 offset_right = 300.0
 offset_bottom = 150.0
 script = ExtResource("1")
+Perk1Button = NodePath("HBoxContainer/Perk1Button")
+Perk2Button = NodePath("HBoxContainer/Perk2Button")
+Perk3Button = NodePath("HBoxContainer/Perk3Button")
 
 [node name="Title" type="Label" parent="."]
 text = "Choose an Upgrade"

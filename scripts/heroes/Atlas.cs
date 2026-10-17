@@ -42,12 +42,12 @@ namespace HeroArena
         {
             if (_slamCooldown > 0f) return;
             Slam();
-            _slamCooldown = SLAM_COOLDOWN;
+            _slamCooldown = SLAM_COOLDOWN * Stats.AttackCooldownMult;
         }
 
         public override void Dodge()
         {
-            StartDodge(0.3f, 1.0f);
+            StartDodge(0.3f, 1.0f * Stats.DodgeCooldownMult);
         }
 
         public override void UseAbility()
@@ -58,11 +58,12 @@ namespace HeroArena
 
         private void Slam()
         {
-            float damage = _levelProg.CalcKineticDamage(SLAM_DAMAGE, Level);
+            float damage = LevelProgression.CalcKineticDamage(SLAM_DAMAGE, Level)
+                * Stats.DamageMult * Stats.KineticDamageMult;
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
 
-            int[] hits = grid.QueryRadius(GlobalPosition, SLAM_RADIUS, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, SLAM_RADIUS * Stats.AoeRadiusMult, out int count);
             for (int i = 0; i < count; i++)
             {
                 if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null

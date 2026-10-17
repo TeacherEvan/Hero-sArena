@@ -44,6 +44,7 @@ namespace HeroArena
         private void SelectPerk(int index)
         {
             ApplyPerk(_currentPerks[index]);
+            EventBus.Instance.EmitPerkChosen(_currentPerks[index]);
             Visible = false;
             GameManager.Instance.ResumeGame();
         }
@@ -52,49 +53,25 @@ namespace HeroArena
         {
             var hero = GameManager.Instance.ActiveHero;
             if (hero == null) return;
-            switch (perk)
-            {
-                case PerkType.DamageUp: break; // Applied in hero weapon systems
-                case PerkType.SpeedUp: hero.MoveSpeed *= 1.1f; break;
-                case PerkType.MaxHealthUp:
-                    float ratio = hero.CurrentHealth / hero.MaxHealth;
-                    hero.MaxHealth *= 1.15f;
-                    hero.SetCurrentHealth(hero.MaxHealth * ratio);
-                    break;
-            }
+
+            // MaxHealthUp needs the health ratio before MaxHealth changes.
+            float healthRatio = perk == PerkType.MaxHealthUp
+                ? hero.CurrentHealth / hero.MaxHealth
+                : 1f;
+
+            PerkSystem.ApplyPerk(perk, hero.Stats);
+
+            if (perk == PerkType.MaxHealthUp)
+                hero.SetCurrentHealth(hero.MaxHealth * healthRatio);
         }
 
-        private static readonly string[] _perkNames = new string[]
-        {
-            "+15% Damage",
-            "+10% Move Speed",
-            "Health Regeneration",
-            "+15% Max Health",
-            "+15% Attack Speed",
-            "Piercing Shots",
-            "Explosive Rounds",
-            "Life Steal",
-            "Shield Burst",
-            "-25% Dodge Cooldown",
-            "+10% Crit Chance",
-            "+20% AoE Radius",
-            "+1 Projectile",
-            "Slow on Hit",
-            "Burn on Hit",
-            "Frost Aura",
-            "Thorn Armor",
-            "Double Dodge",
-            "+15% Energy Damage",
-            "+15% Kinetic Damage"
-        };
+        private static string PerkDisplayName(PerkType perk) => PerkSystem.PerkName(perk);
 
-        private static string PerkDisplayName(PerkType perk)
-        {
-            int index = (int)perk;
-            if ((uint)index < (uint)_perkNames.Length)
-                return _perkNames[index];
-            return perk.ToString();
-        }
+        /// <summary>Explicit one-line perk effect, for display on perk cards.</summary>
+        public static string GetPerkDescription(PerkType perk) => PerkSystem.PerkDescription(perk);
+
+        /// <summary>Synergy tag for a perk, e.g. "Damage", "Survival", "AoE".</summary>
+        public static string GetPerkSynergyTag(PerkType perk) => PerkSystem.PerkSynergyTag(perk);
 
         public override void _ExitTree()
         {

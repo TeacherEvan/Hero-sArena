@@ -86,4 +86,40 @@ public class WaveFormulasTests
         // a silent retune of the ceiling is a visible test change.
         WaveFormulas.MaxEnemies.Should().Be(2000);
     }
+
+    // ── Difficulty multiplier (R2) ──────────────────────────────────────────
+
+    [Fact]
+    public void CalculateWaveEnemyCount_EasyMultiplier_ReducesSpawnCount()
+    {
+        // Easy = 0.6 multiplier; wave 10 with no active enemies.
+        int normal = WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 0, enemyCountMultiplier: 1f);
+        int easy   = WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 0, enemyCountMultiplier: 0.6f);
+        easy.Should().BeLessThan(normal);
+    }
+
+    [Fact]
+    public void CalculateWaveEnemyCount_HardMultiplier_IncreasesSpawnCount()
+    {
+        // Hard = 1.4 multiplier; wave 10 with no active enemies.
+        int normal = WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 0, enemyCountMultiplier: 1f);
+        int hard   = WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 0, enemyCountMultiplier: 1.4f);
+        hard.Should().BeGreaterThan(normal);
+    }
+
+    [Fact]
+    public void CalculateWaveEnemyCount_Multiplier_StillFloorsAtMinimum()
+    {
+        // Even with a huge multiplier, the floor still applies.
+        WaveFormulas.CalculateWaveEnemyCount(0, activeEnemyCount: 0, enemyCountMultiplier: 5f)
+            .Should().Be(WaveFormulas.MinWaveEnemies);
+    }
+
+    [Fact]
+    public void CalculateWaveEnemyCount_Multiplier_StillCeilsAtCap()
+    {
+        // With the arena nearly full, even a multiplier is capped by free slots.
+        WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 1990, enemyCountMultiplier: 5f)
+            .Should().Be(10);
+    }
 }

@@ -41,18 +41,36 @@ namespace HeroArena
             // only auto-start when nobody else will. Exactly one path fires.
             if (!gm.PendingStartAfterSceneChange && gm.CurrentState == GameState.MainMenu)
                 gm.StartGame();
+
+            // Tutorial handoff (R1): MainMenu set PendingTutorial + called
+            // GameManager.StartTutorial() before the scene change. Spawn the
+            // Tutorial onboarding node so it can spawn drones and show prompts.
+            if (gm.PendingTutorial || gm.CurrentState == GameState.Tutorial)
+            {
+                var tutorialScene = GD.Load<PackedScene>("res://scenes/ui/Tutorial.tscn");
+                if (tutorialScene != null)
+                {
+                    var tutorial = tutorialScene.Instantiate<Tutorial>();
+                    GetParent().AddChild(tutorial);
+                    gm.PendingTutorial = false;
+                }
+                else
+                {
+                    GD.PrintErr("MainBootstrap: Tutorial.tscn missing; tutorial cannot run.");
+                }
+            }
         }
 
         public override void _Process(double delta)
         {
             var hero = GameManager.Instance?.ActiveHero;
-            if (hero == null || _camera == null || !IsInstanceValid(_camera)) return;
+            if (hero == null || !IsInstanceValid(hero) || _camera == null || !IsInstanceValid(_camera)) return;
             // Smooth camera follow so the hero never walks out of view.
             float t = 1f - MathF.Pow(0.001f, (float)delta);
             _camera.GlobalPosition = _camera.GlobalPosition.Lerp(hero.GlobalPosition, t);
         }
 
-        private void EnsureInputMap()
+        private static void EnsureInputMap()
         {
             if (_inputReady) return;
             _inputReady = true;
@@ -125,14 +143,22 @@ namespace HeroArena
             // Dark godlike atmosphere over the playfield: void background with
             // a celestial glow. Environment is a Resource (not a Node), so it is
             // wrapped in a WorldEnvironment node that can sit in the scene tree.
-            // BGMode.Color is the custom-color mode (BGMode.CustomColor does
-            // not exist in Godot 4.3 C#; the BG prefix is stripped).
+            // BGMode.Canvas is the documented 2D glow path ("Using glow in 2D"):
+            // the gameplay canvas is the glow source, and the viewport clear
+            // color (kept dark in project.godot) fills wherever it is empty.
+            // GlowHdrThreshold must sit below 1.0 because 2D rendering is SDR;
+            // Bloom adds the soft lift on top. BackgroundCanvasMaxLayer = 0
+            // keeps CanvasLayer UI (HUD/UI/HitFlash/distortion) out of the glow
+            // source, so only the world blooms.
             var env = new Godot.Environment
             {
-                BackgroundMode = Godot.Environment.BGMode.Color,
+                BackgroundMode = Godot.Environment.BGMode.Canvas,
                 BackgroundColor = VisualTheme.Background,
                 GlowEnabled = true,
                 GlowStrength = 0.5f,
+                GlowBloom = 0.08f,
+                GlowHdrThreshold = 0.9f,
+                BackgroundCanvasMaxLayer = 0,
             };
             AddChild(new WorldEnvironment { Environment = env });
         }

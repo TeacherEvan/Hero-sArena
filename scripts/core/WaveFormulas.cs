@@ -32,10 +32,12 @@ namespace HeroArena
         /// Enemy count for <paramref name="wave"/>, floor-clamped to
         /// <see cref="MinWaveEnemies"/> and ceiling-clamped to the room left
         /// under <see cref="MaxEnemies"/> for <paramref name="activeEnemyCount"/>.
+        /// <paramref name="enemyCountMultiplier"/> scales the Weibull curve
+        /// (Easy=0.6, Normal=1.0, Hard=1.4) before clamping.
         /// </summary>
-        public static int CalculateWaveEnemyCount(int wave, int activeEnemyCount)
+        public static int CalculateWaveEnemyCount(int wave, int activeEnemyCount, float enemyCountMultiplier = 1f)
         {
-            int count = MinWaveEnemies + (int)(WeibullIntensity(wave) * IntensityScaleFactor);
+            int count = MinWaveEnemies + (int)(WeibullIntensity(wave) * IntensityScaleFactor * enemyCountMultiplier);
             int max = MaxEnemies - activeEnemyCount;
             // Deliberate divergence from BASE: WaveManager used Mathf.Clamp,
             // which THROWS when the ceiling drops below the floor (Godot

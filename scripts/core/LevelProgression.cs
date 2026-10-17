@@ -23,15 +23,15 @@ namespace HeroArena
 
         // ── Damage formulas ───────────────────────────────────────────────────
         /// <summary>Kinetic damage: D_k = D_0 * (1 + 0.15 * L)</summary>
-        public float CalcKineticDamage(float baseDamage, int level)
+        public static float CalcKineticDamage(float baseDamage, int level)
             => ProgressionFormulas.CalcKineticDamage(baseDamage, level);
 
         /// <summary>Energy damage: D_e = D_0 * L^gamma (gamma clamped 1.2–1.4)</summary>
-        public float CalcEnergyDamage(float baseDamage, int level)
+        public static float CalcEnergyDamage(float baseDamage, int level)
             => ProgressionFormulas.CalcEnergyDamage(baseDamage, level);
 
         /// <summary>Collateral Karma amplifier: A = ln(e + 0.05 * K)</summary>
-        public float CalcKarmaAmplifier(int destructionCount)
+        public static float CalcKarmaAmplifier(int destructionCount)
             => ProgressionFormulas.CalcKarmaAmplifier(destructionCount);
 
         // ── Perk selection ────────────────────────────────────────────────────
@@ -40,7 +40,7 @@ namespace HeroArena
             => ProgressionFormulas.GetRandomPerks(count, _rng);
 
         // ── XP / leveling ─────────────────────────────────────────────────────
-        public int XpRequiredForLevel(int level)
+        public static int XpRequiredForLevel(int level)
             => ProgressionFormulas.XpRequiredForLevel(level);
     }
 }
