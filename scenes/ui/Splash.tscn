@@ -1,0 +1,40 @@
+[gd_scene load_steps=4 format=3 uid="uid://splash"]
+
+[ext_resource type="Script" path="res://scripts/ui/Splash.cs" id="1"]
+[ext_resource type="VideoStream" path="res://splashes/intro.mp4" id="2"]
+
+[node name="Splash" type="Control" node_paths=PackedStringArray("VideoPlayer", "TitleLabel", "SubtitleLabel")]
+anchor_left = 0.0
+anchor_top = 0.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+script = ExtResource("1")
+VideoPlayer = NodePath("VideoPlayer")
+TitleLabel = NodePath("TitleLabel")
+SubtitleLabel = NodePath("SubtitleLabel")
+
+[node name="VideoPlayer" type="VideoStreamPlayer" parent="."]
+stream = ExtResource("2")
+autoplay = true
+
+[node name="TitleLabel" type="Label" parent="."]
+text = "Hero's Arena"
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -320.0
+offset_top = -90.0
+offset_right = 320.0
+offset_bottom = -30.0
+
+[node name="SubtitleLabel" type="Label" parent="."]
+text = "A TOP-DOWN ARENA SHOOTER"
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -240.0
+offset_top = 30.0
+offset_right = 240.0
+offset_bottom = 70.0
