@@ -99,6 +99,7 @@ namespace HeroArena
         protected virtual void Die()
         {
             GameManager.Instance.TriggerGameOver();
+            GameManager.Instance.ActiveHero = null;
             QueueFree();
         }
 
