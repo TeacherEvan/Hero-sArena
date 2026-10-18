@@ -22,7 +22,6 @@ namespace HeroArena
         private bool _waveInProgress = false;
         private float _breatherTimer = 0f;
         private float _breatherSeconds = BREATHER_SECONDS;
-        private int _currentWave = 0;
         private int _pendingEnemiesToSpawn = 0;
         private RandomNumberGenerator _rng = new RandomNumberGenerator();
         private bool _waveWarningEmitted;
@@ -63,7 +62,7 @@ namespace HeroArena
                 if (!_waveWarningEmitted && _breatherTimer <= WAVE_WARNING_LEAD_SECONDS)
                 {
                     _waveWarningEmitted = true;
-                    var nextWave = _currentWave + 1;
+                    var nextWave = (GameManager.Instance?.CurrentWave ?? 0) + 1;
                     var isBoss = _bossTimer >= BOSS_INTERVAL_SECONDS - WAVE_WARNING_LEAD_SECONDS;
                     EventBus.Instance.EmitWaveIncoming(nextWave, isBoss);
                 }
@@ -82,26 +81,26 @@ namespace HeroArena
                 && GameManager.Instance != null
                 && GameManager.Instance.ActiveEnemyCount == 0)
             {
-                EventBus.Instance.EmitWaveCompleted(_currentWave);
+                EventBus.Instance.EmitWaveCompleted(GameManager.Instance.CurrentWave);
             }
         }
 
         public void BeginNextWave()
         {
-            _currentWave++;
+            var gm = GameManager.Instance;
+            gm?.IncrementWave();
             _waveInProgress = true;
             _waveWarningEmitted = false;
-            EventBus.Instance.EmitWaveStarted(_currentWave);
+            EventBus.Instance.EmitWaveStarted(gm?.CurrentWave ?? 0);
 
-            var gameManager = GameManager.Instance;
-            var settings = gameManager?.DifficultySettings
+            var settings = gm?.DifficultySettings
                 ?? GameManagerState.GetSettings(Difficulty.Normal);
             _breatherSeconds = settings.BreatherSeconds;
 
             // Weibull intensity, min floor, and the MaxEnemies clamp live in
             // WaveFormulas (covered headlessly in WaveFormulasTests).
             int totalEnemies = WaveFormulas.CalculateWaveEnemyCount(
-                _currentWave, gameManager?.ActiveEnemyCount ?? 0, settings.EnemyCountMultiplier);
+                gm?.CurrentWave ?? 0, gm?.ActiveEnemyCount ?? 0, settings.EnemyCountMultiplier);
             SpawnWaveEnemies(totalEnemies);
         }
 
@@ -120,7 +119,9 @@ namespace HeroArena
             {
                 if (GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES)
                 {
-                    _pendingEnemiesToSpawn = 0;
+                    // Cap reached: pause spawning but keep the remainder so it
+                    // retries next frame once slots free. Do NOT zero it — that
+                    // would silently drop the rest of the wave.
                     return;
                 }
                 int sceneIdx = _rng.RandiRange(0, EnemyScenes.Length - 1);
@@ -148,6 +149,9 @@ namespace HeroArena
         private void SpawnBoss()
         {
             if (EnemyScenes.Length == 0 || SpawnPoints.Length == 0) return;
+            // Never push the arena over the 2,000 enemy cap; a boss at cap
+            // would strand _pendingEnemiesToSpawn below zero and soft-lock the wave.
+            if (GameManager.Instance != null && GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES) return;
             // Last scene is assumed to be Apex boss
             var bossScene = EnemyScenes[EnemyScenes.Length - 1];
             var pos = SpawnPoints[0];

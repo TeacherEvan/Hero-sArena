@@ -17,6 +17,9 @@ namespace HeroArena
         private ColorRect _overlay = null!;
         private float _remaining;
 
+        // Scratch color reused per projectile hit to avoid per-event Color allocation.
+        private Color _flashColor;
+
         public override void _Ready()
         {
             _overlay = new ColorRect
@@ -27,7 +30,8 @@ namespace HeroArena
                 AnchorBottom = 1f,
             };
             AddChild(_overlay);
-            EventBus.Instance.OnProjectileHit += OnProjectileHit;
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnProjectileHit += OnProjectileHit;
             SetProcess(false);
         }
 
@@ -41,7 +45,10 @@ namespace HeroArena
         private void OnProjectileHit(Vector2 pos, DamageType type)
         {
             var (r, g, b) = HitFlashPalette.ColorFor(type);
-            _overlay.Color = new Color(r, g, b);
+            _flashColor.R = r;
+            _flashColor.G = g;
+            _flashColor.B = b;
+            _overlay.Color = _flashColor;
             _remaining = HitFlashPalette.Duration;
             SetProcess(true);
         }

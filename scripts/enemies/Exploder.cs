@@ -37,8 +37,11 @@ namespace HeroArena
             if (_hero != null && GlobalPosition.DistanceSquaredTo(_hero.GlobalPosition) <= DETONATE_RADIUS * DETONATE_RADIUS)
                 _hero.TakeDamage(DETONATE_DAMAGE, DamageType.Explosive);
 
-            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.AcidPool, DETONATE_RADIUS);
-            EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Acid);
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.AcidPool, DETONATE_RADIUS);
+                EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Acid);
+            }
         }
     }
 }

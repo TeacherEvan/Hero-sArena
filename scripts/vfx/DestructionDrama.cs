@@ -40,6 +40,13 @@ namespace HeroArena
         private readonly RingFx[] _rings = new RingFx[RingPoolSize];
         private readonly Sprite2D[] _ringSprites = new Sprite2D[RingPoolSize];
 
+        // Scratch structs reused each frame to avoid per-active-shard allocations.
+        private Vector2 _shardPos;
+        private Color _shardModulate;
+        private Vector2 _ringScale;
+        private Color _ringModulate;
+        private readonly Color _ringBaseColor = new Color(1f, 0.85f, 0.6f);
+
         private CpuParticles2D[] _smoke = null!;
         private CpuParticles2D[] _sparks = null!;
         private int _nextSmoke;
@@ -96,7 +103,8 @@ namespace HeroArena
                     new Color(1f, 0.8f, 0.35f, 1f)),
             };
 
-            EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
             SetProcess(false);
         }
 
@@ -127,10 +135,14 @@ namespace HeroArena
                 }
 
                 any = true;
-                sprite.GlobalPosition = new Vector2(s.X, s.Y);
+                _shardPos.X = s.X;
+                _shardPos.Y = s.Y;
+                sprite.GlobalPosition = _shardPos;
                 sprite.Rotation = s.Rotation;
                 var tint = _shardTints[i];
-                sprite.Modulate = new Color(tint.R, tint.G, tint.B, tint.A * s.Alpha);
+                _shardModulate = tint;
+                _shardModulate.A = tint.A * s.Alpha;
+                sprite.Modulate = _shardModulate;
             }
 
             for (int i = 0; i < RingPoolSize; i++)
@@ -149,8 +161,12 @@ namespace HeroArena
 
                 any = true;
                 float ease = 1f - (1f - t) * (1f - t);
-                _ringSprites[i].Scale = Vector2.One * ((0.25f + ease) * r.MaxScale);
-                _ringSprites[i].Modulate = new Color(1f, 0.85f, 0.6f, (1f - t) * 0.75f);
+                _ringScale.X = (0.25f + ease) * r.MaxScale;
+                _ringScale.Y = _ringScale.X;
+                _ringSprites[i].Scale = _ringScale;
+                _ringModulate = _ringBaseColor;
+                _ringModulate.A = (1f - t) * 0.75f;
+                _ringSprites[i].Modulate = _ringModulate;
             }
 
             if (!any) SetProcess(false);

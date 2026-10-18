@@ -58,7 +58,9 @@ namespace HeroArena
         private void Attach()
         {
             _attached = true;
-            // Apply slow to hero - in a full impl, hero would expose a speed multiplier
+            // Apply slow to hero: 40% move-speed reduction while attached.
+            if (_hero != null)
+                _hero.MoveSpeed *= (1f - SLOW_AMOUNT);
         }
 
         protected override void Die()

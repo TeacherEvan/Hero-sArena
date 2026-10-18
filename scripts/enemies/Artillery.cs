@@ -39,10 +39,11 @@ namespace HeroArena
         private void FireMortar()
         {
             if (_hero == null) return;
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
             Vector2 dir = (_hero.GlobalPosition - GlobalPosition).Normalized();
-            pool.GetProjectile(new ProjectileData(GlobalPosition, dir, 250f, Damage, DamageType.Explosive));
+            var p = pool.GetProjectile(new ProjectileData(GlobalPosition, dir, 250f, Damage, DamageType.Explosive));
+            if (p == null) return; // pool exhausted; skip this mortar
         }
     }
 }

@@ -108,8 +108,10 @@ namespace HeroArena
         }
 
         // ── Queries ───────────────────────────────────────────────────────────
-        /// <summary>Returns pre-allocated result buffer slice. Count in out param.</summary>
-        public int[] QueryRadius(Vector2 center, float radius, out int count)
+        /// <summary>Returns pre-allocated result buffer slice. Count in out param.
+        /// <paramref name="truncated"/> is true when results were clipped to the
+        /// buffer capacity (callers should treat the result set as incomplete).</summary>
+        public int[] QueryRadius(Vector2 center, float radius, out int count, out bool truncated)
         {
             _resultCount = 0;
             _queryStamp++;
@@ -126,7 +128,12 @@ namespace HeroArena
                     if (!_cells.TryGetValue(key, out var list)) continue;
                     foreach (int id in list)
                     {
-                        if (_resultCount >= _resultBuffer.Length) goto done;
+                        if (_resultCount >= _resultBuffer.Length)
+                        {
+                            truncated = true;
+                            count = _resultCount;
+                            return _resultBuffer;
+                        }
                         if (!_entityData.TryGetValue(id, out var data)) continue;
                         if (_queryStamps.TryGetValue(id, out int stamp) && stamp == _queryStamp) continue;
                         float threshold = radius + data.Radius;
@@ -138,7 +145,7 @@ namespace HeroArena
                     }
                 }
             }
-            done:
+            truncated = false;
             count = _resultCount;
             return _resultBuffer;
         }

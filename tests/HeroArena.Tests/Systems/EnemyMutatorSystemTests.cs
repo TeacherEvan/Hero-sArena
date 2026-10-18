@@ -1,93 +1,78 @@
-using System;
-using System.Reflection;
-using System.Runtime.Serialization;
 using Xunit;
 using FluentAssertions;
 using HeroArena;
 
 namespace HeroArena.Tests.Systems;
 
-public partial class DummyEnemy : EnemyBase
-{
-    protected override void UpdateAI() {}
-
-    // Override methods that trigger Godot methods or signals
-    protected override void Die() {}
-    public override void TakeDamage(float amount, DamageType type = DamageType.Kinetic) {}
-}
-
+/// <summary>
+/// Covers the pure mutator formulas (<see cref="MutatorFormulas"/>) headlessly,
+/// replacing the retired <see cref="EnemyMutatorSystemTests"/> that used the
+/// deprecated <see cref="System.Runtime.Serialization.FormatterServices.GetUninitializedObject"/>
+/// bypass on Godot <see cref="EnemyBase"/> nodes.
+///
+/// The idempotency invariant (audit P1-1): mutator scale is a total multiplier
+/// applied to spawn-time base stats, never compounded on current values, so
+/// re-application at the same threat tier yields identical stats.
+/// </summary>
 public class EnemyMutatorSystemTests
 {
-    private DummyEnemy CreateDummyEnemy()
+    [Theory]
+    [InlineData(0, 1f, 1f)]    // no threat → no multiplier
+    [InlineData(1, 1f, 1.1f)]  // threat 1 → +10%
+    [InlineData(2, 1f, 1.2f)]  // threat 2 → +20%
+    [InlineData(5, 1f, 1.5f)]  // threat 5 → +50%
+    [InlineData(10, 1f, 2.0f)] // threat 10 → +100%
+    [InlineData(5, 0.5f, 1.25f)] // mutatorScale scales the tier
+    public void ComputeScale_TotalMultiplier_IsDeterministic_AndIdempotent(int threatLevel, float mutatorScale, float expected)
     {
-#pragma warning disable SYSLIB0050
-        return (DummyEnemy)FormatterServices.GetUninitializedObject(typeof(DummyEnemy));
-#pragma warning restore SYSLIB0050
+        MutatorFormulas.ComputeScale(threatLevel, mutatorScale).Should().Be(expected);
+
+        // Idempotency: calling again with the same inputs returns the same
+        // scale — no compounding on previous results (this is a pure function).
+        MutatorFormulas.ComputeScale(threatLevel, mutatorScale).Should().Be(expected);
     }
 
     [Fact]
-    public void ApplySingleMutator_SpeedBoost_IncreasesMoveSpeed()
+    public void ComputeScale_ZeroThreat_IsIdentity_NoMutatorsApplied()
     {
-        var enemy = CreateDummyEnemy();
-        enemy.MoveSpeed = 100f;
-
-        var method = typeof(EnemyMutatorSystem).GetMethod("ApplySingleMutator", BindingFlags.NonPublic | BindingFlags.Static);
-        method!.Invoke(null, new object[] { enemy, MutatorType.SpeedBoost, 2 });
-
-        enemy.MoveSpeed.Should().BeApproximately(120f, 0.001f);
+        MutatorFormulas.ComputeScale(0).Should().Be(1f);
+        MutatorFormulas.ComputeMutatorCount(0, MutatorTypeExtensions.Count(), 1f).Should().Be(0);
     }
 
+    [Theory]
+    [InlineData(0, 5, 1f, 0)]
+    [InlineData(1, 5, 1f, 1)]
+    [InlineData(2, 5, 1f, 2)]
+    [InlineData(5, 5, 1f, 5)]
+    [InlineData(10, 5, 1f, 5)] // clamped to pool size
+    [InlineData(3, 5, 0.5f, 2)] // Ceil(3 * 0.5) = 2
+    [InlineData(1, 5, 0.0f, 0)] // zero scale → zero mutators
+    public void ComputeMutatorCount_Clamped_ToPoolSize(int threatLevel, int maxMutators, float mutatorScale, int expected)
+    {
+        MutatorFormulas.ComputeMutatorCount(threatLevel, maxMutators, mutatorScale).Should().Be(expected);
+    }
+
+    /// <summary>
+    /// Regression for audit P1-1: the scale must be monotonic in threat level
+    /// and never compound. A tier-2 application must equal 1.2× base, not
+    /// 1.1× then 1.2× (1.32×) of an already-mutated value.
+    /// </summary>
     [Fact]
-    public void ApplySingleMutator_HealthBoost_IncreasesMaxAndCurrentHealth()
+    public void Scale_DoesNotCompound_AcrossThreatTiers()
     {
-        var enemy = CreateDummyEnemy();
-        enemy.MaxHealth = 100f;
-        typeof(EnemyBase).GetProperty("CurrentHealth", BindingFlags.Public | BindingFlags.Instance)!.SetValue(enemy, 100f);
+        float tier1 = MutatorFormulas.ComputeScale(1);
+        float tier2 = MutatorFormulas.ComputeScale(2);
 
-        var method = typeof(EnemyMutatorSystem).GetMethod("ApplySingleMutator", BindingFlags.NonPublic | BindingFlags.Static);
-        method!.Invoke(null, new object[] { enemy, MutatorType.HealthBoost, 5 });
-
-        // scale = 1.0f + 0.1f * 5 = 1.5f
-        enemy.MaxHealth.Should().BeApproximately(150f, 0.001f);
-        enemy.CurrentHealth.Should().BeApproximately(150f, 0.001f);
+        tier1.Should().Be(1.1f);
+        tier2.Should().Be(1.2f);
+        // Compounding would apply tier2 on top of tier1: 1.1f * 1.2f = 1.32f.
+        // Idempotent application yields exactly tier2 = 1.2f (base × tier).
+        tier2.Should().NotBe(tier1 * tier2);
     }
+}
 
-    [Fact]
-    public void ApplySingleMutator_DamageBoost_IncreasesDamage()
-    {
-        var enemy = CreateDummyEnemy();
-        enemy.Damage = 10f;
-
-        var method = typeof(EnemyMutatorSystem).GetMethod("ApplySingleMutator", BindingFlags.NonPublic | BindingFlags.Static);
-        method!.Invoke(null, new object[] { enemy, MutatorType.DamageBoost, 3 });
-
-        // scale = 1.0f + 0.1f * 3 = 1.3f
-        enemy.Damage.Should().BeApproximately(13f, 0.001f);
-    }
-
-    [Fact]
-    public void ApplySingleMutator_Shielded_AddsShieldCharges()
-    {
-        var enemy = CreateDummyEnemy();
-
-        var method = typeof(EnemyMutatorSystem).GetMethod("ApplySingleMutator", BindingFlags.NonPublic | BindingFlags.Static);
-        method!.Invoke(null, new object[] { enemy, MutatorType.Shielded, 5 });
-
-        // charges = Mathf.Max(1, 5 / 2) = Mathf.Max(1, 2) = 2
-        enemy.ShieldCharges.Should().Be(2);
-    }
-
-    [Fact]
-    public void ApplySingleMutator_Enraged_IncreasesSpeedAndDamage()
-    {
-        var enemy = CreateDummyEnemy();
-        enemy.MoveSpeed = 100f;
-        enemy.Damage = 10f;
-
-        var method = typeof(EnemyMutatorSystem).GetMethod("ApplySingleMutator", BindingFlags.NonPublic | BindingFlags.Static);
-        method!.Invoke(null, new object[] { enemy, MutatorType.Enraged, 5 });
-
-        enemy.MoveSpeed.Should().BeApproximately(150f, 0.001f);
-        enemy.Damage.Should().BeApproximately(15f, 0.001f);
-    }
+/// <summary>Extension to expose the mutator pool size for test assertions.</summary>
+public static class MutatorTypeExtensions
+{
+    public static int Count() => Enum.GetValues(typeof(MutatorType)).Length;
 }

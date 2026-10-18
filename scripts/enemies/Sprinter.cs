@@ -51,7 +51,7 @@ namespace HeroArena
             {
                 SprinterState.FlankManeuver => (_flankTarget - GlobalPosition).Normalized(),
                 SprinterState.Lunge => (_hero.GlobalPosition - GlobalPosition).Normalized(),
-                _ => GameManager.Instance.FlowField?.GetFlowDirection(GlobalPosition)
+                _ => GameManager.Instance?.FlowField?.GetFlowDirection(GlobalPosition)
                      ?? (_hero.GlobalPosition - GlobalPosition).Normalized()
             };
             float speed = _aiState == SprinterState.Lunge ? MoveSpeed * 2f : MoveSpeed;

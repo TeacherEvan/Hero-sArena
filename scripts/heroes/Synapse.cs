@@ -56,12 +56,12 @@ namespace HeroArena
 
         private void FireChainLaser()
         {
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
             float dmg = LevelProgression.CalcEnergyDamage(LASER_DAMAGE, Level)
                 * Stats.DamageMult * Stats.EnergyDamageMult;
-            int[] hits = grid.QueryRadius(GlobalPosition, LASER_RANGE * Stats.AoeRadiusMult, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, LASER_RANGE * Stats.AoeRadiusMult, out int count, out bool _);
             int chained = 0;
             int chainLimit = MAX_CHAIN + Stats.ProjectileCountBonus;
             for (int i = 0; i < count && chained < chainLimit; i++)
@@ -85,13 +85,13 @@ namespace HeroArena
             _overclockCooldown = OVERCLOCK_COOLDOWN;
             EventBus.Instance.EmitPowerupCollected("Overclock");
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
             // Candidate screening happens here (live enemies only); the
             // nearest-N ordering and cap rules live in the pure
             // MindControlTargets helper (covered headlessly in tests).
-            int[] hits = grid.QueryRadius(GlobalPosition, OVERCLOCK_RADIUS, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, OVERCLOCK_RADIUS, out int count, out bool _);
             var candidates = new List<EnemyBase>();
             var distancesSq = new List<float>();
             for (int i = 0; i < count; i++)

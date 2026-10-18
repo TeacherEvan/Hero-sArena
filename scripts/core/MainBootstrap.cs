@@ -91,7 +91,8 @@ namespace HeroArena
             var hero = GameManager.Instance?.ActiveHero;
             if (hero == null || !IsInstanceValid(hero) || _camera == null || !IsInstanceValid(_camera)) return;
             // Smooth camera follow so the hero never walks out of view.
-            float t = 1f - MathF.Pow(0.001f, (float)delta);
+            // Frame-rate independent: exponent scaled by delta * 60 (60 Hz reference).
+            float t = 1f - MathF.Pow(0.001f, (float)delta * 60f);
             _camera.GlobalPosition = _camera.GlobalPosition.Lerp(hero.GlobalPosition, t);
         }
 

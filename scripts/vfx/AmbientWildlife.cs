@@ -23,7 +23,7 @@ namespace HeroArena
     /// </summary>
     public partial class AmbientWildlife : Node2D
     {
-        private const int MaxCritters = WildlifeDirectorState.MaxCritters;
+        private const int MaxCritters = WildlifeConfig.MaxCritters;
 
         /// <summary>Fix integer seed: the same arena always opens the same way.</summary>
         private const int Seed = 20261017;
@@ -45,8 +45,8 @@ namespace HeroArena
         private readonly AmbientWindState _wind = new();
         private readonly Sprite2D[] _bodies = new Sprite2D[MaxCritters];
         private readonly Sprite2D[] _glows = new Sprite2D[MaxCritters];
-        private readonly WildlifeDirectorState.SpeciesProfile[] _species =
-            new WildlifeDirectorState.SpeciesProfile[2];
+        private readonly WildlifeConfig.SpeciesProfile[] _species =
+            new WildlifeConfig.SpeciesProfile[2];
 
         // Per-species cached tints (computed once at _Ready). Render() mutates
         // alpha on stack copies only — zero per-frame Color allocations. (Audit P1-1 / R2)
@@ -109,13 +109,16 @@ namespace HeroArena
                 _glows[i] = glow;
             }
 
-            EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
-            EventBus.Instance.OnProjectileHit += OnProjectileHit;
-            EventBus.Instance.OnWaveIncoming += OnWaveIncoming;
-            EventBus.Instance.OnWaveStarted += OnWaveStarted;
-            EventBus.Instance.OnWaveCompleted += OnWaveCompleted;
-            EventBus.Instance.OnHeroDamaged += OnHeroDamaged;
-            EventBus.Instance.OnThreatLevelChanged += OnThreatLevelChanged;
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
+                EventBus.Instance.OnProjectileHit += OnProjectileHit;
+                EventBus.Instance.OnWaveIncoming += OnWaveIncoming;
+                EventBus.Instance.OnWaveStarted += OnWaveStarted;
+                EventBus.Instance.OnWaveCompleted += OnWaveCompleted;
+                EventBus.Instance.OnHeroDamaged += OnHeroDamaged;
+                EventBus.Instance.OnThreatLevelChanged += OnThreatLevelChanged;
+            }
 
             RefreshPopulation();
         }
@@ -340,8 +343,9 @@ namespace HeroArena
             _director.SetTargetPopulation(Mathf.RoundToInt(_profile.WildlifePopulation * keep));
         }
 
+        // Frame-rate independent approach: rate is per-second, scaled by dt * 60.
         private static float Approach(float current, float target, float rate, float dt)
-            => current + (target - current) * (1f - MathF.Exp(-rate * dt));
+            => current + (target - current) * (1f - MathF.Exp(-rate * dt * 60f));
 
         /// <summary>Radial soft dot (critter bodies and glow halos).</summary>
         private static GradientTexture2D SoftDotTexture(int size)

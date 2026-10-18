@@ -13,6 +13,9 @@ namespace HeroArena
         private float _elapsed = 0f;
         private readonly FastNoiseLite _noise = new();
 
+        // Scratch offset reused each frame to avoid per-frame Vector2 allocation.
+        private Vector2 _offset;
+
         public override void _Ready()
         {
             _noise.Seed = (int)GD.Randi();
@@ -41,7 +44,9 @@ namespace HeroArena
             float nx = _noise.GetNoise2D(_elapsed * 100f, 0f);
             float ny = _noise.GetNoise2D(0f, _elapsed * 100f);
             float factor = _intensity * t;
-            Offset = new Vector2(nx * factor, ny * factor);
+            _offset.X = nx * factor;
+            _offset.Y = ny * factor;
+            Offset = _offset;
         }
     }
 }

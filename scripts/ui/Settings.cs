@@ -133,7 +133,10 @@ namespace HeroArena
                 SettingsState.SerializeBool(FullscreenToggle.ButtonPressed));
             cfg.SetValue(SettingsState.ConfigSection, SettingsState.ConfigKeyVSync,
                 SettingsState.SerializeBool(VSyncToggle.ButtonPressed));
-            cfg.Save(SettingsPath);
+            // Atomic write: temp file + replace (avoid corrupted settings.cfg on crash/OOM).
+            string tmp = SettingsPath + ".tmp";
+            cfg.Save(tmp);
+            System.IO.File.Move(tmp, SettingsPath, overwrite: true);
         }
 
         private void OnMasterChanged(double v) => SaveAndRefresh(MasterValueLabel, MasterSlider, (float)v);

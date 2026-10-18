@@ -19,6 +19,14 @@ namespace HeroArena
         private float _fireCooldown = 0f;
         private float _novaCooldown = 0f;
 
+        // Cached heat-gauge geometry to avoid per-frame allocations in _Draw.
+        private static readonly Vector2 _barSize = new Vector2(40f, 5f);
+        private static readonly Vector2 _barPos = new Vector2(-20f, -42f);
+        private static readonly Vector2 _barInnerOffset = new Vector2(1f, 1f);
+        private Color _heatColor = new Color();
+        private Vector2 _innerPos = new Vector2();
+        private Vector2 _innerSize = new Vector2();
+
         private readonly IgnisCombustionState _combustion = new();
 
         public float CurrentHeat => _combustion.CurrentHeat;
@@ -79,7 +87,7 @@ namespace HeroArena
 
         private void FireCombustionStream()
         {
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
 
             // Generate heat per volley
@@ -127,7 +135,7 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
@@ -156,7 +164,7 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition, totalRadius, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition, totalRadius, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
@@ -180,22 +188,24 @@ namespace HeroArena
             if (_combustion.CurrentHeat <= 0.1f) return;
 
             // Draw heat gauge bar above Ignis
-            Vector2 barSize = new Vector2(40f, 5f);
-            Vector2 barPos = new Vector2(-20f, -42f);
 
             // Background
-            DrawRect(new Rect2(barPos, barSize), new Color(0.1f, 0.1f, 0.1f, 0.7f), true);
+            DrawRect(new Rect2(_barPos, _barSize), new Color(0.1f, 0.1f, 0.1f, 0.7f), true);
 
             // Fill with heat gradient color
-            float fillWidth = (barSize.X - 2f) * (_combustion.CurrentHeat / IgnisCombustionState.MAX_HEAT);
-            Color heatColor = _combustion.Stage switch
+            float fillWidth = (_barSize.X - 2f) * (_combustion.CurrentHeat / IgnisCombustionState.MAX_HEAT);
+            _heatColor = _combustion.Stage switch
             {
                 CombustionStage.Overheat => new Color(1.0f, 0.95f, 0.6f),
                 CombustionStage.Blazing => new Color(1.0f, 0.5f, 0.05f),
                 _ => new Color(0.9f, 0.25f, 0.05f)
             };
 
-            DrawRect(new Rect2(barPos + new Vector2(1f, 1f), new Vector2(fillWidth, barSize.Y - 2f)), heatColor, true);
+            _innerPos.X = _barPos.X + _barInnerOffset.X;
+            _innerPos.Y = _barPos.Y + _barInnerOffset.Y;
+            _innerSize.X = fillWidth;
+            _innerSize.Y = _barSize.Y - 2f;
+            DrawRect(new Rect2(_innerPos, _innerSize), _heatColor, true);
         }
     }
 }

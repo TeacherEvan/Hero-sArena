@@ -31,11 +31,28 @@ namespace HeroArena
             base._ExitTree();
         }
 
-        private void OnThreatChanged(int threatLevel) { /* future: re-apply scaling to live enemies */ }
+        private void OnThreatChanged(int threatLevel)
+        {
+            // Re-apply mutator scaling to all live enemies so higher threat
+            // strengthens existing foes, not just newly spawned ones.
+            if (GameManager.Instance == null) return;
+            foreach (var enemy in EnemyBase.GetAllAlive())
+            {
+                if (enemy.State == EnemyAIState.Dead || enemy.IsMindControlled)
+                    continue;
+                ApplyMutators(enemy, threatLevel, 1f);
+            }
+        }
 
         public void ApplyMutators(EnemyBase enemy, int threatLevel, float mutatorScale = 1f)
         {
-            int mutatorCount = Mathf.CeilToInt(Mathf.Min(threatLevel, AllMutators.Length) * mutatorScale);
+            // Total multiplier applied to spawn-time base stats (MutatorFormulas,
+            // covered headlessly). Because the multiplier is computed from base
+            // (not current) values, re-apply on every threat tier is idempotent:
+            // tier N always yields the same stats regardless of how many times
+            // it is re-applied (audit P1-1).
+            float scale = MutatorFormulas.ComputeScale(threatLevel, mutatorScale);
+            int mutatorCount = MutatorFormulas.ComputeMutatorCount(threatLevel, AllMutators.Length, mutatorScale);
 
             Span<MutatorType> pool = stackalloc MutatorType[AllMutators.Length];
             AllMutators.AsSpan().CopyTo(pool);
@@ -44,34 +61,35 @@ namespace HeroArena
             for (int i = 0; i < mutatorCount; i++)
             {
                 int idx = _rng.RandiRange(0, poolCount - 1);
-                ApplySingleMutator(enemy, pool[idx], threatLevel);
+                ApplySingleMutator(enemy, pool[idx], threatLevel, scale);
 
                 pool[idx] = pool[poolCount - 1];
                 poolCount--;
             }
         }
 
-        private static void ApplySingleMutator(EnemyBase enemy, MutatorType mutator, int threatLevel)
+        private static void ApplySingleMutator(EnemyBase enemy, MutatorType mutator, int threatLevel, float scale)
         {
-            float scale = 1f + 0.1f * threatLevel;
             switch (mutator)
             {
                 case MutatorType.SpeedBoost:
-                    enemy.MoveSpeed *= scale;
+                    enemy.MoveSpeed = enemy.BaseMoveSpeed * scale;
                     break;
                 case MutatorType.HealthBoost:
-                    enemy.MaxHealth *= scale;
+                    enemy.MaxHealth = enemy.BaseMaxHealth * scale;
                     enemy.SetCurrentHealth(enemy.MaxHealth);
                     break;
                 case MutatorType.DamageBoost:
-                    enemy.Damage *= scale;
+                    enemy.Damage = enemy.BaseDamage * scale;
                     break;
                 case MutatorType.Shielded:
+                    // Additive charge count (not multiplicative): keep based on
+                    // threat level so it scales linearly, not exponentially.
                     enemy.AddShieldCharges(Mathf.Max(1, threatLevel / 2));
                     break;
                 case MutatorType.Enraged:
-                    enemy.MoveSpeed *= 1.5f;
-                    enemy.Damage *= 1.5f;
+                    enemy.MoveSpeed = enemy.BaseMoveSpeed * 1.5f;
+                    enemy.Damage = enemy.BaseDamage * 1.5f;
                     break;
                 // Splitting requires a new scene; not implemented yet.
             }

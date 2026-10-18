@@ -80,7 +80,7 @@ namespace HeroArena
         private void SelectDifficulty(Difficulty difficulty)
         {
             _difficulty = difficulty;
-            GameManager.Instance.SetDifficulty(difficulty);
+            GameManager.Instance?.SetDifficulty(difficulty);
             RefreshDifficultyButtons();
             PersistDifficulty();
         }

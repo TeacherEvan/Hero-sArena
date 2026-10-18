@@ -59,7 +59,7 @@ namespace HeroArena
             }
             else
             {
-                var flow = GameManager.Instance.FlowField;
+                var flow = GameManager.Instance?.FlowField;
                 Vector2 dir = flow != null
                     ? flow.GetFlowDirection(GlobalPosition)
                     : (_hero.GlobalPosition - GlobalPosition).Normalized();

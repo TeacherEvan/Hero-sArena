@@ -54,10 +54,10 @@ namespace HeroArena
             StartDodge(0.28f, 0.75f * Stats.DodgeCooldownMult);
             AudioManager.Instance?.PlaySound(SoundCue.Dodge, -6f);
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition, 90f, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition, 90f, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     _catalyst.AddCorrosion(hits[i], 2);
@@ -75,7 +75,7 @@ namespace HeroArena
 
         private void LobAcidCanister()
         {
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
 
             Vector2 baseDir = GetAimDirection();
@@ -101,10 +101,10 @@ namespace HeroArena
                 }
             }
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition + (baseDir * 100f), 110f, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition + (baseDir * 100f), 110f, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     _catalyst.AddCorrosion(hits[i], 1);
@@ -161,10 +161,10 @@ namespace HeroArena
                 EventBus.Instance.EmitPowerupCollected($"+{(int)healing} HP Siphoned");
             }
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
@@ -187,7 +187,7 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid == null) return;
 
-            int[] hits = grid.QueryRadius(GlobalPosition, 350f, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, 350f, out int count, out bool _);
             for (int i = 0; i < count; i++)
             {
                 int entityId = hits[i];

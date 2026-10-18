@@ -101,13 +101,13 @@ namespace HeroArena.Tests
 
             // Test insert and query
             grid.Insert(1, new Vector2(100, 100), 10f);
-            var results = grid.QueryRadius(new Vector2(100, 100), 15f, out int count);
+            var results = grid.QueryRadius(new Vector2(100, 100), 15f, out int count, out bool _);
             if (count != 1 || results[0] != 1)
                 throw new Exception($"Expected 1 entity at (100,100), got {count}");
 
             // Test remove
             grid.Remove(1);
-            results = grid.QueryRadius(new Vector2(100, 100), 15f, out count);
+            results = grid.QueryRadius(new Vector2(100, 100), 15f, out count, out bool _);
             if (count != 0)
                 throw new Exception($"Expected 0 after remove, got {count}");
 
@@ -115,23 +115,23 @@ namespace HeroArena.Tests
             grid.Insert(1, new Vector2(100, 100), 10f);
             grid.Insert(2, new Vector2(120, 100), 10f);
             grid.Insert(3, new Vector2(200, 200), 10f);
-            results = grid.QueryRadius(new Vector2(110, 100), 20f, out count);
+            results = grid.QueryRadius(new Vector2(110, 100), 20f, out count, out bool _);
             if (count != 2)
                 throw new Exception($"Expected 2 entities near (110,100), got {count}");
 
             // Test update
             grid.Update(1, new Vector2(500, 500), 10f);
-            results = grid.QueryRadius(new Vector2(100, 100), 15f, out count);
+            results = grid.QueryRadius(new Vector2(100, 100), 15f, out count, out bool _);
             if (count != 1 || results[0] != 2)
                 throw new Exception("Update failed - entity still at old position");
 
-            results = grid.QueryRadius(new Vector2(500, 500), 15f, out count);
+            results = grid.QueryRadius(new Vector2(500, 500), 15f, out count, out bool _);
             if (count != 1 || results[0] != 1)
                 throw new Exception("Update failed - entity not at new position");
 
             // Test clear
             grid.Clear();
-            results = grid.QueryRadius(new Vector2(500, 500), 15f, out count);
+            results = grid.QueryRadius(new Vector2(500, 500), 15f, out count, out bool _);
             if (count != 0)
                 throw new Exception("Clear failed");
 

@@ -25,6 +25,12 @@ namespace HeroArena
         private int _lastEnemyCount = -1;
         private float _lastMaxHealth = -1f;
         private bool _lastHealthLow = false;
+        // Cooldown label text cached and rebuilt only when the tenths digit
+        // changes, avoiding per-frame string allocation during cooldowns.
+        private string _dodgeCooldownText = "DODGE: READY";
+        private string _abilityCooldownText = "ABILITY: READY";
+        private int _dodgeTenths = -1;
+        private int _abilityTenths = -1;
 
         private readonly Label[] _powerupLabels = new Label[PowerupBannerSlots.MaxBanners];
         private readonly float[] _powerupTimers = new float[PowerupBannerSlots.MaxBanners];
@@ -38,6 +44,9 @@ namespace HeroArena
         private const float LOW_HEALTH_THRESHOLD = 0.30f;
         private const float VIGNETTE_MAX_ALPHA = 0.30f;
         private const float WAVE_WARNING_DURATION = 2.5f;
+
+        // Scratch vignette color reused each frame to avoid per-frame Color allocation.
+        private Color _vignetteColor = new Color(0.5f, 0f, 0f, 0f);
 
         public override void _Ready()
         {
@@ -54,15 +63,17 @@ namespace HeroArena
             _onLevelUp = l => { LevelLabel.Text = $"Lv {l}"; };
             _onThreatChanged = t => { ThreatLabel.Text = $"Threat {t}"; };
 
-            EventBus.Instance.OnHeroDamaged += _onHeroDamaged;
-            EventBus.Instance.OnWaveStarted += _onWaveStarted;
-            EventBus.Instance.OnLevelUp += _onLevelUp;
-            EventBus.Instance.OnThreatLevelChanged += _onThreatChanged;
-            EventBus.Instance.OnPowerupCollected += ShowPowerup;
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnHeroDamaged += _onHeroDamaged;
+                EventBus.Instance.OnWaveStarted += _onWaveStarted;
+                EventBus.Instance.OnLevelUp += _onLevelUp;
+                EventBus.Instance.OnThreatLevelChanged += _onThreatChanged;
+                EventBus.Instance.OnPowerupCollected += ShowPowerup;
+                _onWaveIncoming = (wave, isBoss) => ShowWaveWarning(wave, isBoss);
+                EventBus.Instance.OnWaveIncoming += _onWaveIncoming;
+            }
             ApplyTheme();
-
-            _onWaveIncoming = (wave, isBoss) => ShowWaveWarning(wave, isBoss);
-            EventBus.Instance.OnWaveIncoming += _onWaveIncoming;
 
             // Top-center wave warning banner.
             _waveWarningLabel = new Label
@@ -156,34 +167,47 @@ namespace HeroArena
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
 
-                // Cooldown indicators
+                // Cooldown indicators (text rebuilt only when the tenths digit
+                // changes — no per-frame string allocation during cooldowns).
                 if (_dodgeCooldownLabel != null)
                 {
                     float dRemain = hero.DodgeCooldownRemaining;
-                    if (dRemain <= 0.05f)
+                    int tenths = dRemain <= 0.05f ? -1 : (int)(dRemain * 10f);
+                    if (tenths != _dodgeTenths)
                     {
-                        _dodgeCooldownLabel.Text = "DODGE: READY";
-                        _dodgeCooldownLabel.Modulate = VisualTheme.Cyan;
-                    }
-                    else
-                    {
-                        _dodgeCooldownLabel.Text = $"DODGE: {dRemain:0.0}s";
-                        _dodgeCooldownLabel.Modulate = VisualTheme.TextMuted;
+                        _dodgeTenths = tenths;
+                        if (tenths < 0)
+                        {
+                            _dodgeCooldownText = "DODGE: READY";
+                            _dodgeCooldownLabel.Modulate = VisualTheme.Cyan;
+                        }
+                        else
+                        {
+                            _dodgeCooldownText = $"DODGE: {dRemain:0.0}s";
+                            _dodgeCooldownLabel.Modulate = VisualTheme.TextMuted;
+                        }
+                        _dodgeCooldownLabel.Text = _dodgeCooldownText;
                     }
                 }
 
                 if (_abilityCooldownLabel != null)
                 {
                     float aRemain = hero.AbilityCooldownRemaining;
-                    if (aRemain <= 0.05f)
+                    int tenths = aRemain <= 0.05f ? -1 : (int)(aRemain * 10f);
+                    if (tenths != _abilityTenths)
                     {
-                        _abilityCooldownLabel.Text = "ABILITY: READY";
-                        _abilityCooldownLabel.Modulate = VisualTheme.Gold;
-                    }
-                    else
-                    {
-                        _abilityCooldownLabel.Text = $"ABILITY: {aRemain:0.0}s";
-                        _abilityCooldownLabel.Modulate = VisualTheme.TextMuted;
+                        _abilityTenths = tenths;
+                        if (tenths < 0)
+                        {
+                            _abilityCooldownText = "ABILITY: READY";
+                            _abilityCooldownLabel.Modulate = VisualTheme.Gold;
+                        }
+                        else
+                        {
+                            _abilityCooldownText = $"ABILITY: {aRemain:0.0}s";
+                            _abilityCooldownLabel.Modulate = VisualTheme.TextMuted;
+                        }
+                        _abilityCooldownLabel.Text = _abilityCooldownText;
                     }
                 }
 
@@ -201,11 +225,16 @@ namespace HeroArena
                     if (low)
                     {
                         var t = 1f - healthPct / LOW_HEALTH_THRESHOLD; // 1 at 0%, 0 at 30%
-                        _lowHealthVignette.Color = new Color(0.5f, 0f, 0f, VIGNETTE_MAX_ALPHA * t);
+                        _vignetteColor.R = 0.5f;
+                        _vignetteColor.G = 0f;
+                        _vignetteColor.B = 0f;
+                        _vignetteColor.A = VIGNETTE_MAX_ALPHA * t;
+                        _lowHealthVignette.Color = _vignetteColor;
                     }
                     else
                     {
-                        _lowHealthVignette.Color = new Color(0.5f, 0f, 0f, 0f);
+                        _vignetteColor.A = 0f;
+                        _lowHealthVignette.Color = _vignetteColor;
                     }
                 }
             }

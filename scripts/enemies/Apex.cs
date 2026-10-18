@@ -82,7 +82,8 @@ namespace HeroArena
             {
                 float angle = angleStep * i;
                 Vector2 dir = Vector2.Right.Rotated(angle);
-                pool.GetProjectile(new ProjectileData(GlobalPosition, dir, 200f, Damage * 0.5f, DamageType.Energy));
+                var p = pool.GetProjectile(new ProjectileData(GlobalPosition, dir, 200f, Damage * 0.5f, DamageType.Energy));
+                if (p == null) return; // pool exhausted; skip this volley
             }
         }
 

@@ -135,7 +135,11 @@ namespace HeroArena
             cfg.SetValue(section, SettingsState.ConfigKeyLifetimePlaySeconds,
                 SettingsState.SerializeInt(SettingsState.ParseInt(
                     cfg.GetValue(section, SettingsState.ConfigKeyLifetimePlaySeconds).AsString(), 0) + playSeconds));
-            cfg.Save("user://settings.cfg");
+            // Atomic write: temp file + replace (avoid corrupted settings.cfg on crash/OOM).
+            string path = "user://settings.cfg";
+            string tmp = path + ".tmp";
+            cfg.Save(tmp);
+            System.IO.File.Move(tmp, path, overwrite: true);
         }
 
         private static string FormatTime(double seconds)

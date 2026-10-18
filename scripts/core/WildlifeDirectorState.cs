@@ -19,64 +19,6 @@ namespace HeroArena
     /// </summary>
     public sealed class WildlifeDirectorState
     {
-        /// <summary>Fixed critter pool size. The arena is a stage, not a zoo.</summary>
-        public const int MaxCritters = 64;
-
-        /// <summary>Seconds between spawn fades while a deficit exists.</summary>
-        public const float SpawnInterval = 0.35f;
-
-        /// <summary>Fade durations for spawning and despawning critters.</summary>
-        public const float FadeInSeconds = 1.6f;
-        public const float FadeOutSeconds = 1.2f;
-
-        /// <summary>Margin from the arena edges that spawns and motion respect.</summary>
-        public const float EdgeMargin = 120f;
-
-        /// <summary>Critters are not spawned within this radius of the hero.</summary>
-        public const float HeroSpawnClearance = 220f;
-
-        /// <summary>Distance the curious keep from the hero (stand-off, then back off).</summary>
-        public const float CuriosityStandoff = 140f;
-
-        /// <summary>Species with flee sensitivity at/below this approach the idle hero.</summary>
-        public const float CuriosityBoldnessThreshold = 0.5f;
-
-        /// <summary>Radius around home within which wander targets are picked.</summary>
-        public const float WanderRadius = 180f;
-
-        /// <summary>Critters push apart when closer than this (soft separation, px).</summary>
-        public const float SeparationRadius = 26f;
-
-        /// <summary>How firmly separation steers a critter (px/s at contact).</summary>
-        public const float SeparationWeight = 26f;
-
-        /// <summary>Firefly flash duty cycle: fraction of the period spent flashing.</summary>
-        public const float FlashDuty = 0.06f;
-
-        /// <summary>Firefly flash period in seconds (research: real fireflies flash every ~2–7 s).</summary>
-        public const float FlashPeriod = 4.4f;
-
-        /// <summary>Dim baseline so unlit fireflies are still faintly trackable.</summary>
-        public const float FlashDimBase = 0.1f;
-
-        /// <summary>
-        /// Per-species parameters. Biomes pick 1–2 of these (see
-        /// <see cref="BiomeAtmosphereState"/>); the distinction is purely data.
-        /// </summary>
-        public struct SpeciesProfile
-        {
-            public string Name;
-            public float Speed;             // wander cruise speed, px/s
-            public float PanicSpeed;        // flee speed, px/s
-            public float Size;              // draw scale factor for the node
-            public float Glow01;            // additive glow strength for the node
-            public float Height01;          // 0 = ground skitter, 1 = air drift
-            public float FleeSensitivity01; // scales the panic radius they notice
-            public float AccentR;           // accent/glow colour (0..1) for the node
-            public float AccentG;
-            public float AccentB;
-        }
-
         /// <summary>One pooled critter. Positions are world-space floats.</summary>
         public struct Critter
         {
@@ -100,8 +42,8 @@ namespace HeroArena
             public float HomeY;
         }
 
-        private readonly Critter[] _critters = new Critter[MaxCritters];
-        private SpeciesProfile[] _profiles = Array.Empty<SpeciesProfile>();
+        private readonly Critter[] _critters = new Critter[WildlifeConfig.MaxCritters];
+        private WildlifeConfig.SpeciesProfile[] _profiles = Array.Empty<WildlifeConfig.SpeciesProfile>();
         private Random _rng = new Random(1);
         private int _targetPopulation;
         private float _spawnCooldown;
@@ -121,10 +63,10 @@ namespace HeroArena
         public int TargetPopulation => _targetPopulation;
 
         /// <summary>Sets the species roster and desired population; resets the pool.</summary>
-        public void Configure(SpeciesProfile[] profiles, int targetPopulation, int seed)
+        public void Configure(WildlifeConfig.SpeciesProfile[] profiles, int targetPopulation, int seed)
         {
-            _profiles = profiles ?? Array.Empty<SpeciesProfile>();
-            _targetPopulation = Math.Clamp(targetPopulation, 0, MaxCritters);
+            _profiles = profiles ?? Array.Empty<WildlifeConfig.SpeciesProfile>();
+            _targetPopulation = Math.Clamp(targetPopulation, 0, WildlifeConfig.MaxCritters);
             _rng = new Random(seed);
             Array.Clear(_critters);
             _spawnCooldown = 0f;
@@ -134,11 +76,11 @@ namespace HeroArena
         /// <summary>
         /// Raises or lowers the desired population without resetting the pool.
         /// Lowering fades the farthest-from-hero critters out one by one;
-        /// raising schedules spawns at <see cref="SpawnInterval"/>. The node
+        /// raising schedules spawns at <see cref="WildlifeConfig.SpawnInterval"/>. The node
         /// uses this to thin wildlife as waves escalate.
         /// </summary>
         public void SetTargetPopulation(int value)
-            => _targetPopulation = Math.Clamp(value, 0, MaxCritters);
+            => _targetPopulation = Math.Clamp(value, 0, WildlifeConfig.MaxCritters);
 
         /// <summary>Sets the rectangle critters live in (world-space centre + half extents).</summary>
         public void SetArena(float centerX, float centerY, float halfWidth, float halfHeight)
@@ -163,7 +105,7 @@ namespace HeroArena
         /// <summary>
         /// Optional scar sampler (0 = clean .. 1 = scarred). Wander targets
         /// falling in scarred ground are re-rolled up to
-        /// <see cref="ScarAttempts"/> times; a critter never strands because
+        /// <see cref="WildlifeConfig.ScarAttempts"/> times; a critter never strands because
         /// of it — the last candidate wins.
         /// </summary>
         public Func<float, float, float>? ScarSampler { get; set; }
@@ -184,7 +126,7 @@ namespace HeroArena
             if (dt <= 0f) return;
             UpdateSpawning(dt);
 
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 ref var c = ref _critters[i];
                 if (!c.Active) continue;
@@ -216,7 +158,7 @@ namespace HeroArena
         public void Panic(float x, float y, float radius, float strength01)
         {
             float strength = Math.Clamp(strength01, 0f, 1f);
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 ref var c = ref _critters[i];
                 if (!c.Active || c.Despawning || c.HideTime > 0f) continue;
@@ -251,7 +193,7 @@ namespace HeroArena
         public void HideAll(float seconds)
         {
             if (seconds <= 0f) return;
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 ref var c = ref _critters[i];
                 if (!c.Active || c.Despawning) continue;
@@ -265,7 +207,7 @@ namespace HeroArena
         /// <summary>Ends a hold-breath (wave cleared): critters fade back in and resume.</summary>
         public void EndHide()
         {
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 ref var c = ref _critters[i];
                 if (!c.Active) continue;
@@ -278,22 +220,22 @@ namespace HeroArena
         public Critter GetCritter(int index) => _critters[index];
 
         /// <summary>
-        /// Bioluminescent flash intensity in [<see cref="FlashDimBase"/>, 1]
+        /// Bioluminescent flash intensity in [<see cref="WildlifeConfig.FlashDimBase"/>, 1]
         /// for a cycling glow species: one short smooth flash per
-        /// <see cref="FlashPeriod"/> seconds, a faint baseline the rest of the
+        /// <see cref="WildlifeConfig.FlashPeriod"/> seconds, a faint baseline the rest of the
         /// time. Real fireflies are dark most of the time — the darkness is
         /// what makes the glow read as alive instead of as a lamp (research:
         /// docs/external-research/living-world-wildlife-patterns.md).
         /// </summary>
         public static float FireflyFlash(float time, float phase01)
         {
-            float cycles = time / FlashPeriod + phase01;
+            float cycles = time / WildlifeConfig.FlashPeriod + phase01;
             float phase = cycles - MathF.Floor(cycles);
-            if (phase >= FlashDuty) return FlashDimBase;
+            if (phase >= WildlifeConfig.FlashDuty) return WildlifeConfig.FlashDimBase;
 
-            float k = phase / FlashDuty;
+            float k = phase / WildlifeConfig.FlashDuty;
             float envelope = k < 0.5f ? k * 2f : (1f - k) * 2f;
-            return FlashDimBase + (1f - FlashDimBase) * envelope;
+            return WildlifeConfig.FlashDimBase + (1f - WildlifeConfig.FlashDimBase) * envelope;
         }
 
         /// <summary>Number of living (non-despawning) critters, hidden ones included.</summary>
@@ -302,7 +244,7 @@ namespace HeroArena
             get
             {
                 int n = 0;
-                for (int i = 0; i < MaxCritters; i++)
+                for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
                 {
                     if (_critters[i].Active && !_critters[i].Despawning) n++;
                 }
@@ -321,7 +263,7 @@ namespace HeroArena
             {
                 int worst = -1;
                 float worstDist = -1f;
-                for (int i = 0; i < MaxCritters; i++)
+                for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
                 {
                     ref var c = ref _critters[i];
                     if (!c.Active || c.Despawning) continue;
@@ -343,14 +285,14 @@ namespace HeroArena
             if (living < _targetPopulation && _spawnCooldown <= 0f)
             {
                 TrySpawn();
-                _spawnCooldown = SpawnInterval;
+                _spawnCooldown = WildlifeConfig.SpawnInterval;
             }
         }
 
         private void TrySpawn()
         {
             int slot = -1;
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 if (!_critters[i].Active)
                 {
@@ -397,18 +339,18 @@ namespace HeroArena
                 if (!_heroSet) return (x, y);
                 float dx = x - _heroX;
                 float dy = y - _heroY;
-                if (dx * dx + dy * dy >= HeroSpawnClearance * HeroSpawnClearance)
+                if (dx * dx + dy * dy >= WildlifeConfig.HeroSpawnClearance * WildlifeConfig.HeroSpawnClearance)
                     return (x, y);
             }
             // Fallback (all 8 clearance attempts failed): centre of the clamped
-            // arena, always inside EdgeMargin (audit P3-1 / R4).
+            // arena, always inside WildlifeConfig.EdgeMargin (audit P3-1 / R4).
             return ((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
         }
 
         private void UpdateFade(ref Critter c, float dt)
         {
             float target = c.Despawning ? 0f : (c.HideTime > 0f ? 0f : 1f);
-            float seconds = target > c.Fade ? FadeInSeconds : FadeOutSeconds;
+            float seconds = target > c.Fade ? WildlifeConfig.FadeInSeconds : WildlifeConfig.FadeOutSeconds;
             c.Fade = MoveTowards(c.Fade, target, dt / seconds);
 
             if (c.Despawning && c.Fade <= 0.001f)
@@ -434,26 +376,26 @@ namespace HeroArena
                 desiredX *= spec.PanicSpeed;
                 desiredY *= spec.PanicSpeed;
                 // Panicked creatures barely notice the wind.
-                desiredX += windX * 0.1f;
-                desiredY += windY * 0.1f;
+                desiredX += windX * WildlifeConfig.WindPanicFactor;
+                desiredY += windY * WildlifeConfig.WindPanicFactor;
                 maxSpeed = spec.PanicSpeed;
             }
             else if (ShouldBeCurious(c, spec, out float towardX, out float towardY, out float dist))
             {
                 float speed = spec.Speed * _curiosity;
-                if (dist > CuriosityStandoff)
+                if (dist > WildlifeConfig.CuriosityStandoff)
                 {
                     desiredX = towardX * speed;
                     desiredY = towardY * speed;
                 }
                 else
                 {
-                    desiredX = -towardX * spec.Speed * 0.5f;
-                    desiredY = -towardY * spec.Speed * 0.5f;
+                    desiredX = -towardX * spec.Speed * WildlifeConfig.CuriosityBackOffSpeed;
+                    desiredY = -towardY * spec.Speed * WildlifeConfig.CuriosityBackOffSpeed;
                 }
-                desiredX += windX * 0.3f;
-                desiredY += windY * 0.3f;
-                maxSpeed = spec.Speed * 1.5f;
+                desiredX += windX * WildlifeConfig.WindWanderFactor;
+                desiredY += windY * WildlifeConfig.WindWanderFactor;
+                maxSpeed = spec.Speed * WildlifeConfig.CuriositySpeedMult;
             }
             else
             {
@@ -461,13 +403,13 @@ namespace HeroArena
                 float tdx = c.TargetX - c.X;
                 float tdy = c.TargetY - c.Y;
                 float distSq = tdx * tdx + tdy * tdy;
-                if (c.WanderTimer <= 0f || distSq < 14f * 14f)
+                if (c.WanderTimer <= 0f || distSq < WildlifeConfig.WanderArrivalDistSq)
                     PickWanderTarget(ref c);
 
                 Normalize(ref tdx, ref tdy, keepCurrent: (c.VX, c.VY));
-                desiredX = tdx * spec.Speed + windX * 0.3f;
-                desiredY = tdy * spec.Speed + windY * 0.3f;
-                maxSpeed = spec.Speed * 1.4f;
+                desiredX = tdx * spec.Speed + windX * WildlifeConfig.WindWanderFactor;
+                desiredY = tdy * spec.Speed + windY * WildlifeConfig.WindWanderFactor;
+                maxSpeed = spec.Speed * WildlifeConfig.WanderSpeedMult;
             }
 
             // Soft separation: critters are individual animals, not a swarm —
@@ -476,8 +418,8 @@ namespace HeroArena
             // personal space: flight and breath-holding ignore it.
             if (c.PanicTime <= 0f)
             {
-                float sepRadiusSq = SeparationRadius * SeparationRadius;
-                for (int j = 0; j < MaxCritters; j++)
+                float sepRadiusSq = WildlifeConfig.SeparationRadius * WildlifeConfig.SeparationRadius;
+                for (int j = 0; j < WildlifeConfig.MaxCritters; j++)
                 {
                     if (j == index) continue;
                     var other = _critters[j];
@@ -489,14 +431,16 @@ namespace HeroArena
                     if (d2 >= sepRadiusSq || d2 < 0.0001f) continue;
 
                     float d = MathF.Sqrt(d2);
-                    float push = (1f - d / SeparationRadius) * SeparationWeight;
+                    float push = (1f - d / WildlifeConfig.SeparationRadius) * WildlifeConfig.SeparationWeight;
                     desiredX += dx / d * push;
                     desiredY += dy / d * push;
                 }
             }
 
             // Exponential approach toward the desired velocity (smooth startles).
-            float k = 1f - MathF.Exp(-6f * dt);
+            // Frame-rate independent: rate is per-second, scaled by dt * 60 so the
+            // approach behaves identically at 60 Hz and 120 Hz.
+            float k = 1f - MathF.Exp(-WildlifeConfig.SteerDampingRate * dt * 60f);
             c.VX += (desiredX - c.VX) * k;
             c.VY += (desiredY - c.VY) * k;
             var (cx, cy) = AmbientWindState.ClampSpeed(c.VX, c.VY, maxSpeed);
@@ -504,14 +448,14 @@ namespace HeroArena
             c.VY = cy;
         }
 
-        private bool ShouldBeCurious(Critter c, SpeciesProfile spec, out float towardX, out float towardY, out float dist)
+        private bool ShouldBeCurious(Critter c, WildlifeConfig.SpeciesProfile spec, out float towardX, out float towardY, out float dist)
         {
             towardX = 0f;
             towardY = 0f;
             dist = 0f;
 
             if (_curiosity <= 0.05f || !_heroSet) return false;
-            if (spec.FleeSensitivity01 > CuriosityBoldnessThreshold) return false;
+            if (spec.FleeSensitivity01 > WildlifeConfig.CuriosityBoldnessThreshold) return false;
 
             float dx = _heroX - c.X;
             float dy = _heroY - c.Y;
@@ -527,13 +471,13 @@ namespace HeroArena
             float tx = c.HomeX;
             float ty = c.HomeY; // fallback: stay home rather than walk onto scarred ground
             bool accepted = false;
-            for (int attempt = 0; attempt < ScarAttempts && !accepted; attempt++)
+            for (int attempt = 0; attempt < WildlifeConfig.ScarAttempts && !accepted; attempt++)
             {
                 float angle = (float)(_rng.NextDouble() * Math.PI * 2.0);
-                float radius = (float)_rng.NextDouble() * WanderRadius;
+                float radius = (float)_rng.NextDouble() * WildlifeConfig.WanderRadius;
                 tx = c.HomeX + MathF.Cos(angle) * radius;
                 ty = c.HomeY + MathF.Sin(angle) * radius;
-                if (ScarSampler == null || ScarSampler(tx, ty) < ScarAvoidThreshold) accepted = true;
+                if (ScarSampler == null || ScarSampler(tx, ty) < WildlifeConfig.ScarAvoidThreshold) accepted = true;
             }
             c.TargetX = tx;
             c.TargetY = ty;
@@ -567,14 +511,14 @@ namespace HeroArena
 
         private (float MinX, float MinY, float MaxX, float MaxY) ArenaBounds()
         {
-            float hw = _arenaHalfW - EdgeMargin;
-            float hh = _arenaHalfH - EdgeMargin;
+            float hw = _arenaHalfW - WildlifeConfig.EdgeMargin;
+            float hh = _arenaHalfH - WildlifeConfig.EdgeMargin;
             if (hw < 16f) hw = 16f;
             if (hh < 16f) hh = 16f;
             return (_arenaCx - hw, _arenaCy - hh, _arenaCx + hw, _arenaCy + hh);
         }
 
-        private SpeciesProfile SpeciesAt(int index)
+        private WildlifeConfig.SpeciesProfile SpeciesAt(int index)
         {
             if (_profiles.Length == 0) return default;
             if ((uint)index >= (uint)_profiles.Length) return _profiles[0];
@@ -584,7 +528,7 @@ namespace HeroArena
         private int CountActive()
         {
             int n = 0;
-            for (int i = 0; i < MaxCritters; i++)
+            for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
             {
                 if (_critters[i].Active) n++;
             }

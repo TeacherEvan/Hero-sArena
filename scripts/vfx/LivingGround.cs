@@ -50,6 +50,18 @@ namespace HeroArena
         private float _time;
         private int _count;
 
+        // Scratch structs reused each draw frame to avoid per-tuft allocations.
+        private Vector2 _tuftRoot;
+        private Vector2 _tuftTip;
+        private Color _tuftDrawColor;
+        private Vector2 _crackDir;
+        private Vector2 _crackMid;
+        private Vector2 _crackA;
+        private Vector2 _crackB;
+        private Vector2 _crackBDir;
+        private Vector2 _pebblePos;
+        private Color _pebbleDrawColor;
+
         public override void _Ready()
         {
             var profile = BiomeAtmosphereState.ProfileFor(SceneAnchors.ResolveBiome(this));
@@ -60,8 +72,11 @@ namespace HeroArena
             _tuftColor = new Color(TuftBase.R * tint.R, TuftBase.G * tint.G, TuftBase.B * tint.B);
             _pebbleColor = new Color(PebbleBase.R * tint.R, PebbleBase.G * tint.G, PebbleBase.B * tint.B);
 
-            EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
-            EventBus.Instance.OnProjectileHit += OnProjectileHit;
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
+                EventBus.Instance.OnProjectileHit += OnProjectileHit;
+            }
         }
 
         public override void _ExitTree()
@@ -117,17 +132,24 @@ namespace HeroArena
                 var it = _items[i];
                 if (it.Kind != GroundDetailPlan.ItemKind.Crack) continue;
 
-                var dir = new Vector2(MathF.Cos(it.Rotation), MathF.Sin(it.Rotation));
-                var mid = new Vector2(it.X, it.Y);
-                var a = mid - dir * (it.Size * 0.5f);
-                var b = mid + dir * (it.Size * 0.5f);
+                var dir = _crackDir;
+                dir.X = MathF.Cos(it.Rotation);
+                dir.Y = MathF.Sin(it.Rotation);
+                var mid = _crackMid;
+                mid.X = it.X;
+                mid.Y = it.Y;
+                var a = _crackA;
+                a = mid - dir * (it.Size * 0.5f);
+                var b = _crackB;
+                b = mid + dir * (it.Size * 0.5f);
                 DrawLine(a, b, color, 1f);
 
                 if (it.Size > 18f)
                 {
                     // A short side-branch makes long cracks read as cracked, not ruled.
                     float side = it.Shade01 > 0.5f ? 0.8f : -0.8f;
-                    var bdir = dir.Rotated(side);
+                    var bdir = _crackBDir;
+                    bdir = dir.Rotated(side);
                     DrawLine(mid, mid + bdir * (it.Size * 0.28f), color, 1f);
                 }
             }
@@ -140,12 +162,15 @@ namespace HeroArena
                 var it = _items[i];
                 if (it.Kind != GroundDetailPlan.ItemKind.Pebble) continue;
 
-                var color = new Color(
-                    _pebbleColor.R * it.Shade01,
-                    _pebbleColor.G * it.Shade01,
-                    _pebbleColor.B * it.Shade01,
-                    0.8f);
-                DrawCircle(new Vector2(it.X, it.Y), it.Size, color);
+                var pos = _pebblePos;
+                pos.X = it.X;
+                pos.Y = it.Y;
+                var color = _pebbleDrawColor;
+                color.R = _pebbleColor.R * it.Shade01;
+                color.G = _pebbleColor.G * it.Shade01;
+                color.B = _pebbleColor.B * it.Shade01;
+                color.A = 0.8f;
+                DrawCircle(pos, it.Size, color);
             }
         }
 
@@ -164,13 +189,17 @@ namespace HeroArena
                 float wy = baseWindY + iy * _windScale;
                 GroundDetailPlan.Sway(_time, wx, wy, it.X, it.Y, out float sx, out float sy);
 
-                var root = new Vector2(it.X, it.Y);
-                var tip = new Vector2(it.X + sx * 0.5f, it.Y - it.Size + sy * 0.25f);
-                var color = new Color(
-                    _tuftColor.R * it.Shade01,
-                    _tuftColor.G * it.Shade01,
-                    _tuftColor.B * it.Shade01,
-                    0.85f);
+                var root = _tuftRoot;
+                root.X = it.X;
+                root.Y = it.Y;
+                var tip = _tuftTip;
+                tip.X = it.X + sx * 0.5f;
+                tip.Y = it.Y - it.Size + sy * 0.25f;
+                var color = _tuftDrawColor;
+                color.R = _tuftColor.R * it.Shade01;
+                color.G = _tuftColor.G * it.Shade01;
+                color.B = _tuftColor.B * it.Shade01;
+                color.A = 0.85f;
                 DrawLine(root, tip, color, 1f + 0.8f * it.Shade01);
             }
         }

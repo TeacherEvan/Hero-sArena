@@ -31,6 +31,9 @@ namespace HeroArena
         public DifficultySettings DifficultySettings => GameManagerState.GetSettings(_state.CurrentDifficulty);
         public void SetDifficulty(Difficulty d) => _state.SetDifficulty(d);
 
+        /// <summary>Increments the wave counter (single source of truth via GameManagerState).</summary>
+        public void IncrementWave() => _state.IncrementWave();
+
         // ── System references (assigned in _Ready or by scene) ────────────────
         public WaveManager? WaveManager { get; set; }
         public FlowFieldPathfinder? FlowField { get; set; }
@@ -131,7 +134,7 @@ namespace HeroArena
 
         public void TriggerGameOver()
         {
-            _state.SetState(GameState.GameOver);
+            _state.TryTransition(GameState.GameOver);
             EventBus.Instance.EmitGameOver();
         }
 

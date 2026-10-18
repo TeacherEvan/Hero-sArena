@@ -60,10 +60,10 @@ namespace HeroArena
         {
             float damage = LevelProgression.CalcKineticDamage(SLAM_DAMAGE, Level)
                 * Stats.DamageMult * Stats.KineticDamageMult;
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
-            int[] hits = grid.QueryRadius(GlobalPosition, SLAM_RADIUS * Stats.AoeRadiusMult, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, SLAM_RADIUS * Stats.AoeRadiusMult, out int count, out bool _);
             for (int i = 0; i < count; i++)
             {
                 if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null

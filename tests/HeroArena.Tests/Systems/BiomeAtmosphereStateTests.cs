@@ -118,7 +118,7 @@ public class BiomeAtmosphereStateTests
             profile.TintG.Should().BeInRange(0f, 1f);
             profile.TintB.Should().BeInRange(0f, 1f);
             profile.WindScale.Should().BeInRange(0.4f, 2f);
-            profile.WildlifePopulation.Should().BeInRange(1, WildlifeDirectorState.MaxCritters);
+            profile.WildlifePopulation.Should().BeInRange(1, WildlifeConfig.MaxCritters);
         }
     }
 
@@ -128,8 +128,8 @@ public class BiomeAtmosphereStateTests
         foreach (var kind in AllBiomes)
         {
             var profile = BiomeAtmosphereState.ProfileFor(kind);
-            bool bold = profile.PrimaryCritter.FleeSensitivity01 <= WildlifeDirectorState.CuriosityBoldnessThreshold
-                || profile.SecondaryCritter.FleeSensitivity01 <= WildlifeDirectorState.CuriosityBoldnessThreshold;
+            bool bold = profile.PrimaryCritter.FleeSensitivity01 <= WildlifeConfig.CuriosityBoldnessThreshold
+                || profile.SecondaryCritter.FleeSensitivity01 <= WildlifeConfig.CuriosityBoldnessThreshold;
             bold.Should().BeTrue($"{kind} needs one curious species for calm-time encounters");
         }
     }

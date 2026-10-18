@@ -12,20 +12,20 @@ namespace HeroArena.Tests.Systems;
 // wind coupling, determinism and simulation stability.
 public class WildlifeDirectorStateTests
 {
-    private static WildlifeDirectorState.SpeciesProfile BoldSpecies() => new()
+    private static WildlifeConfig.SpeciesProfile BoldSpecies() => new()
     {
         Name = "BoldMoth", Speed = 30f, PanicSpeed = 140f, Size = 0.5f,
         Glow01 = 0.8f, Height01 = 0.5f, FleeSensitivity01 = 0.3f,
     };
 
-    private static WildlifeDirectorState.SpeciesProfile SkittishSpecies() => new()
+    private static WildlifeConfig.SpeciesProfile SkittishSpecies() => new()
     {
         Name = "SkittishCrawler", Speed = 30f, PanicSpeed = 90f, Size = 0.4f,
         Glow01 = 0.1f, Height01 = 0.1f, FleeSensitivity01 = 0.9f,
     };
 
     private static WildlifeDirectorState Make(
-        WildlifeDirectorState.SpeciesProfile[] profiles, int population,
+        WildlifeConfig.SpeciesProfile[] profiles, int population,
         int seed = 7, float halfW = 1000f, float halfH = 1000f)
     {
         var d = new WildlifeDirectorState();
@@ -43,7 +43,7 @@ public class WildlifeDirectorStateTests
     private static List<(int Index, WildlifeDirectorState.Critter Critter)> Active(WildlifeDirectorState d)
     {
         var list = new List<(int, WildlifeDirectorState.Critter)>();
-        for (int i = 0; i < WildlifeDirectorState.MaxCritters; i++)
+        for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
         {
             var c = d.GetCritter(i);
             if (c.Active) list.Add((i, c));
@@ -106,19 +106,19 @@ public class WildlifeDirectorStateTests
         // The full pool, not one lucky spawn: with ~5% of uniform spawns
         // landing inside the ring, 64 attempts make a missing check virtually
         // certain to be caught (and a passing run samples the rule at scale).
-        var d = Make(new[] { BoldSpecies() }, WildlifeDirectorState.MaxCritters);
+        var d = Make(new[] { BoldSpecies() }, WildlifeConfig.MaxCritters);
         d.SetHero(0f, 0f);
 
         Settle(d, 24f); // 64 spawns × 0.35 s interval, plus slack
 
         var active = Active(d);
-        active.Count.Should().Be(WildlifeDirectorState.MaxCritters);
+        active.Count.Should().Be(WildlifeConfig.MaxCritters);
         foreach (var (_, c) in active)
         {
             // Clearance is a spawn rule, so measure spawn origins: critters may
             // wander closer afterwards, but a home never moves.
             float dist = MathF.Sqrt(c.HomeX * c.HomeX + c.HomeY * c.HomeY);
-            dist.Should().BeGreaterThanOrEqualTo(WildlifeDirectorState.HeroSpawnClearance - 0.5f);
+            dist.Should().BeGreaterThanOrEqualTo(WildlifeConfig.HeroSpawnClearance - 0.5f);
         }
     }
 
@@ -327,7 +327,7 @@ public class WildlifeDirectorStateTests
             b.Update(0.05f, 0f, 0f);
         }
 
-        for (int i = 0; i < WildlifeDirectorState.MaxCritters; i++)
+        for (int i = 0; i < WildlifeConfig.MaxCritters; i++)
         {
             var ca = a.GetCritter(i);
             var cb = b.GetCritter(i);
@@ -368,7 +368,7 @@ public class WildlifeDirectorStateTests
         for (float t = 0f; t < 200f; t += 0.05f)
         {
             float v = WildlifeDirectorState.FireflyFlash(t, 0.37f);
-            v.Should().BeInRange(WildlifeDirectorState.FlashDimBase, 1f);
+            v.Should().BeInRange(WildlifeConfig.FlashDimBase, 1f);
             if (v > 0.5f) lit++;
             total++;
         }

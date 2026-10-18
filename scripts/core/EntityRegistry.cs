@@ -28,5 +28,9 @@ namespace HeroArena
 
         public bool Remove(int entityId)
             => _byEntityId.Remove(entityId);
+
+        /// <summary>Returns all registered entities (may include dead ones;
+        /// callers filter as needed).</summary>
+        public IEnumerable<TEntity> GetAll() => _byEntityId.Values;
     }
 }

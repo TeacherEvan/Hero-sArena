@@ -37,6 +37,13 @@ namespace HeroArena
         /// <summary>When true, <see cref="TakeDamage"/> ignores all incoming damage (used by god mode / i-frame effects).</summary>
         public bool Invulnerable { get; set; }
 
+        /// <summary>Current aim direction: updated from mouse every physics tick;
+        /// twin-stick/touch input can override via <see cref="SetAimDirection"/>.</summary>
+        protected Vector2 _aimDirection = Vector2.Right;
+
+        /// <summary>Override the aim direction (twin-stick / touch input).</summary>
+        public void SetAimDirection(Vector2 dir) => _aimDirection = dir;
+
         public override void _Ready()
         {
             CurrentHealth = MaxHealth;
@@ -62,6 +69,9 @@ namespace HeroArena
         // ── Input ──────────────────────────────────────────────────────────────
         private void HandleInput(float dt)
         {
+            // Track mouse aim every tick; twin-stick/touch can override via SetAimDirection.
+            _aimDirection = (GetGlobalMousePosition() - GlobalPosition).Normalized();
+
             // Buffer attack and dodge inputs
             if (Input.IsActionJustPressed("attack"))
                 _inputBuffer.BufferAction("attack");
@@ -103,8 +113,12 @@ namespace HeroArena
 
         protected virtual void Die()
         {
-            GameManager.Instance.TriggerGameOver();
-            GameManager.Instance.ActiveHero = null;
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                gm.TriggerGameOver();
+                gm.ActiveHero = null;
+            }
             QueueFree();
         }
 
@@ -130,8 +144,7 @@ namespace HeroArena
         // ── Utility ───────────────────────────────────────────────────────────
         protected Vector2 GetAimDirection()
         {
-            var mouse = GetGlobalMousePosition();
-            return (mouse - GlobalPosition).Normalized();
+            return _aimDirection;
         }
 
         protected void StartDodge(float duration = 0.25f, float cooldown = 0.8f)

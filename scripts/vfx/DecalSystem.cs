@@ -15,7 +15,7 @@ namespace HeroArena
 
         private void HandleDecalRequest(Vector2 pos, DecalType type, float size)
         {
-            GameManager.Instance.PoolManager?.GetDecal(pos, type, size);
+            GameManager.Instance?.PoolManager?.GetDecal(pos, type, size);
         }
 
         public override void _ExitTree()

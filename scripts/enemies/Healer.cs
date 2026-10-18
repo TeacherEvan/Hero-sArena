@@ -47,9 +47,9 @@ namespace HeroArena
                 _aiState = HealerState.FleePlayer;
                 return;
             }
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
-            grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count);
+            grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count, out bool _);
             _aiState = count > 2 ? HealerState.ChannelAura : HealerState.FindCluster;
         }
 
@@ -70,9 +70,9 @@ namespace HeroArena
 
         private void HealNearby(float dt)
         {
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
-            int[] nearby = grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count);
+            int[] nearby = grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count, out bool _);
             float healPerTick = MaxHealth * HEAL_RATE * dt;
             for (int i = 0; i < count; i++)
             {

@@ -24,6 +24,9 @@ namespace HeroArena
         private readonly ActiveNumber[] _pool = new ActiveNumber[POOL_SIZE];
         private System.Action<Vector2, float, DamageType, bool>? _handler;
 
+        // Scratch scale reused each frame to avoid per-active-number Vector2 allocation.
+        private Vector2 _popScale;
+
         public override void _Ready()
         {
             Layer = 5; // Above world, below modals
@@ -123,7 +126,9 @@ namespace HeroArena
                 if (progress < 0.15f)
                 {
                     float pop = 1.0f + 0.3f * (1.0f - progress / 0.15f);
-                    _pool[i].Label.Scale = new Vector2(pop, pop);
+                    _popScale.X = pop;
+                    _popScale.Y = pop;
+                    _pool[i].Label.Scale = _popScale;
                 }
 
                 // Alpha fade

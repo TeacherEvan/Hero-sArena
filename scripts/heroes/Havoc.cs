@@ -51,7 +51,7 @@ namespace HeroArena
             var grid = GameManager.Instance.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(GlobalPosition, 110f, out int count);
+                int[] hits = grid.QueryRadius(GlobalPosition, 110f, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null
@@ -77,7 +77,7 @@ namespace HeroArena
 
         private void FireClusterRocket()
         {
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
 
             Vector2 baseDir = GetAimDirection();
@@ -118,7 +118,7 @@ namespace HeroArena
         private void ActivateOrbitalBarrage()
         {
             _barrageCooldown = BARRAGE_COOLDOWN;
-            Vector2 targetPos = GetGlobalMousePosition();
+            Vector2 targetPos = GlobalPosition + GetAimDirection() * 500f;
 
             AudioManager.Instance?.PlaySound(SoundCue.Ability, -1f);
             EventBus.Instance.EmitPowerupCollected("OrbitalBarrage");
@@ -151,10 +151,10 @@ namespace HeroArena
                 * Stats.DamageMult * Stats.AoeRadiusMult * strike.DamageMultiplier;
             float radius = BASE_BARRAGE_RADIUS * Stats.AoeRadiusMult * strike.RadiusMultiplier;
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
-                int[] hits = grid.QueryRadius(impactPos, radius, out int count);
+                int[] hits = grid.QueryRadius(impactPos, radius, out int count, out bool _);
                 for (int i = 0; i < count; i++)
                 {
                     if (EnemyBase.TryGetById(hits[i], out var enemy) && enemy != null

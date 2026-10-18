@@ -32,6 +32,12 @@ namespace HeroArena
         private readonly List<AudioStreamPlayer> _players = new();
         private int _playerIndex = 0;
 
+        // Delegate fields so subscriptions can be removed deterministically in _ExitTree.
+        // Storing the delegates avoids leaking the AudioManager instance (and its
+        // 12 AudioStreamPlayer children) into the singleton EventBus forever.
+        private Action<int>? _onLevelUp;
+        private Action<Vector2, DamageType>? _onProjectileHit;
+
         public override void _Ready()
         {
             Instance = this;
@@ -50,18 +56,25 @@ namespace HeroArena
 
             if (EventBus.Instance != null)
             {
-                EventBus.Instance.OnLevelUp += _ => PlaySound(SoundCue.LevelUp, -2f);
-                EventBus.Instance.OnProjectileHit += (_, type) =>
+                _onLevelUp = _ => PlaySound(SoundCue.LevelUp, -2f);
+                _onProjectileHit = (_, type) =>
                 {
                     if (type == DamageType.Explosive) PlaySound(SoundCue.Explosion, -6f);
                     else if (type == DamageType.Acid) PlaySound(SoundCue.ShootAcid, -10f);
                     else PlaySound(SoundCue.HitImpact, -12f);
                 };
+                EventBus.Instance.OnLevelUp += _onLevelUp;
+                EventBus.Instance.OnProjectileHit += _onProjectileHit;
             }
         }
 
         public override void _ExitTree()
         {
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnLevelUp -= _onLevelUp;
+                EventBus.Instance.OnProjectileHit -= _onProjectileHit;
+            }
             if (Instance == this) Instance = null;
             base._ExitTree();
         }

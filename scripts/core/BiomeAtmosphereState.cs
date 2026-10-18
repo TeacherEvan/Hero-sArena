@@ -70,8 +70,8 @@ namespace HeroArena
             public float TintB;
             public float WindScale;     // scales AmbientWindState for this biome
             public int WildlifePopulation;
-            public WildlifeDirectorState.SpeciesProfile PrimaryCritter;
-            public WildlifeDirectorState.SpeciesProfile SecondaryCritter;
+            public WildlifeConfig.SpeciesProfile PrimaryCritter;
+            public WildlifeConfig.SpeciesProfile SecondaryCritter;
             public ParticleField PrimaryField;
             public ParticleField SecondaryField;
         }
@@ -227,10 +227,10 @@ namespace HeroArena
                 WindInfluence01 = wind,
             };
 
-        private static WildlifeDirectorState.SpeciesProfile Critter(
+        private static WildlifeConfig.SpeciesProfile Critter(
             string name, float r, float g, float b,
             float speed, float panic, float size, float glow, float height, float flee)
-            => new WildlifeDirectorState.SpeciesProfile
+            => new WildlifeConfig.SpeciesProfile
             {
                 Name = name,
                 AccentR = r,

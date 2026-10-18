@@ -1,5 +1,6 @@
 using Godot;
 using System;
+using System.Collections.Generic;
 
 namespace HeroArena
 {
@@ -19,12 +20,29 @@ namespace HeroArena
         public static bool TryGetById(int entityId, out EnemyBase? enemy)
             => Registry.TryGet(entityId, out enemy);
 
+        /// <summary>Returns all registered enemies that are not dead.</summary>
+        public static IEnumerable<EnemyBase> GetAllAlive()
+        {
+            foreach (var enemy in Registry.GetAll())
+            {
+                if (enemy != null && enemy.State != EnemyAIState.Dead)
+                    yield return enemy;
+            }
+        }
+
         [Export] public float MaxHealth { get; set; } = 50f;
         [Export] public float MoveSpeed { get; set; } = 100f;
         [Export] public float Damage { get; set; } = 10f;
         [Export] public int ExpValue { get; set; } = 10;
 
         public float CurrentHealth { get; protected set; }
+
+        // ── Spawn-time base stats (mutator scaling applies to these, not to
+        // ── current values, so repeated threat-tier applications are
+        // ── idempotent instead of compounding exponentially). Cached in _Ready.
+        public float BaseMoveSpeed { get; private set; } = 100f;
+        public float BaseMaxHealth { get; private set; } = 50f;
+        public float BaseDamage { get; private set; } = 10f;
         public EnemyAIState State { get; protected set; } = EnemyAIState.Idle;
         public int ShieldCharges { get; private set; } = 0;
 
@@ -56,16 +74,23 @@ namespace HeroArena
 
         public override void _Ready()
         {
+            var gm = GameManager.Instance;
+            if (gm == null) return;
+
             CurrentHealth = MaxHealth;
+            // Cache spawn-time base stats so mutator scaling is idempotent.
+            BaseMaxHealth = MaxHealth;
+            BaseMoveSpeed = MoveSpeed;
+            BaseDamage = Damage;
             _entityId = (int)(GetInstanceId() & 0x7FFFFFFF);
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = gm.SpatialGrid;
             grid?.Insert(_entityId, GlobalPosition, 16f);
 
             Registry.Register(_entityId, this);
             _lastGridPos = GlobalPosition;
 
-            _hero = GameManager.Instance.ActiveHero;
+            _hero = gm.ActiveHero;
             OnSpawn();
         }
 
@@ -146,7 +171,7 @@ namespace HeroArena
             // Update spatial grid
             if (GlobalPosition.DistanceSquaredTo(_lastGridPos) > 1.0f)
             {
-                GameManager.Instance.SpatialGrid?.Update(_entityId, GlobalPosition, 16f);
+                GameManager.Instance?.SpatialGrid?.Update(_entityId, GlobalPosition, 16f);
                 _lastGridPos = GlobalPosition;
             }
         }
@@ -156,7 +181,7 @@ namespace HeroArena
         protected virtual void Move(float dt)
         {
             if (_hero == null || State == EnemyAIState.Dead) return;
-            var flow = GameManager.Instance.FlowField;
+            var flow = GameManager.Instance?.FlowField;
             Vector2 dir = flow != null
                 ? flow.GetFlowDirection(GlobalPosition)
                 : (_hero.GlobalPosition - GlobalPosition).Normalized();
@@ -210,10 +235,10 @@ namespace HeroArena
             _mindControlRetargetTimer = MIND_CONTROL_RETARGET_INTERVAL;
             _mindControlTarget = null;
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
-            int[] hits = grid.QueryRadius(GlobalPosition, MIND_CONTROL_HUNT_RADIUS, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, MIND_CONTROL_HUNT_RADIUS, out int count, out bool _);
             float nearestDistSq = float.MaxValue;
             for (int i = 0; i < count; i++)
             {
@@ -260,7 +285,7 @@ namespace HeroArena
         {
             if (State == EnemyAIState.Dead) return;
             State = EnemyAIState.Dead;
-            GameManager.Instance.SpatialGrid?.Remove(_entityId);
+            GameManager.Instance?.SpatialGrid?.Remove(_entityId);
             EventBus.Instance.EmitEnemyKilled(this);
             QueueFree();
         }

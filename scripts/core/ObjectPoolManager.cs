@@ -162,20 +162,23 @@ namespace HeroArena
         // ── Decal API ─────────────────────────────────────────────────────────
         private int EvictOldestActiveDecal()
         {
-            // Evict the oldest *still-active* decal from the circular order buffer
+            // Evict the oldest *still-active* decal from the circular order buffer.
+            // Only decrement the live count for real evictions; skipping already-
+            // returned decals without touching the count keeps _activeDecalCount
+            // accurate and prevents premature pool exhaustion.
             int idx = -1;
             while (_activeDecalCount > 0 && idx < 0)
             {
                 int candidate = _activeDecalOrder[_decalEvictHead];
                 _decalEvictHead = (_decalEvictHead + 1) % MAX_DECALS;
-                _activeDecalCount--;
                 if (_isDecalActiveInPool[candidate])
                 {
+                    _activeDecalCount--;
                     idx = candidate;
                     _decals[idx].Deactivate();
                     _isDecalActiveInPool[idx] = false;
                 }
-                // else: already returned via ReturnDecal; skip
+                // else: already returned via ReturnDecal; skip without touching count
             }
             return idx;
         }

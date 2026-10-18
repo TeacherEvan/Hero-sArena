@@ -6,26 +6,33 @@ namespace HeroArena
     /// Tracks environmental destruction count and calculates the Collateral Karma amplifier.
     /// Every 10 destructions increases ThreatLevel by 1.
     ///
-    /// The counting state lives in the Godot-free <see cref="DestructionTracker"/>
-    /// (covered headlessly in DestructionTrackerTests); this Node only wires the
-    /// EventBus subscription.
+    /// Destruction counting is the single source of truth in GameManagerState
+    /// (RecordEnvironmentDestroyed, wired by GameManager.HandleEnvironmentDestroyed).
+    /// This Node derives KarmaAmplifier from that count so the amplifier and
+    /// ThreatLevel can never desync (audit P2-1). The Godot-free
+    /// DestructionTracker remains for headless unit testing of the counting
+    /// primitive; CollateralKarma no longer duplicates its state.
     /// </summary>
     public partial class CollateralKarma : Node
     {
-        private readonly DestructionTracker _tracker = new();
-
-        public int DestructionCount => _tracker.DestructionCount;
-        public float KarmaAmplifier => _tracker.KarmaAmplifier;
+        public int DestructionCount => GameManager.Instance?.DestructionCount ?? 0;
+        public float KarmaAmplifier => ProgressionFormulas.CalcKarmaAmplifier(DestructionCount);
 
         public override void _Ready()
         {
+            if (EventBus.Instance == null) return;
             EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
         }
 
+        /// <summary>Event consumer: the actual increment happens in
+        /// GameManager.HandleEnvironmentDestroyed → GameManagerState.RecordEnvironmentDestroyed,
+        /// the single source of truth. This handler exists to keep the
+        /// EventBus subscription balanced and to mirror the destruction event
+        /// into the karma layer without maintaining a second counter.</summary>
         private void OnEnvironmentDestroyed(Vector2 pos, float radius)
         {
-            _tracker.Record();
-            // Threat level escalation is handled centrally by GameManager
+            // Counting is done by GameManagerState; KarmaAmplifier reads it
+            // via the DestructionCount property above.
         }
 
         public override void _ExitTree()

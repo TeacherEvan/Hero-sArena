@@ -47,17 +47,20 @@ public class WaveFormulasTests
     }
 
     [Fact]
-    public void ArenaPastCapacity_YieldsNonPositiveCount_NeverThrows()
+    public void ArenaPastCapacity_YieldsNonNegativeCount_NeverThrows()
     {
-        // BASE used Mathf.Clamp, which throws when the ceiling drops below
-        // the floor (reachable near MaxEnemies active enemies mid-spawn).
-        // An over-full arena now yields a non-positive count so the
-        // caller's spawn loop simply runs zero times.
+        // Over-full arena must never yield a negative count: a negative
+        // return strands _pendingEnemiesToSpawn below zero and soft-locks
+        // the wave (P1-1). Clamp to 0 so the spawn loop runs zero times.
         WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 2000)
-            .Should().BeLessThanOrEqualTo(0);
+            .Should().BeGreaterOrEqualTo(0);
 
         WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 2500)
-            .Should().BeLessThanOrEqualTo(0);
+            .Should().BeGreaterOrEqualTo(0);
+
+        // Exactly at cap: zero free slots → zero spawns.
+        WaveFormulas.CalculateWaveEnemyCount(10, activeEnemyCount: 2000)
+            .Should().Be(0);
     }
 
     [Fact]

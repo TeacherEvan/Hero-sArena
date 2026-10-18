@@ -62,7 +62,7 @@ namespace HeroArena
 
         private void FireBlades()
         {
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
             Vector2 dir = GetAimDirection();
             float dmg = LevelProgression.CalcKineticDamage(BLADE_DAMAGE, Level)
@@ -84,10 +84,30 @@ namespace HeroArena
         {
             _hyperDashTimer = HYPER_DASH_DURATION;
             _hyperDashCooldown = HYPER_DASH_COOLDOWN;
-            _preHyperDashTimeScale = Engine.TimeScale;
+            // Only capture the pre-dash time scale once; nested dashes must not
+            // overwrite it with the already-slowed value (would restore 0.3
+            // instead of 1.0 when the outer dash ends).
+            if (_hyperDashTimer <= 0f)
+                _preHyperDashTimeScale = Engine.TimeScale;
             Engine.TimeScale = 0.3;
             MoveSpeed = 260f * 3f;
             EventBus.Instance.EmitPowerupCollected("HyperDash");
+        }
+
+        /// <summary>Restore the time scale if the hero dies while HyperDash is active,
+        /// so the game does not stay in slow motion after _PhysicsProcess stops running.</summary>
+        protected override void Die()
+        {
+            Engine.TimeScale = _preHyperDashTimeScale;
+            MoveSpeed = 260f;
+            base.Die();
+        }
+
+        public override void _ExitTree()
+        {
+            // Safety: never leave the engine time scale slowed when this node leaves the tree.
+            Engine.TimeScale = _preHyperDashTimeScale;
+            base._ExitTree();
         }
     }
 }

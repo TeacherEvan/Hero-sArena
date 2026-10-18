@@ -22,7 +22,8 @@ namespace HeroArena
             _progression = GameManager.Instance.EnsureLevelProgression();
 
             _onLevelUpHandler = _ => ShowMenu();
-            EventBus.Instance.OnLevelUp += _onLevelUpHandler;
+            if (EventBus.Instance != null)
+                EventBus.Instance.OnLevelUp += _onLevelUpHandler;
 
             Perk1Button.Pressed += () => SelectPerk(0);
             Perk2Button.Pressed += () => SelectPerk(1);

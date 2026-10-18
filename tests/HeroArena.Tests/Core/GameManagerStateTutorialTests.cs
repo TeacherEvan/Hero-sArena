@@ -29,6 +29,7 @@ public class GameManagerStateTutorialTests
     {
         var state = NewState();
         state.SetState(GameState.GameOver);
+        state.TryTransition(GameState.MainMenu); // must return to MainMenu first
         state.AddScore(999);
         state.SetThreatLevel(5);
 

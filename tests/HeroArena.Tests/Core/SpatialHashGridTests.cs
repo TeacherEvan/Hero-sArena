@@ -14,7 +14,7 @@ namespace HeroArena.Tests.Core
             var grid = new SpatialHashGrid(64, 512);
             grid.Insert(1, new Vector2(10, 10), 5);
 
-            int[] results = grid.QueryRadius(new Vector2(12, 12), 10, out int count);
+            int[] results = grid.QueryRadius(new Vector2(12, 12), 10, out int count, out bool _);
             count.Should().Be(1);
             results[0].Should().Be(1);
         }
@@ -28,7 +28,7 @@ namespace HeroArena.Tests.Core
             // Move within the same cell
             grid.Update(1, new Vector2(15, 15), 5);
 
-            int[] results = grid.QueryRadius(new Vector2(12, 12), 10, out int count);
+            int[] results = grid.QueryRadius(new Vector2(12, 12), 10, out int count, out bool _);
             count.Should().Be(1);
             results[0].Should().Be(1);
         }
@@ -44,9 +44,24 @@ namespace HeroArena.Tests.Core
             grid.Remove(42);
 
             // Entity 42 must be gone everywhere; entity 99 still in place.
-            int[] results = grid.QueryRadius(new Vector2(100, 100), 50f, out int count);
+            int[] results = grid.QueryRadius(new Vector2(100, 100), 50f, out int count, out bool _);
             results.Should().NotContain(42);
             results.Should().Contain(99);
+        }
+
+        // P2-4: QueryRadius must signal truncation when results exceed the
+        // pre-allocated buffer capacity instead of silently dropping entities.
+        [Fact]
+        public void QueryRadius_ReportsTruncation_WhenResultsExceedCapacity()
+        {
+            var grid = new SpatialHashGrid(64, 64);
+            for (int i = 0; i < 700; i++)
+                grid.Insert(i, new Vector2(100, 100), 50f);
+
+            int[] results = grid.QueryRadius(new Vector2(100, 100), 60f, out int count, out bool truncated);
+
+            truncated.Should().BeTrue();
+            count.Should().BeLessOrEqualTo(results.Length);
         }
     }
 }

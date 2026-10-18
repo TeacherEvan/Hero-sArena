@@ -53,12 +53,12 @@ namespace HeroArena
 
         private void FireArcLightning()
         {
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
             float dmg = LevelProgression.CalcEnergyDamage(LIGHTNING_DAMAGE, Level)
                 * Stats.DamageMult * Stats.EnergyDamageMult;
-            int[] hits = grid.QueryRadius(GlobalPosition, LIGHTNING_RANGE * Stats.AoeRadiusMult, out int count);
+            int[] hits = grid.QueryRadius(GlobalPosition, LIGHTNING_RANGE * Stats.AoeRadiusMult, out int count, out bool _);
             int forked = 0;
             int forkLimit = MAX_FORKS + Stats.ProjectileCountBonus;
             for (int i = 0; i < count && forked < forkLimit; i++)

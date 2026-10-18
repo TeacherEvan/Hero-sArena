@@ -144,13 +144,13 @@ namespace HeroArena
 
         private void OnHit(Node? _)
         {
-            GameManager.Instance.PoolManager?.ReturnProjectile(this);
+            GameManager.Instance?.PoolManager?.ReturnProjectile(this);
         }
 
         /// <summary>Expires a projectile that reached max lifetime without hitting anything.</summary>
         private void Expire()
         {
-            GameManager.Instance.PoolManager?.ReturnProjectile(this);
+            GameManager.Instance?.PoolManager?.ReturnProjectile(this);
         }
     }
 }

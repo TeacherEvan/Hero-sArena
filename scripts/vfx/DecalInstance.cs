@@ -75,7 +75,7 @@ namespace HeroArena
             _lifetime += (float)delta;
             if (_lifetime >= _maxLifetime)
             {
-                GameManager.Instance.PoolManager?.ReturnDecal(this);
+                GameManager.Instance?.PoolManager?.ReturnDecal(this);
                 return;
             }
             if (_lifetime >= _fadeStart)

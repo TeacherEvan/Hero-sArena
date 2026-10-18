@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 
 namespace HeroArena
 {
@@ -20,7 +21,7 @@ namespace HeroArena
     public class GameManagerState
     {
         public GameState CurrentState { get; private set; } = GameState.MainMenu;
-        public int CurrentWave { get; private set; } = 0;
+        public int CurrentWave { get; set; } = 0;
         public long Score { get; private set; } = 0;
         public int ThreatLevel { get; private set; } = 0;
         public int KillCount { get; private set; } = 0;
@@ -28,6 +29,31 @@ namespace HeroArena
         public int ActiveEnemyCount { get; private set; } = 0;
 
         public void SetState(GameState newState) => CurrentState = newState;
+
+        /// <summary>
+        /// Validated state transition: only the documented from→to edges are
+        /// allowed (MainMenu↔Tutorial↔Playing↔Paused↔LevelUp↔GameOver). Returns
+        /// true when the transition was applied, false when it is illegal for
+        /// the current state. Use this instead of <see cref="SetState"/> when
+        /// the caller is not trusted to know the current state.
+        /// </summary>
+        public bool TryTransition(GameState newState)
+        {
+            if (CurrentState == newState) return true; // idempotent no-op
+            var allowed = CurrentState switch
+            {
+                GameState.MainMenu => new[] { GameState.Playing, GameState.Tutorial },
+                GameState.Tutorial => new[] { GameState.MainMenu },
+                GameState.Playing => new[] { GameState.Paused, GameState.GameOver, GameState.LevelUp },
+                GameState.Paused => new[] { GameState.Playing, GameState.GameOver },
+                GameState.LevelUp => new[] { GameState.Playing },
+                GameState.GameOver => new[] { GameState.MainMenu },
+                _ => Array.Empty<GameState>()
+            };
+            if (!allowed.Contains(newState)) return false;
+            CurrentState = newState;
+            return true;
+        }
 
         /// <summary>
         /// Resets the per-run metrics and drops the machine into Playing.
@@ -41,7 +67,7 @@ namespace HeroArena
             ThreatLevel = 0;
             KillCount = 0;
             DestructionCount = 0;
-            SetState(GameState.Playing);
+            TryTransition(GameState.Playing);
         }
 
         /// <summary>
@@ -104,7 +130,7 @@ namespace HeroArena
             DestructionCount = 0;
             ActiveEnemyCount = 0;
             InTutorial = true;
-            SetState(GameState.Tutorial);
+            TryTransition(GameState.Tutorial);
         }
 
         /// <summary>
@@ -113,7 +139,7 @@ namespace HeroArena
         public void CompleteTutorial()
         {
             InTutorial = false;
-            SetState(GameState.MainMenu);
+            TryTransition(GameState.MainMenu);
         }
 
         /// <summary>
@@ -156,6 +182,13 @@ namespace HeroArena
         {
             if (CurrentDifficulty == d) return;
             CurrentDifficulty = d;
+        }
+
+        /// <summary>Increments the wave counter; single source of truth for
+        /// CurrentWave so WaveManager and GameManagerState never diverge.</summary>
+        public void IncrementWave()
+        {
+            CurrentWave++;
         }
 
         /// <summary>

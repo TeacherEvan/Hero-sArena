@@ -46,9 +46,12 @@ namespace HeroArena
             _spawnPoint = main.GetNodeOrNull<Marker2D>("SpawnPoint");
             _entitiesLayer = main.GetNodeOrNull<Node2D>("EntitiesLayer");
 
-            EventBus.Instance.OnEnemyKilled += OnEnemyKilled;
-            EventBus.Instance.OnLevelUp += OnLevelUp;
-            EventBus.Instance.OnPerkChosen += OnPerkChosen;
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnEnemyKilled += OnEnemyKilled;
+                EventBus.Instance.OnLevelUp += OnLevelUp;
+                EventBus.Instance.OnPerkChosen += OnPerkChosen;
+            }
             ShowPrompt(_currentStep);
             UpdateProgress();
             // Spawn the first drone after a short delay so the player reads the prompt

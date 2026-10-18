@@ -39,6 +39,9 @@ namespace HeroArena
         private int _wave;
         private Camera2D? _camera;
 
+        // Scratch gravity vector reused each frame to avoid per-field Vector2 allocation.
+        private Vector2 _fieldGravity;
+
         public override void _Ready()
         {
             _profile = BiomeAtmosphereState.ProfileFor(SceneAnchors.ResolveBiome(this));
@@ -51,11 +54,14 @@ namespace HeroArena
             _primary = MakeField(_profile.PrimaryField, halfExtents);
             _secondary = MakeField(_profile.SecondaryField, halfExtents);
 
-            EventBus.Instance.OnWaveCompleted += OnWaveCompleted;
-            EventBus.Instance.OnWaveIncoming += OnWaveIncoming;
-            EventBus.Instance.OnThreatLevelChanged += OnThreatLevelChanged;
-            EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
-            EventBus.Instance.OnProjectileHit += OnProjectileHit;
+            if (EventBus.Instance != null)
+            {
+                EventBus.Instance.OnWaveCompleted += OnWaveCompleted;
+                EventBus.Instance.OnWaveIncoming += OnWaveIncoming;
+                EventBus.Instance.OnThreatLevelChanged += OnThreatLevelChanged;
+                EventBus.Instance.OnEnvironmentDestroyed += OnEnvironmentDestroyed;
+                EventBus.Instance.OnProjectileHit += OnProjectileHit;
+            }
 
             RefreshMoodTarget();
             _mood = _moodTarget;
@@ -88,7 +94,8 @@ namespace HeroArena
             wx *= _windScale;
             wy *= _windScale;
 
-            float k = 1f - MathF.Exp(-MoodRate * dt);
+            // Frame-rate independent mood smoothing: rate is per-second.
+            float k = 1f - MathF.Exp(-MoodRate * dt * 60f);
             _mood += (_moodTarget - _mood) * k;
 
             ApplyField(_primary, _profile.PrimaryField, wx, wy);
@@ -100,7 +107,9 @@ namespace HeroArena
             // Wind becomes acceleration on top of the field's own gravity:
             // rain slants, embers stream, haze drifts — all in one direction.
             float influence = spec.WindInfluence01 * WindGravityFactor;
-            field.Gravity = new Vector2(wx * influence, spec.GravityY + wy * influence * 0.4f);
+            _fieldGravity.X = wx * influence;
+            _fieldGravity.Y = spec.GravityY + wy * influence * 0.4f;
+            field.Gravity = _fieldGravity;
             field.SpeedScale = _mood;
         }
 

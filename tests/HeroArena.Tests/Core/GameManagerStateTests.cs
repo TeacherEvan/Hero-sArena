@@ -35,6 +35,7 @@ public class GameManagerStateTests
     {
         var state = NewState();
         state.SetState(GameState.GameOver);
+        state.TryTransition(GameState.MainMenu); // must return to MainMenu first
         state.AddScore(999);
         state.SetThreatLevel(5);
 
@@ -167,6 +168,55 @@ public class GameManagerStateTests
         state.SetState(GameState.GameOver);
 
         state.CurrentState.Should().Be(GameState.GameOver);
+    }
+
+    // ── Validated transitions (TryTransition) ────────────────────────────
+
+    [Fact]
+    public void TryTransition_ValidEdges_AreAllowed()
+    {
+        var state = NewState();
+        // MainMenu → Playing (StartGame)
+        state.TryTransition(GameState.Playing).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.Playing);
+        // Playing → Paused (RequestPause)
+        state.TryTransition(GameState.Paused).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.Paused);
+        // Paused → Playing (RequestResume)
+        state.TryTransition(GameState.Playing).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.Playing);
+        // Playing → GameOver (TriggerGameOver)
+        state.TryTransition(GameState.GameOver).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.GameOver);
+        // GameOver → MainMenu
+        state.TryTransition(GameState.MainMenu).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.MainMenu);
+    }
+
+    [Fact]
+    public void TryTransition_IllegalEdges_AreRejected()
+    {
+        var state = NewState();
+        // MainMenu → GameOver is illegal (bypasses game-over side effects)
+        state.TryTransition(GameState.GameOver).Should().BeFalse();
+        state.CurrentState.Should().Be(GameState.MainMenu);
+        // MainMenu → LevelUp is illegal
+        state.TryTransition(GameState.LevelUp).Should().BeFalse();
+        state.CurrentState.Should().Be(GameState.MainMenu);
+        // Paused → Tutorial is illegal
+        state.TryTransition(GameState.Playing).Should().BeTrue();
+        state.TryTransition(GameState.Paused).Should().BeTrue();
+        state.TryTransition(GameState.Tutorial).Should().BeFalse();
+        state.CurrentState.Should().Be(GameState.Paused);
+    }
+
+    [Fact]
+    public void TryTransition_Idempotent_NoOp_WhenSameState()
+    {
+        var state = NewState();
+        state.TryTransition(GameState.Playing).Should().BeTrue();
+        state.TryTransition(GameState.Playing).Should().BeTrue();
+        state.CurrentState.Should().Be(GameState.Playing);
     }
 
     // ── Threat level ─────────────────────────────────────────────────────
