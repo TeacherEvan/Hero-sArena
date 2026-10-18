@@ -48,7 +48,7 @@ namespace HeroArena
         {
             StartDodge(0.30f, 0.85f * Stats.DodgeCooldownMult);
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
                 int[] hits = grid.QueryRadius(GlobalPosition, 110f, out int count, out bool _);
@@ -64,8 +64,8 @@ namespace HeroArena
                 }
             }
 
-            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.ExplosionScorch, 80f);
-            EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Explosive);
+            EventBus.Instance?.EmitDecalRequested(GlobalPosition, DecalType.ExplosionScorch, 80f);
+            EventBus.Instance?.EmitProjectileHit(GlobalPosition, DamageType.Explosive);
             AudioManager.Instance?.PlaySound(SoundCue.Explosion, -6f);
         }
 

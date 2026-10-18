@@ -76,8 +76,9 @@ namespace HeroArena
                     enemy.MoveSpeed = enemy.BaseMoveSpeed * scale;
                     break;
                 case MutatorType.HealthBoost:
+                    float healthPct = enemy.MaxHealth > 0f ? enemy.CurrentHealth / enemy.MaxHealth : 1f;
                     enemy.MaxHealth = enemy.BaseMaxHealth * scale;
-                    enemy.SetCurrentHealth(enemy.MaxHealth);
+                    enemy.SetCurrentHealth(enemy.MaxHealth * healthPct);
                     break;
                 case MutatorType.DamageBoost:
                     enemy.Damage = enemy.BaseDamage * scale;

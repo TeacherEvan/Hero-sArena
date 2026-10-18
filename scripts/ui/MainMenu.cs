@@ -110,7 +110,7 @@ namespace HeroArena
                 MenuDifficultyState.Serialize(_difficulty));
             string tmp = SettingsPath + ".tmp";
             cfg.Save(tmp);
-            System.IO.File.Move(tmp, SettingsPath, overwrite: true);
+            System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(SettingsPath), overwrite: true);
         }
 
         private void RefreshDifficultyButtons()

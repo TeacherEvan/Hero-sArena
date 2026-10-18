@@ -9,12 +9,12 @@ namespace HeroArena
         /// <summary>Maps each DamageType to its 1024px-atlas-style sprite path.</summary>
         public static readonly Dictionary<DamageType, string> Paths = new()
         {
-            [DamageType.Kinetic]    = "res://projectiles/kinetic.png",
-            [DamageType.Energy]     = "res://projectiles/energy.png",
-            [DamageType.Fire]       = "res://projectiles/fire.png",
-            [DamageType.Acid]       = "res://projectiles/acid.png",
-            [DamageType.Lightning]  = "res://projectiles/lightning.png",
-            [DamageType.Explosive]  = "res://projectiles/explosive.png",
+            [DamageType.Kinetic]    = "res://res/projectiles/kinetic.png",
+            [DamageType.Energy]     = "res://res/projectiles/energy.png",
+            [DamageType.Fire]       = "res://res/projectiles/fire.png",
+            [DamageType.Acid]       = "res://res/projectiles/acid.png",
+            [DamageType.Lightning]  = "res://res/projectiles/lightning.png",
+            [DamageType.Explosive]  = "res://res/projectiles/explosive.png",
         };
 
         public static string DefaultPath => Paths[DamageType.Kinetic];
@@ -25,11 +25,11 @@ namespace HeroArena
     {
         public static readonly Dictionary<DecalType, string> Paths = new()
         {
-            [DecalType.BloodSplat]     = "res://decals/blood.png",
-            [DecalType.ScorchMark]     = "res://decals/scorch.png",
-            [DecalType.CraterMark]     = "res://decals/crater.png",
-            [DecalType.AcidPool]       = "res://decals/acid.png",
-            [DecalType.ExplosionScorch]= "res://decals/explosion.png",
+            [DecalType.BloodSplat]     = "res://res/decals/blood.png",
+            [DecalType.ScorchMark]     = "res://res/decals/scorch.png",
+            [DecalType.CraterMark]     = "res://res/decals/crater.png",
+            [DecalType.AcidPool]       = "res://res/decals/acid.png",
+            [DecalType.ExplosionScorch]= "res://res/decals/explosion.png",
         };
 
         public static string DefaultPath => Paths[DecalType.BloodSplat];

@@ -138,7 +138,7 @@ namespace HeroArena
             // Atomic write: temp file + replace (avoid corrupted settings.cfg on crash/OOM).
             string tmp = SettingsPath + ".tmp";
             cfg.Save(tmp);
-            System.IO.File.Move(tmp, SettingsPath, overwrite: true);
+            System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(SettingsPath), overwrite: true);
         }
 
         private void OnMasterChanged(double v) => SaveAndRefresh(MasterValueLabel, MasterSlider, (float)v);

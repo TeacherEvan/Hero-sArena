@@ -83,7 +83,7 @@ namespace HeroArena
 
         public override void _ExitTree()
         {
-            if (VideoPlayer != null)
+            if (VideoPlayer != null && VideoPlayer.Stream != null)
                 VideoPlayer.Finished -= OnVideoFinished;
         }
     }

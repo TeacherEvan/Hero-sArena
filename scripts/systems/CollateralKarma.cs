@@ -15,6 +15,9 @@ namespace HeroArena
     /// </summary>
     public partial class CollateralKarma : Node
     {
+        [System.Diagnostics.CodeAnalysis.SuppressMessage(
+            "Style", "CA1822:Mark members as static",
+            Justification = "Instance property kept for Node API parity and scene/script binding")]
         public int DestructionCount => GameManager.Instance?.DestructionCount ?? 0;
         public float KarmaAmplifier => ProgressionFormulas.CalcKarmaAmplifier(DestructionCount);
 

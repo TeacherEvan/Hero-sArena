@@ -132,7 +132,7 @@ namespace HeroArena
             float radius = 130f + (ventedHeat * 1.5f);
             float damage = (25f + ventedHeat * 0.8f) * Stats.DamageMult;
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
                 int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count, out bool _);
@@ -148,8 +148,8 @@ namespace HeroArena
                 }
             }
 
-            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.ScorchMark, radius);
-            EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType.Fire);
+            EventBus.Instance?.EmitDecalRequested(GlobalPosition, DecalType.ScorchMark, radius);
+            EventBus.Instance?.EmitProjectileHit(GlobalPosition, DamageType.Fire);
         }
 
         private void ActivateInfernoNova()
@@ -161,7 +161,7 @@ namespace HeroArena
             float totalDamage = IgnisCombustionState.CalcNovaDamage(rawDmg, consumedHeat) * Stats.AoeRadiusMult;
             float totalRadius = IgnisCombustionState.CalcNovaRadius(BASE_NOVA_RADIUS, consumedHeat) * Stats.AoeRadiusMult;
 
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid != null)
             {
                 int[] hits = grid.QueryRadius(GlobalPosition, totalRadius, out int count, out bool _);

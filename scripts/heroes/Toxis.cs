@@ -123,7 +123,7 @@ namespace HeroArena
                 * Stats.DamageMult * Stats.AoeRadiusMult;
             float radius = BASE_ERUPTION_RADIUS * Stats.AoeRadiusMult;
 
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool != null)
             {
                 for (int i = 0; i < 12; i++)
@@ -184,7 +184,7 @@ namespace HeroArena
 
         private void ApplyCorrosionAuras()
         {
-            var grid = GameManager.Instance.SpatialGrid;
+            var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
 
             int[] hits = grid.QueryRadius(GlobalPosition, 350f, out int count, out bool _);

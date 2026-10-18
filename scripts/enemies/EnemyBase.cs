@@ -96,6 +96,7 @@ namespace HeroArena
 
         public override void _ExitTree()
         {
+            GameManager.Instance?.SpatialGrid?.Remove(_entityId);
             Registry.Remove(_entityId);
             base._ExitTree();
         }
@@ -286,7 +287,7 @@ namespace HeroArena
             if (State == EnemyAIState.Dead) return;
             State = EnemyAIState.Dead;
             GameManager.Instance?.SpatialGrid?.Remove(_entityId);
-            EventBus.Instance.EmitEnemyKilled(this);
+            EventBus.Instance?.EmitEnemyKilled(this);
             QueueFree();
         }
 
