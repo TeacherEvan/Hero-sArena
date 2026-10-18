@@ -159,6 +159,8 @@ do_install() {
     mkdir -p "$install_location" || die "Cannot create install directory: $install_location"
 
     # Copy artifacts
+    # Note: rm -f first to unlink the inode in case the game binary is running/open (avoids ETXTBSY)
+    rm -f "$install_location/HeroArena.x86_64" 2>/dev/null || true
     cp "$SOURCE_BIN" "$install_location/HeroArena.x86_64" || die "Failed to copy game binary."
     cp "$SOURCE_PCK" "$install_location/HeroArena.pck"     || die "Failed to copy game data pack."
     cp "$SOURCE_ICON" "$install_location/icon.png"           || die "Failed to copy game icon."
