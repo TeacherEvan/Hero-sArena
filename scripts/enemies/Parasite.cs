@@ -57,16 +57,32 @@ namespace HeroArena
 
         private void Attach()
         {
+            if (_attached) return;
             _attached = true;
             // Apply slow to hero: 40% move-speed reduction while attached.
             if (_hero != null)
                 _hero.MoveSpeed *= (1f - SLOW_AMOUNT);
         }
 
+        private void DetachSlow()
+        {
+            if (_attached && _hero != null && GodotObject.IsInstanceValid(_hero))
+            {
+                _hero.MoveSpeed /= (1f - SLOW_AMOUNT);
+                _attached = false;
+            }
+        }
+
         protected override void Die()
         {
-            // Remove slow effect if attached
+            DetachSlow();
             base.Die();
+        }
+
+        public override void _ExitTree()
+        {
+            DetachSlow();
+            base._ExitTree();
         }
     }
 }

@@ -2,7 +2,7 @@
 [ext_resource type="Script" path="res://scripts/vfx/DecalInstance.cs" id="1"]
 
 [sub_resource type="AtlasTexture" id="1"]
-path = "res://decals/blood.png"
+path = "res://res/decals/blood.png"
 
 [node name="Decal" type="Sprite2D"]
 script = ExtResource("1")

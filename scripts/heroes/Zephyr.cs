@@ -82,13 +82,13 @@ namespace HeroArena
 
         private void ActivateHyperDash()
         {
-            _hyperDashTimer = HYPER_DASH_DURATION;
-            _hyperDashCooldown = HYPER_DASH_COOLDOWN;
             // Only capture the pre-dash time scale once; nested dashes must not
             // overwrite it with the already-slowed value (would restore 0.3
             // instead of 1.0 when the outer dash ends).
             if (_hyperDashTimer <= 0f)
                 _preHyperDashTimeScale = Engine.TimeScale;
+            _hyperDashTimer = HYPER_DASH_DURATION;
+            _hyperDashCooldown = HYPER_DASH_COOLDOWN;
             Engine.TimeScale = 0.3;
             MoveSpeed = 260f * 3f;
             EventBus.Instance.EmitPowerupCollected("HyperDash");

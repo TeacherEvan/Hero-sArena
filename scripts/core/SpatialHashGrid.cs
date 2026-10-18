@@ -153,6 +153,7 @@ namespace HeroArena
         public int[] QueryAABB(Rect2 bounds, out int count)
         {
             _resultCount = 0;
+            _queryStamp++;
             int minCx = Mathf.FloorToInt(bounds.Position.X / _cellSize);
             int maxCx = Mathf.FloorToInt(bounds.End.X / _cellSize);
             int minCy = Mathf.FloorToInt(bounds.Position.Y / _cellSize);
@@ -167,6 +168,8 @@ namespace HeroArena
                     foreach (int id in list)
                     {
                         if (_resultCount >= _resultBuffer.Length) goto done;
+                        if (_queryStamps.TryGetValue(id, out int stamp) && stamp == _queryStamp) continue;
+                        _queryStamps[id] = _queryStamp;
                         _resultBuffer[_resultCount++] = id;
                     }
                 }

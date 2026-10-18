@@ -117,7 +117,7 @@ namespace HeroArena
             int spawnedThisFrame = 0;
             for (int i = 0; i < toSpawn; i++)
             {
-                if (GameManager.Instance.ActiveEnemyCount >= MAX_ENEMIES)
+                if ((GameManager.Instance?.ActiveEnemyCount ?? 0) >= MAX_ENEMIES)
                 {
                     // Cap reached: pause spawning but keep the remainder so it
                     // retries next frame once slots free. Do NOT zero it — that

@@ -96,10 +96,21 @@ namespace HeroArena
 
         private void PersistDifficulty()
         {
+            // Read-modify-write atomically: load existing settings, update only
+            // the difficulty key, then save via temp file + replace. Prevents
+            // wiping audio/graphics settings (audit: split-brain settings
+            // persistence between MainMenu and Settings) and config corruption
+            // on crash/OOM (non-atomic direct save).
             var cfg = new ConfigFile();
+            if (cfg.Load(SettingsPath) == Error.Ok)
+            {
+                // existing keys (master_volume, sfx_volume, ...) are preserved
+            }
             cfg.SetValue(MenuDifficultyState.ConfigSection, MenuDifficultyState.ConfigKey,
                 MenuDifficultyState.Serialize(_difficulty));
-            cfg.Save(SettingsPath);
+            string tmp = SettingsPath + ".tmp";
+            cfg.Save(tmp);
+            System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(SettingsPath), overwrite: true);
         }
 
         private void RefreshDifficultyButtons()

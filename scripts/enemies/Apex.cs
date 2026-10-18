@@ -74,7 +74,7 @@ namespace HeroArena
             if (_bulletCooldown > 0f) return;
             _bulletCooldown = BULLET_COOLDOWN;
 
-            var pool = GameManager.Instance.PoolManager;
+            var pool = GameManager.Instance?.PoolManager;
             if (pool == null) return;
 
             float angleStep = Mathf.Tau / BULLET_COUNT;

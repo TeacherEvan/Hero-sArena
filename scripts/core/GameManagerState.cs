@@ -47,7 +47,7 @@ namespace HeroArena
                 GameState.Playing => new[] { GameState.Paused, GameState.GameOver, GameState.LevelUp },
                 GameState.Paused => new[] { GameState.Playing, GameState.GameOver },
                 GameState.LevelUp => new[] { GameState.Playing },
-                GameState.GameOver => new[] { GameState.MainMenu },
+                GameState.GameOver => new[] { GameState.MainMenu, GameState.Playing },
                 _ => Array.Empty<GameState>()
             };
             if (!allowed.Contains(newState)) return false;

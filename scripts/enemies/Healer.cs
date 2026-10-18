@@ -33,7 +33,7 @@ namespace HeroArena
                 if (_healTick >= HEAL_TICK)
                 {
                     _healTick = 0f;
-                    HealNearby(dt);
+                    HealNearby(HEAL_TICK);
                 }
             }
         }
@@ -60,7 +60,7 @@ namespace HeroArena
             if (_aiState == HealerState.FleePlayer)
                 dir = (GlobalPosition - _hero.GlobalPosition).Normalized();
             else
-                dir = GameManager.Instance.FlowField?.GetFlowDirection(GlobalPosition)
+                dir = GameManager.Instance?.FlowField?.GetFlowDirection(GlobalPosition)
                       ?? (_hero.GlobalPosition - GlobalPosition).Normalized();
 
             float speed = _aiState == HealerState.ChannelAura ? 0f : MoveSpeed;
@@ -68,18 +68,18 @@ namespace HeroArena
             MoveAndSlide();
         }
 
-        private void HealNearby(float dt)
+        private void HealNearby(float tickDuration)
         {
             var grid = GameManager.Instance?.SpatialGrid;
             if (grid == null) return;
             int[] nearby = grid.QueryRadius(GlobalPosition, HEAL_RADIUS, out int count, out bool _);
-            float healPerTick = MaxHealth * HEAL_RATE * dt;
             for (int i = 0; i < count; i++)
             {
                 if (EnemyBase.TryGetById(nearby[i], out var ally) && ally != null
                     && ally != this && ally.State != EnemyAIState.Dead)
                 {
-                    ally.SetCurrentHealth(ally.CurrentHealth + healPerTick);
+                    float healAmount = ally.MaxHealth * HEAL_RATE * tickDuration;
+                    ally.SetCurrentHealth(ally.CurrentHealth + healAmount);
                 }
             }
         }

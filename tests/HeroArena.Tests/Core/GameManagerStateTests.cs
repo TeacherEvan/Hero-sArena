@@ -50,6 +50,19 @@ public class GameManagerStateTests
     }
 
     [Fact]
+    public void StartGame_FromGameOver_TransitionsDirectlyToPlaying()
+    {
+        var state = NewState();
+        state.SetState(GameState.GameOver);
+        state.AddScore(500);
+
+        state.StartGame();
+
+        state.CurrentState.Should().Be(GameState.Playing);
+        state.Score.Should().Be(0);
+    }
+
+    [Fact]
     public void StartGame_DoesNotResetActiveEnemyCount()
     {
         // Preserved quirk from the pre-extraction GameManager (docs: pin
