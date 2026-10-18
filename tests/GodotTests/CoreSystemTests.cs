@@ -83,6 +83,9 @@ namespace HeroArena.Tests
             try { TestEnemyTargetDisposal(); passed++; GD.Print("PASS: Enemy target-disposal tests"); }
             catch (Exception e) { failed++; GD.PrintErr($"FAIL: Enemy target disposal - {e.Message}"); }
 
+            try { TestSceneTextures(); passed++; GD.Print("PASS: Scene textures tests"); }
+            catch (Exception e) { failed++; GD.PrintErr($"FAIL: Scene textures - {e.Message}"); }
+
             GD.Print($"\n=== Results: {passed} passed, {failed} failed ===");
 
             if (failed > 0)
@@ -637,5 +640,57 @@ namespace HeroArena.Tests
             GameManager.Instance.ActiveHero = previousHero;
             GD.Print("  Enemy targeting: disposed hero reference handled without exceptions");
         }
+
+        private static void TestSceneTextures()
+        {
+            string[] scenes = {
+                "res://scenes/heroes/Atlas.tscn",
+                "res://scenes/heroes/Havoc.tscn",
+                "res://scenes/heroes/Ignis.tscn",
+                "res://scenes/heroes/Synapse.tscn",
+                "res://scenes/heroes/Toxis.tscn",
+                "res://scenes/heroes/Volt.tscn",
+                "res://scenes/heroes/Zephyr.tscn",
+                "res://scenes/enemies/Apex.tscn",
+                "res://scenes/enemies/Artillery.tscn",
+                "res://scenes/enemies/Brute.tscn",
+                "res://scenes/enemies/Burrower.tscn",
+                "res://scenes/enemies/Drone.tscn",
+                "res://scenes/enemies/Exploder.tscn",
+                "res://scenes/enemies/Healer.tscn",
+                "res://scenes/enemies/Parasite.tscn",
+                "res://scenes/enemies/Shielder.tscn",
+                "res://scenes/enemies/Sprinter.tscn",
+                "res://scenes/projectiles/Projectile.tscn",
+                "res://scenes/vfx/Decal.tscn",
+                "res://scenes/maps/Destructible.tscn"
+            };
+
+            foreach (var path in scenes)
+            {
+                var scene = GD.Load<PackedScene>(path);
+                if (scene == null) throw new Exception($"Could not load scene: {path}");
+                var node = scene.Instantiate<Node>();
+                var sprite = node is Sprite2D s ? s : node.GetNodeOrNull<Sprite2D>("Sprite2D");
+                if (sprite == null)
+                {
+                    node.QueueFree();
+                    throw new Exception($"Scene {path} has no Sprite2D");
+                }
+                if (sprite.Texture == null)
+                {
+                    node.QueueFree();
+                    throw new Exception($"Scene {path} Sprite2D.Texture is NULL!");
+                }
+                if (sprite.Texture is AtlasTexture at && at.Atlas == null)
+                {
+                    node.QueueFree();
+                    throw new Exception($"Scene {path} has AtlasTexture with null Atlas!");
+                }
+                node.QueueFree();
+            }
+            GD.Print($"  Verified {scenes.Length} scenes have valid, non-null textures.");
+        }
     }
 }
+

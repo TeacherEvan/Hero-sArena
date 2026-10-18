@@ -26,6 +26,19 @@ namespace HeroArena
             TitleLabel.Modulate = new Color(1f, 1f, 1f, 0f);
             SubtitleLabel.Modulate = new Color(1f, 1f, 1f, 0f);
 
+            if (VideoPlayer != null && VideoPlayer.Stream == null)
+            {
+                try
+                {
+                    if (ResourceLoader.Exists("res://res/splashes/intro.mp4"))
+                        VideoPlayer.Stream = GD.Load<VideoStream>("res://res/splashes/intro.mp4");
+                }
+                catch (Exception ex)
+                {
+                    GD.Print($"Splash: VideoStream load skipped: {ex.Message}");
+                }
+            }
+
             if (VideoPlayer != null && VideoPlayer.Stream != null)
             {
                 VideoPlayer.Play();
@@ -39,7 +52,7 @@ namespace HeroArena
             }
             else
             {
-                // Video stream not yet imported: show title immediately and proceed.
+                // Video stream not available: show title immediately and proceed.
                 TitleLabel.Modulate = new Color(1f, 1f, 1f, 1f);
                 SubtitleLabel.Modulate = new Color(1f, 1f, 1f, 1f);
                 CallDeferred(MethodName.GoToMainMenu);
@@ -63,7 +76,6 @@ namespace HeroArena
 
         private void Skip()
         {
-            _done = true;
             _fadeTween?.Kill();
             VideoPlayer?.Stop();
             GoToMainMenu();

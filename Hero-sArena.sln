@@ -1,0 +1,33 @@
+
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Hero-sArena", "Hero-sArena.csproj", "{74CEDF32-092C-4ECF-B78D-5351C1404E3F}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{878ECDCF-3508-41B7-BC06-536E13D9641B}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HeroArena.Tests", "tests/HeroArena.Tests/HeroArena.Tests.csproj", "{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{74CEDF32-092C-4ECF-B78D-5351C1404E3F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{74CEDF32-092C-4ECF-B78D-5351C1404E3F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{74CEDF32-092C-4ECF-B78D-5351C1404E3F}.Release|Any CPU.ActiveCfg = Debug|Any CPU
+		{74CEDF32-092C-4ECF-B78D-5351C1404E3F}.Release|Any CPU.Build.0 = Debug|Any CPU
+		{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{52DDF04A-A2AE-48C3-B8B3-88E8C4C4F189} = {878ECDCF-3508-41B7-BC06-536E13D9641B}
+	EndGlobalSection
+EndGlobal

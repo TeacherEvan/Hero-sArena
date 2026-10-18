@@ -3,7 +3,7 @@
 Project conventions for autonomous agents working on Hero's Arena (Godot 4.3 + C#).
 
 ## Stack & local toolchain (read first — easy to get wrong)
-- Engine: Godot 4.3. Language: C# / .NET 8 (`TargetFramework=net8.0`, `Nullable=enable`). SDK: `Godot.NET.Sdk/4.3.0`. Single csproj (`Hero-sArena.csproj`), no `.sln`. Root namespace `HeroArena`.
+- Engine: Godot 4.3. Language: C# / .NET 8 (`TargetFramework=net8.0`, `Nullable=enable`). SDK: `Godot.NET.Sdk/4.3.0`. Single csproj (`Hero-sArena.csproj`) and `Hero-sArena.sln` (required by Godot mono export plugin). Root namespace `HeroArena`.
 - **`dotnet` on PATH is .NET 10 (broken snap shim) and `~/.dotnet` is also v10 — never use either.** Prefix every dotnet command with `DOTNET_ROOT=~/.dotnet8` (.NET 8 SDK at `~/.dotnet8`).
 - **Godot:** use `~/.local/bin/godot-mono` (C#-enabled mono build). The standard/non-mono Godot cannot load `.cs` scripts — never use it to run or test.
 - `Hero-sArena.csproj` sets `GenerateAssemblyInfo=false` and `GenerateTargetFrameworkAttribute=false` because `Godot.NET.Sdk` supplies both. Do NOT re-enable — incremental builds duplicate them (CS0579).

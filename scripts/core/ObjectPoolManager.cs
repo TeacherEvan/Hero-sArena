@@ -49,17 +49,14 @@ namespace HeroArena
 
         public override void _Ready()
         {
-            if (ProjectileScene == null || DecalScene == null || DestructibleScene == null)
+            ProjectileScene ??= GD.Load<PackedScene>("res://scenes/projectiles/Projectile.tscn");
+            DecalScene ??= GD.Load<PackedScene>("res://scenes/vfx/Decal.tscn");
+            DestructibleScene ??= GD.Load<PackedScene>("res://scenes/maps/Destructible.tscn");
+
+            if (ProjectileScene == null || DecalScene == null)
             {
-                // In a real project DestructibleScene would also be checked, but to avoid
-                // breaking existing scenes that don't have it assigned, we'll just skip
-                // allocation if it's null, or warn. We'll throw only if Projectile/Decal are null.
-                if (ProjectileScene == null || DecalScene == null)
-                {
-                    throw new InvalidOperationException(
-                        "ObjectPoolManager: ProjectileScene/DecalScene not assigned. " +
-                        "Wire them in project.godot or the scene that instantiates this autoload.");
-                }
+                throw new InvalidOperationException(
+                    "ObjectPoolManager: ProjectileScene/DecalScene not assigned and fallback load failed.");
             }
 
             PreAllocateProjectiles();

@@ -1,7 +1,6 @@
-[gd_scene load_steps=4 format=3 uid="uid://splash"]
+[gd_scene load_steps=2 format=3 uid="uid://splash"]
 
 [ext_resource type="Script" path="res://scripts/ui/Splash.cs" id="1"]
-[ext_resource type="VideoStream" path="res://res/splashes/intro.mp4" id="2"]
 
 [node name="Splash" type="Control" node_paths=PackedStringArray("VideoPlayer", "TitleLabel", "SubtitleLabel")]
 anchor_left = 0.0
@@ -14,7 +13,6 @@ TitleLabel = NodePath("TitleLabel")
 SubtitleLabel = NodePath("SubtitleLabel")
 
 [node name="VideoPlayer" type="VideoStreamPlayer" parent="."]
-stream = ExtResource("2")
 autoplay = true
 
 [node name="TitleLabel" type="Label" parent="."]

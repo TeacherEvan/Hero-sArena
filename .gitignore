@@ -8,7 +8,7 @@
 # C# / .NET
 bin/
 obj/
-*.sln
+# *.sln tracked for Godot export plugin C# remaps
 *.slnx
 .vs/
 *.user
