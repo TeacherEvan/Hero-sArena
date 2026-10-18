@@ -168,6 +168,7 @@ namespace HeroArena
             for (int i = 0; i < count; i++)
             {
                 int idx = FindFreeShard();
+                if (idx < 0) continue; // pool full; drop this shard instead of corrupting an active one
                 ref var s = ref _shardStates[idx];
                 s = DebrisShardState.FromPlan(_plan[i], pos.X, pos.Y);
                 _shardTints[idx] = ShardTint(i);
@@ -191,10 +192,9 @@ namespace HeroArena
             {
                 if (_shardStates[i].Life <= 0f) return i;
             }
-            // All busy (rare with 64 slots): recycle round-robin.
-            int idx = _overflowCursor % ShardPoolSize;
-            _overflowCursor++;
-            return idx;
+            // Pool exhausted: return -1 and let the caller skip spawning rather
+            // than silently overwriting an active shard (audit P2-1 / R3).
+            return -1;
         }
 
         private void SpawnRing(Vector2 pos, float radius)

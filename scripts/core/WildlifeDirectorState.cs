@@ -400,7 +400,9 @@ namespace HeroArena
                 if (dx * dx + dy * dy >= HeroSpawnClearance * HeroSpawnClearance)
                     return (x, y);
             }
-            return (_arenaCx + _arenaHalfW, _arenaCy + _arenaHalfH);
+            // Fallback (all 8 clearance attempts failed): centre of the clamped
+            // arena, always inside EdgeMargin (audit P3-1 / R4).
+            return ((minX + maxX) * 0.5f, (minY + maxY) * 0.5f);
         }
 
         private void UpdateFade(ref Critter c, float dt)

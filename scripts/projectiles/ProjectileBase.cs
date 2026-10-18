@@ -40,6 +40,9 @@ namespace HeroArena
         public void Activate(ProjectileData data, int poolIndex)
         {
             GlobalPosition = data.Position;
+            // Godot 4 returns Vector2.Zero (not NaN) for Vector2.Zero.Normalized()
+            // (evidenced by AuditRegressionTests.ZeroDirection_Normalized_Premise),
+            // so no NaN guard is required; direction is used as-is.
             Direction = data.Direction.Normalized();
             Speed = data.Speed;
             Damage = data.Damage;
@@ -86,6 +89,18 @@ namespace HeroArena
             // Reset per-shot state so a reused projectile doesn't carry the
             // previous shot's PiercingCount. (Audit finding F-51.)
             PiercingCount = 0;
+        }
+
+        /// <summary>Preloads every per-type projectile texture at boot so the first
+        /// activation of each <see cref="DamageType"/> performs no synchronous GD.Load.</summary>
+        public static void PreloadTextures()
+        {
+            if (_texturesLoaded) return;
+            foreach (var kvp in ProjectileSprites.Paths)
+            {
+                _textures[kvp.Key] = GD.Load<Texture2D>(kvp.Value);
+            }
+            _texturesLoaded = true;
         }
 
         public override void _PhysicsProcess(double delta)

@@ -48,6 +48,11 @@ namespace HeroArena
         private readonly WildlifeDirectorState.SpeciesProfile[] _species =
             new WildlifeDirectorState.SpeciesProfile[2];
 
+        // Per-species cached tints (computed once at _Ready). Render() mutates
+        // alpha on stack copies only — zero per-frame Color allocations. (Audit P1-1 / R2)
+        private readonly Color[] _speciesAccent = new Color[2];
+        private readonly Color[] _speciesBodyTint = new Color[2];
+
         private BiomeAtmosphereState.BiomeProfile _profile;
         private float _windScale = 1f;
         private float _time;
@@ -65,6 +70,14 @@ namespace HeroArena
             _windScale = _profile.WindScale;
             _species[0] = _profile.PrimaryCritter;
             _species[1] = _profile.SecondaryCritter;
+
+            // Cache per-species tints once; Render mutates alpha on stack copies.
+            for (int s = 0; s < 2; s++)
+            {
+                var sp = _species[s];
+                _speciesAccent[s] = new Color(sp.AccentR, sp.AccentG, sp.AccentB);
+                _speciesBodyTint[s] = BodyColor.Lerp(_speciesAccent[s], 0.15f + 0.3f * sp.Glow01);
+            }
 
             var (center, halfExtents) = SceneAnchors.ResolveArena(this);
             GlobalPosition = center;
@@ -181,8 +194,9 @@ namespace HeroArena
                     continue;
                 }
 
-                var spec = _species[c.Species == 1 ? 1 : 0];
-                var accent = new Color(spec.AccentR, spec.AccentG, spec.AccentB);
+                int speciesIdx = c.Species == 1 ? 1 : 0;
+                var spec = _species[speciesIdx];
+                var accent = _speciesAccent[speciesIdx];
 
                 // Air species bob gently; ground skitters keep their back to the floor.
                 float bob = spec.Height01 * MathF.Sin(_time * 2.6f + c.Phase) * 5f;
@@ -192,8 +206,9 @@ namespace HeroArena
                 // Silhouette: darker when the species carries a bright glow,
                 // leaning toward the accent so it never reads as a grey blob.
                 float bodyAlpha = c.Fade * (0.62f - 0.22f * spec.Glow01);
-                var bodyTint = BodyColor.Lerp(accent, 0.15f + 0.3f * spec.Glow01);
-                body.Modulate = new Color(bodyTint.R, bodyTint.G, bodyTint.B, bodyAlpha);
+                var bodyTint = _speciesBodyTint[speciesIdx];
+                bodyTint.A = bodyAlpha;
+                body.Modulate = bodyTint;
                 body.Scale = grounded
                     ? new Vector2(spec.Size * 1.5f, spec.Size * 0.85f)
                     : new Vector2(spec.Size * 1.15f, spec.Size * 1.15f);
@@ -214,7 +229,9 @@ namespace HeroArena
                 if (glowVisible)
                 {
                     float glowScale = spec.Size * (grounded ? 2.6f : 3.8f) * (0.9f + 0.25f * flash);
-                    glow.Modulate = new Color(accent.R, accent.G, accent.B, glowAlpha);
+                    var glowMod = accent;
+                    glowMod.A = glowAlpha;
+                    glow.Modulate = glowMod;
                     glow.Scale = Vector2.One * glowScale;
                     glow.GlobalPosition = pos;
                 }

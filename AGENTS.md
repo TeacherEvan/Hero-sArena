@@ -28,6 +28,8 @@ All dotnet commands need `DOTNET_ROOT=~/.dotnet8`.
 - Do NOT add new tests on Godot `Node` types via `RuntimeHelpers.GetUninitializedObject` — that bypass is deprecated. Extract pure logic or add `[Trait("Category","GodotRuntime")]` and grow the Godot gate.
 - Residual deprecated bypass fixtures exist in `HeroBaseTests`, `FlowFieldPathfinderTests`, `EventBusTests`, `EnemyMutatorSystemTests` — they pass headlessly; do not extend them, remove them as each suite is extracted.
 - `[Trait("Category","GodotRuntime")]` is a no-op kept for git history; no xUnit suite carries it anymore. CI still passes `--filter "Category!=GodotRuntime"` harmlessly.
+- Node-dependent coverage (e.g. `ProjectileBase` : Area2D, `DestructionDrama`/`AmbientWildlife` : Node2D, `ObjectPoolManager` : Node) belongs in the Godot headless gate (`tests/GodotTests/CoreSystemTests.tscn`), not in xUnit via deprecated bypasses. Grow that gate when adding behavior to `Node` subclasses; keep xUnit for pure `scripts/core/` logic only.
+- `Godot.Vector2.Zero.Normalized()` returns `Vector2.Zero` (not `NaN`) in Godot 4 — do not invent a zero-direction `Normalize` guard; it is not a defect here (evidenced by `tests/HeroArena.Tests/Systems/AuditRegressionTests.cs`).
 
 ## Quality gates
 - Must FAIL on any `TODO|FIXME` in `scripts/*.cs`:
@@ -45,4 +47,6 @@ All dotnet commands need `DOTNET_ROOT=~/.dotnet8`.
 ## Known gotchas
 - CI has never run (GitHub account locked, billing; issue #23). Verify locally with `dotnet build` + `dotnet test` + the Godot gate scene (see Testing) + `dotnet roslynator analyze`.
 - Pool pre-warm is order-sensitive: pooled nodes must be deactivated BEFORE `AddChild` (`ObjectPoolManager`) and `ProjectileBase.Deactivate()` must keep parking its `CollisionShape2D` + `Monitoring`/`Monitorable`. Misordering re-creates the super-linear (hours) boot stall (fixed in `2cd98dd`).
+- Pool exhaustion contract: `ObjectPoolManager.GetProjectile()` returns `null` when all `MAX_PROJECTILES` (5000) are active; callers must null-check before `Activate`. Exhaustion is effectively unreachable in normal play but the contract is documented.
+- Per-frame allocation rule: zero `new Color`/`new Vector2`/object-literal allocations inside `_Process`/`_Render` loops (60–120 Hz). Cache per-entity tints/values at spawn and mutate alpha only each frame; per-frame GC churn can blow the 16.67ms (60Hz) / 8.33ms (120Hz) frame budget.
 - Intermittent: a single unexplained `dotnet test` failure has occurred on the very first run right after a fresh build, with no failing test name and no reproduction on re-run (likely a cold-start MSBuild/test-host race). Re-run before investigating.

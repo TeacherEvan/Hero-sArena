@@ -96,6 +96,10 @@ namespace HeroArena
                 _projectiles[i] = p;
                 _freeProjectiles[_freeProjectileTop++] = i;
             }
+            // Boot-time texture preload: every per-type projectile texture is
+            // resident before any projectile activates, eliminating the first-shot
+            // GD.Load hitch (audit P3-2 / R5).
+            ProjectileBase.PreloadTextures();
         }
 
         private void PreAllocateDecals()
@@ -133,6 +137,9 @@ namespace HeroArena
         }
 
         // ── Projectile API ────────────────────────────────────────────────────
+        /// <summary>Checks out a projectile from the pool. Returns <c>null</c> when the
+        /// projectile pool is exhausted (<see cref="MAX_PROJECTILES"/> all active); callers
+        /// must null-check before activating (audit P3-3 / R6).</summary>
         public ProjectileBase? GetProjectile(ProjectileData data)
         {
             RequireReady();
