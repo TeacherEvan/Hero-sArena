@@ -33,6 +33,9 @@ namespace HeroArena
 
         // ── Subsystems ────────────────────────────────────────────────────────
         protected InputBuffer _inputBuffer = null!;
+        protected CharacterJuiceState _juice = new();
+        protected Sprite2D? _sprite;
+        private Vector2 _baseSpriteScale = Vector2.One;
 
         /// <summary>When true, <see cref="TakeDamage"/> ignores all incoming damage (used by god mode / i-frame effects).</summary>
         public bool Invulnerable { get; set; }
@@ -49,6 +52,9 @@ namespace HeroArena
             CurrentHealth = MaxHealth;
             _inputBuffer = new InputBuffer();
             AddChild(_inputBuffer);
+            _sprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+            if (_sprite != null)
+                _baseSpriteScale = _sprite.Scale;
             OnReady();
         }
 
@@ -64,6 +70,28 @@ namespace HeroArena
             if (_dodgeCooldown > 0f) _dodgeCooldown -= dt;
             if (_dodgeTimer > 0f) _dodgeTimer -= dt;
             if (_dodgeTimer <= 0f) _isDodging = false;
+
+            UpdateJuice(dt);
+        }
+
+        private void UpdateJuice(float dt)
+        {
+            if (_sprite == null || !IsInstanceValid(_sprite)) return;
+
+            bool isMoving = Velocity.LengthSquared() > 10f;
+            float speedRatio = MoveSpeed > 0f ? Velocity.Length() / MoveSpeed : 0f;
+            _juice.Update(dt, isMoving, speedRatio);
+
+            // Aim rotation: face crosshair
+            if (_aimDirection != Vector2.Zero)
+                _sprite.Rotation = _aimDirection.Angle() + _juice.TiltAngle;
+
+            // Apply squash, stretch, and walk-bob deformation
+            var scale = _baseSpriteScale;
+            scale.X *= _juice.ScaleX;
+            scale.Y *= _juice.ScaleY;
+            _sprite.Scale = scale;
+            _sprite.Position = new Vector2(0f, _juice.WalkBob);
         }
 
         // ── Input ──────────────────────────────────────────────────────────────
@@ -104,6 +132,7 @@ namespace HeroArena
             if (Invulnerable) return; // god mode / invulnerability
             if (_isDodging) return; // i-frames during dodge
             CurrentHealth -= amount;
+            _juice.ApplyImpactFlinch();
             EventBus.Instance.EmitHeroDamaged(amount);
             if (CurrentHealth <= 0f) Die();
         }
@@ -153,6 +182,7 @@ namespace HeroArena
             _dodgeTimer = duration;
             _dodgeCooldown = cooldown;
             DodgeCooldownTotal = cooldown;
+            _juice.ApplyDashStretch();
         }
     }
 }

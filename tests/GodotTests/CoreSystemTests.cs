@@ -687,9 +687,34 @@ namespace HeroArena.Tests
                     node.QueueFree();
                     throw new Exception($"Scene {path} has AtlasTexture with null Atlas!");
                 }
+
+                // Verify character textures are 256x256 high-resolution assets
+                if (path.StartsWith("res://scenes/heroes/") || path.StartsWith("res://scenes/enemies/"))
+                {
+                    int w = sprite.Texture.GetWidth();
+                    int h = sprite.Texture.GetHeight();
+                    if (w != 256 || h != 256)
+                    {
+                        node.QueueFree();
+                        throw new Exception($"Scene {path} texture size expected 256x256, got {w}x{h}");
+                    }
+
+                    // Check that Sprite2D scale aligns with CollisionShape2D radius (200px visual body base)
+                    var col = node.GetNodeOrNull<CollisionShape2D>("CollisionShape2D");
+                    if (col?.Shape is CircleShape2D circle)
+                    {
+                        float expectedScale = (circle.Radius * 2f) / 200f;
+                        if (Mathf.Abs(sprite.Scale.X - expectedScale) > 0.05f)
+                        {
+                            node.QueueFree();
+                            throw new Exception($"Scene {path} scale {sprite.Scale.X:F3} does not align with CollisionShape radius {circle.Radius} (expected ~{expectedScale:F3})");
+                        }
+                    }
+                }
+
                 node.QueueFree();
             }
-            GD.Print($"  Verified {scenes.Length} scenes have valid, non-null textures.");
+            GD.Print($"  Verified {scenes.Length} scenes have valid, non-null textures with normalized scales.");
         }
     }
 }

@@ -71,6 +71,9 @@ namespace HeroArena
         public bool IsMindControlled => _mindControl.IsControlled;
 
         private Vector2 _lastGridPos;
+        protected CharacterJuiceState _juice = new();
+        protected Sprite2D? _sprite;
+        private Vector2 _baseSpriteScale = Vector2.One;
 
         public override void _Ready()
         {
@@ -91,6 +94,9 @@ namespace HeroArena
             _lastGridPos = GlobalPosition;
 
             _hero = gm.ActiveHero;
+            _sprite = GetNodeOrNull<Sprite2D>("Sprite2D");
+            if (_sprite != null)
+                _baseSpriteScale = _sprite.Scale;
             OnSpawn();
         }
 
@@ -175,6 +181,34 @@ namespace HeroArena
                 GameManager.Instance?.SpatialGrid?.Update(_entityId, GlobalPosition, 16f);
                 _lastGridPos = GlobalPosition;
             }
+
+            UpdateJuice(dt);
+        }
+
+        private void UpdateJuice(float dt)
+        {
+            if (_sprite == null || !IsInstanceValid(_sprite)) return;
+
+            bool isMoving = Velocity.LengthSquared() > 10f;
+            float speedRatio = MoveSpeed > 0f ? Velocity.Length() / MoveSpeed : 0f;
+            _juice.Update(dt, isMoving, speedRatio);
+
+            // Facing direction: align with movement velocity or hero target
+            Vector2 faceDir = Velocity.LengthSquared() > 10f
+                ? Velocity
+                : (_hero != null && IsInstanceValid(_hero) ? _hero.GlobalPosition - GlobalPosition : Vector2.Zero);
+
+            if (faceDir != Vector2.Zero)
+            {
+                float targetAngle = faceDir.Angle();
+                _sprite.Rotation = Mathf.LerpAngle(_sprite.Rotation, targetAngle + _juice.TiltAngle, Math.Min(1f, dt * 14f));
+            }
+
+            var scale = _baseSpriteScale;
+            scale.X *= _juice.ScaleX;
+            scale.Y *= _juice.ScaleY;
+            _sprite.Scale = scale;
+            _sprite.Position = new Vector2(0f, _juice.WalkBob);
         }
 
         protected abstract void UpdateAI();
@@ -265,6 +299,7 @@ namespace HeroArena
                 ShieldCharges--;
                 return;
             }
+            _juice.ApplyImpactFlinch();
             ApplyHealth(CurrentHealth - amount);
             EventBus.Instance?.EmitDamageNumber(GlobalPosition, amount, type, false);
         }
