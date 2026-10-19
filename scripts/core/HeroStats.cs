@@ -28,6 +28,14 @@ namespace HeroArena
         public float EnergyDamageMult { get; set; } = 1f;
         public float KineticDamageMult { get; set; } = 1f;
 
+        // ── Weapon-system perks ──
+        public float ReloadSpeedMult    { get; set; } = 1f;   // <1 = faster reload
+        public int   AmmoCapacityBonus  { get; set; } = 0;    // extra magazine rounds
+        public float CritDamageMult     { get; set; } = 1f;   // critical hit multiplier
+        public bool  HealOnKill         { get; set; } = false;// heal on enemy kill
+        public float KnockbackForce     { get; set; } = 0f;   // projectile knockback
+        public bool  ProjectileRicochet { get; set; } = false;// bullets bounce once
+
         /// <summary>Restores all stats to their default values.</summary>
         public void ResetToDefaults()
         {
@@ -51,6 +59,14 @@ namespace HeroArena
             DodgeCharges = 1;
             EnergyDamageMult = 1f;
             KineticDamageMult = 1f;
+
+            // Weapon-system perks
+            ReloadSpeedMult = 1f;
+            AmmoCapacityBonus = 0;
+            CritDamageMult = 1f;
+            HealOnKill = false;
+            KnockbackForce = 0f;
+            ProjectileRicochet = false;
         }
     }
 }

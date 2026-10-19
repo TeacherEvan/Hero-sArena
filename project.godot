@@ -21,6 +21,10 @@ config/icon="res://icon.svg"
 EventBus="*res://scripts/core/EventBus.cs"
 GameManager="*res://scripts/core/GameManager.cs"
 ObjectPoolManager="*res://scripts/core/ObjectPoolManager.cs"
+LocalCoopInputManager="*res://scripts/core/LocalCoopInputManager.cs"
+RespawnManager="*res://scripts/core/RespawnManager.cs"
+MultiTargetCamera="*res://scripts/core/MultiTargetCamera.cs"
+LeaderboardService="*res://scripts/core/LeaderboardService.cs"
 
 [display]
 

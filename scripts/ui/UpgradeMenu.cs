@@ -60,7 +60,7 @@ namespace HeroArena
                 ? hero.CurrentHealth / hero.MaxHealth
                 : 1f;
 
-            PerkSystem.ApplyPerk(perk, hero.Stats);
+            hero.AddPerk(perk);
 
             if (perk == PerkType.MaxHealthUp)
                 hero.SetCurrentHealth(hero.MaxHealth * healthRatio);

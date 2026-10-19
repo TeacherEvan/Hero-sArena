@@ -67,7 +67,11 @@ namespace HeroArena
                 VisualTheme.StyleStatLabel(label);
         }
 
-        public void Open() => Visible = true;
+        public void Open()
+        {
+            Refresh();
+            Visible = true;
+        }
 
         private void Close()
         {
@@ -101,14 +105,18 @@ namespace HeroArena
                 var lifetimePlay = SettingsState.ParseInt(
                     cfg.GetValue(section, SettingsState.ConfigKeyLifetimePlaySeconds).AsString(), 0);
 
-                LifetimeKillsLabel.Text = lifetimeKills.ToString("N0");
+                var gmInstance = GameManager.Instance;
+                var scrap = gmInstance?.MetaProgression.Scrap ?? 0;
+                LifetimeKillsLabel.Text = $"Lifetime Kills: {lifetimeKills:N0}  |  Scrap: {scrap:N0}";
                 LifetimeScoreLabel.Text = lifetimeScore.ToString("N0");
                 LifetimeWavesLabel.Text = lifetimeWaves.ToString("N0");
                 LifetimePlayTimeLabel.Text = FormatTime(lifetimePlay);
             }
             else
             {
-                LifetimeKillsLabel.Text = "0";
+                var gmInstance = GameManager.Instance;
+                var scrap = gmInstance?.MetaProgression.Scrap ?? 0;
+                LifetimeKillsLabel.Text = $"Lifetime Kills: 0  |  Scrap: {scrap:N0}";
                 LifetimeScoreLabel.Text = "0";
                 LifetimeWavesLabel.Text = "0";
                 LifetimePlayTimeLabel.Text = "0m 0s";

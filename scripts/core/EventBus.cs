@@ -41,6 +41,14 @@ namespace HeroArena
         // ── Game Over ─────────────────────────────────────────────────────────
         public event Action? OnGameOver;
 
+        // ── Co-op ─────────────────────────────────────────────────────────────
+        // Shared-screen co-op (Crimsonland-style). OnPlayerDied carries the
+        // 0-based player index; RespawnManager handles the respawn schedule.
+        // GameManager gates game-over behind LivesManager.IsEveryoneOut().
+        public event Action<int>? OnPlayerDied;
+        public event Action<int>? OnPlayerRespawned;
+        public event Action<int, int>? OnLivesChanged;
+
         // ── Wave warning ──────────────────────────────────────────────────────
         // Emitted during the inter-wave breather so the HUD can show a
         // "Wave N incoming" banner before enemies spawn. isBoss flags a boss
@@ -72,6 +80,9 @@ namespace HeroArena
         public void EmitDecalRequested(Vector2 pos, DecalType type, float size) => OnDecalRequested?.Invoke(pos, type, size);
         public void EmitDamageNumber(Vector2 pos, float amount, DamageType type, bool isCritical = false) => OnDamageNumber?.Invoke(pos, amount, type, isCritical);
         public void EmitWaveIncoming(int wave, bool isBoss) => OnWaveIncoming?.Invoke(wave, isBoss);
+        public void EmitPlayerDied(int playerIndex) => OnPlayerDied?.Invoke(playerIndex);
+        public void EmitPlayerRespawned(int playerIndex) => OnPlayerRespawned?.Invoke(playerIndex);
+        public void EmitLivesChanged(int playerIndex, int lives) => OnLivesChanged?.Invoke(playerIndex, lives);
         public void EmitGameOver() => OnGameOver?.Invoke();
     }
 }
