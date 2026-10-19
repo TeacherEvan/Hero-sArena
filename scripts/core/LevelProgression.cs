@@ -8,7 +8,10 @@ namespace HeroArena
         DamageUp, SpeedUp, HealthRegen, MaxHealthUp, AttackSpeedUp,
         PiercingShots, ExplosiveRounds, LifeSteal, ShieldBurst, DodgeCooldownReduce,
         CritChanceUp, AoERadiusUp, ProjectileCount, SlowOnHit, BurnOnHit,
-        FrostAura, ThornArmor, DoubleJump, EnergyDamageUp, KineticDamageUp
+        FrostAura, ThornArmor, DoubleJump, EnergyDamageUp, KineticDamageUp,
+        ReloadSpeedUp, AmmoUp, CritDamageUp, HealOnKill, Knockback,
+        Ricochet, LifeStealUp, MaxHealthPlus, SpeedPlus, DamagePlus,
+        RegenPlus, ShieldPlus
     }
 
     /// <summary>

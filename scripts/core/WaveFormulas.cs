@@ -37,7 +37,9 @@ namespace HeroArena
         /// </summary>
         public static int CalculateWaveEnemyCount(int wave, int activeEnemyCount, float enemyCountMultiplier = 1f)
         {
-            int count = MinWaveEnemies + (int)(WeibullIntensity(wave) * IntensityScaleFactor * enemyCountMultiplier);
+            // Weibull surge + sustained late-game escalation past wave 10
+            int escalation = (int)(Math.Max(0, wave - 10) * 2.5f);
+            int count = MinWaveEnemies + (int)((WeibullIntensity(wave) * IntensityScaleFactor + escalation) * enemyCountMultiplier);
             int max = Math.Max(0, MaxEnemies - activeEnemyCount);
             // Never return a negative count: an over-full arena yields 0, so the
             // caller's spawn loop runs zero times and _pendingEnemiesToSpawn can

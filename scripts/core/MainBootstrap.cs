@@ -88,6 +88,10 @@ namespace HeroArena
 
         public override void _Process(double delta)
         {
+            // When MultiTargetCamera (co-op) is active it owns camera follow;
+            // the single-hero follow below only runs for single-player.
+            if (MultiTargetCamera.Instance != null) return;
+
             var hero = GameManager.Instance?.ActiveHero;
             if (hero == null || !IsInstanceValid(hero) || _camera == null || !IsInstanceValid(_camera)) return;
             // Smooth camera follow so the hero never walks out of view.
@@ -209,6 +213,8 @@ namespace HeroArena
                 return;
             }
             var hero = scene.Instantiate<HeroBase>();
+            gm.MetaProgression.ApplyToHeroStats(hero.Stats);
+            hero.SetCurrentHealth(hero.Stats.MaxHealth);
             var parent = GetParent().GetNodeOrNull<Node>("EntitiesLayer") ?? GetParent();
             parent.AddChild(hero);
             hero.GlobalPosition = Vector2.Zero;

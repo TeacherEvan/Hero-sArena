@@ -56,8 +56,23 @@ namespace HeroArena
             DifficultyLabel.Text = difficulty.ToString();
             PlayTimeLabel.Text = FormatTime(runSeconds);
 
-            // Record lifetime stats.
+            // Record lifetime stats and meta scrap reward (R3)
             Dashboard.RecordRunEnd(kills, score, waves, runSeconds);
+            var gm = GameManager.Instance;
+            if (gm != null)
+            {
+                int earnedScrap = MetaProgressionState.CalculateRunScrap(waves, kills, gm.DestructionCount);
+                gm.MetaProgression.Scrap += earnedScrap;
+                gm.SaveMetaProgression();
+
+                // Submit to leaderboards (Crimsonland: global + friends + co-op).
+                bool isCoop = gm.ActiveHero != null && gm.ActiveHero.PlayerInput != null
+                    && LocalCoopInputManager.Instance?.PlayerCount > 1;
+                int playerCount = isCoop ? LocalCoopInputManager.Instance?.PlayerCount ?? 1 : 1;
+                LeaderboardService.Instance?.SubmitScore(
+                    score, waves, kills, gm.DestructionCount, gm.CurrentDifficulty,
+                    isCoop, playerCount);
+            }
 
             Visible = true;
             SetProcessInput(true);

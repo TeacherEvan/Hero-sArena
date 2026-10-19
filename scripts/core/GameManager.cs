@@ -32,7 +32,11 @@ namespace HeroArena
         public void SetDifficulty(Difficulty d) => _state.SetDifficulty(d);
 
         /// <summary>Increments the wave counter (single source of truth via GameManagerState).</summary>
-        public void IncrementWave() => _state.IncrementWave();
+        public void IncrementWave()
+        {
+            _state.IncrementWave();
+            CheckAchievements();
+        }
 
         // ── System references (assigned in _Ready or by scene) ────────────────
         public WaveManager? WaveManager { get; set; }
@@ -41,6 +45,56 @@ namespace HeroArena
         public ObjectPoolManager? PoolManager { get; set; }
         public CollateralKarma? KarmaSystem { get; set; }
         public HeroBase? ActiveHero { get; set; }
+
+        // ── Co-op ─────────────────────────────────────────────────────────────
+        /// <summary>Per-player lives for local co-op (Crimsonland accountability).</summary>
+        public LivesManager Lives { get; } = new(LivesMode.PerPlayer, startingLives: 3, playerCount: 1);
+
+        private Action? _onAllOutHandler;
+        private Action<int, int>? _onLivesChangedHandler;
+
+        // ── Meta-progression (R3) ─────────────────────────────────────────────
+        public readonly MetaProgressionState MetaProgression = new();
+
+        // ── Achievements (Crimsonland-style local achievement system) ────────
+        public readonly AchievementManager Achievements = new();
+        private int _perksTaken;
+        private bool _tookDamage;
+
+        // ── Survival modes (Crimsonland: Survival, Rush, Blitz, Weapon Picker, Nukefism) ─
+        public GameMode CurrentGameMode { get; private set; } = GameMode.Survival;
+        public GameModeRules CurrentGameModeRules { get; private set; } = GameModeRules.SurvivalRules();
+        private float _rushTimer;
+        private int _blitzKillsAtModeStart;
+
+        /// <summary>Select the survival mode for the next run.</summary>
+        public void SetGameMode(GameMode mode)
+        {
+            CurrentGameMode = mode;
+            CurrentGameModeRules = mode switch
+            {
+                GameMode.Rush => GameModeRules.RushRules(RushTimeLimitSeconds),
+                GameMode.Blitz => GameModeRules.BlitzRules(BlitzKillTarget),
+                GameMode.WeaponPicker => GameModeRules.WeaponPickerRules(),
+                GameMode.Nukefism => GameModeRules.NukefismRules(),
+                _ => GameModeRules.SurvivalRules(),
+            };
+        }
+
+        // Rush time limit (seconds). Persisted like difficulty.
+        public int RushTimeLimitSeconds { get; set; } = 180;
+        // Blitz kill target.
+        public int BlitzKillTarget { get; set; } = 100;
+
+        /// <summary>Snapshot of run stats including mode info for leaderboards.</summary>
+        public RunStats GetRunStats() => new(
+            _state.KillCount,
+            _state.CurrentWave,
+            _state.DestructionCount,
+            _perksTaken,
+            0, // HighestChapterCleared
+            0, // QuestsCompleted
+            _tookDamage);
 
         // Set by MainMenu.StartGame; consumed by MainMenu.OnSceneChanged after
         // the new scene's _Ready has wired WaveManager/SpatialGrid.
@@ -72,6 +126,17 @@ namespace HeroArena
             Instance = this;
             EventBus.Instance.OnEnemyKilled += HandleEnemyKilled;
             EventBus.Instance.OnEnvironmentDestroyed += HandleEnvironmentDestroyed;
+            EventBus.Instance.OnHeroDamaged += HandleHeroDamaged;
+            EventBus.Instance.OnPerkChosen += HandlePerkChosen;
+
+            // Co-op: game over only when every player is out of lives.
+            _onAllOutHandler = () => TriggerGameOver();
+            _onLivesChangedHandler = (pi, lives) =>
+                EventBus.Instance?.EmitLivesChanged(pi, lives);
+            Lives.OnAllOut += _onAllOutHandler;
+            Lives.OnLivesChanged += _onLivesChangedHandler;
+
+            LoadMetaProgression();
 
             // Assign ObjectPoolManager exports so pooling works
             var pool = GetNodeOrNull<ObjectPoolManager>("/root/ObjectPoolManager");
@@ -90,17 +155,31 @@ namespace HeroArena
         public override void _PhysicsProcess(double delta)
         {
             if (CurrentState != GameState.Playing) return;
+
+            // Rush mode: survive the time limit → mode complete (win).
+            if (CurrentGameMode == GameMode.Rush)
+            {
+                _rushTimer += (float)delta;
+                if (_rushTimer >= RushTimeLimitSeconds)
+                    CompleteMode();
+            }
         }
 
         // ── Public API (each 1:1 over GameManagerState) ───────────────────────
         public void StartGame()
         {
+            _tookDamage = false;
+            _perksTaken = 0;
+            _rushTimer = 0f;
+            _blitzKillsAtModeStart = _state.KillCount;
             _state.StartGame();
             WaveManager?.BeginNextWave();
         }
 
         public void StartTutorial()
         {
+            _tookDamage = false;
+            _perksTaken = 0;
             _state.StartTutorial();
             PendingTutorial = true;
         }
@@ -138,6 +217,16 @@ namespace HeroArena
             EventBus.Instance.EmitGameOver();
         }
 
+        /// <summary>Called when a mode's win condition is met (Rush time limit,
+        /// Blitz kill target). Ends the run as a mode completion rather than a
+        /// death, so the run counts as a cleared survival mode.</summary>
+        public void CompleteMode()
+        {
+            if (CurrentState == GameState.GameOver) return;
+            _state.TryTransition(GameState.GameOver);
+            EventBus.Instance.EmitGameOver();
+        }
+
         public void AddScore(long points)
         {
             _state.AddScore(points);
@@ -152,16 +241,75 @@ namespace HeroArena
                 EventBus.Instance.EmitThreatLevelChanged(level);
         }
 
+        public void SaveMetaProgression()
+        {
+            var cfg = new ConfigFile();
+            if (cfg.Load("user://settings.cfg") != Error.Ok)
+                cfg = new ConfigFile();
+
+            var sec = MetaProgressionState.ConfigSection;
+            cfg.SetValue(sec, MetaProgressionState.ScrapKey, MetaProgression.Scrap);
+            cfg.SetValue(sec, MetaProgressionState.HealthTierKey, MetaProgression.HealthUpgradeTier);
+            cfg.SetValue(sec, MetaProgressionState.SpeedTierKey, MetaProgression.SpeedUpgradeTier);
+            cfg.SetValue(sec, MetaProgressionState.DamageTierKey, MetaProgression.DamageUpgradeTier);
+
+            string path = "user://settings.cfg";
+            string tmp = path + ".tmp";
+            cfg.Save(tmp);
+            System.IO.File.Move(ProjectSettings.GlobalizePath(tmp), ProjectSettings.GlobalizePath(path), overwrite: true);
+        }
+
+        private void LoadMetaProgression()
+        {
+            var cfg = new ConfigFile();
+            if (cfg.Load("user://settings.cfg") != Error.Ok) return;
+
+            var sec = MetaProgressionState.ConfigSection;
+            MetaProgression.Scrap = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.ScrapKey).AsString(), 0);
+            MetaProgression.HealthUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.HealthTierKey).AsString(), 0);
+            MetaProgression.SpeedUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.SpeedTierKey).AsString(), 0);
+            MetaProgression.DamageUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.DamageTierKey).AsString(), 0);
+        }
+
         // ── Private helpers ───────────────────────────────────────────────────
         private void HandleEnemyKilled(EnemyBase enemy)
         {
             _state.RecordEnemyKill(enemy.ExpValue);
+
+            // Heal on Kill perk.
+            var hero = ActiveHero;
+            if (hero != null && hero.Stats.HealOnKill)
+                hero.Heal(5f);
+
+            // Blitz mode: reach kill target as fast as possible → mode complete (win).
+            if (CurrentGameMode == GameMode.Blitz)
+            {
+                int killsThisRun = _state.KillCount - _blitzKillsAtModeStart;
+                if (killsThisRun >= BlitzKillTarget)
+                    CompleteMode();
+            }
+
+            // Check kill/wave/destruction achievements after every kill.
+            CheckAchievements();
         }
+
+        private void HandleHeroDamaged(float _) => _tookDamage = true;
+
+        private void HandlePerkChosen(PerkType _) => _perksTaken++;
 
         private void HandleEnvironmentDestroyed(Vector2 pos, float radius)
         {
             if (_state.RecordEnvironmentDestroyed())
                 EventBus.Instance.EmitThreatLevelChanged(_state.ThreatLevel);
+        }
+
+        /// <summary>Evaluate all achievements against the current run stats and
+        /// surface any newly unlocked ones (the HUD shows a toast for each).</summary>
+        private void CheckAchievements()
+        {
+            var newly = Achievements.Check(GetRunStats());
+            foreach (var id in newly)
+                EventBus.Instance?.EmitPowerupCollected($"Achievement:{id}");
         }
 
         public override void _ExitTree()
@@ -170,7 +318,11 @@ namespace HeroArena
             {
                 EventBus.Instance.OnEnemyKilled -= HandleEnemyKilled;
                 EventBus.Instance.OnEnvironmentDestroyed -= HandleEnvironmentDestroyed;
+                EventBus.Instance.OnHeroDamaged -= HandleHeroDamaged;
+                EventBus.Instance.OnPerkChosen -= HandlePerkChosen;
             }
+            Lives.OnAllOut -= _onAllOutHandler;
+            Lives.OnLivesChanged -= _onLivesChangedHandler;
             if (Instance == this) Instance = null!;
             base._ExitTree();
         }

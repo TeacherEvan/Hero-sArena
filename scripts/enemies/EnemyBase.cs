@@ -51,6 +51,7 @@ namespace HeroArena
 
         private float _aiTimer = 0f;
         private const float AI_INTERVAL = 0.1f; // 10 Hz
+        private static readonly Random _dropRng = new();
 
         // ── Mind control ────────────────────────────────────────────
         // While mind-controlled (Synapse Overclock), the enemy hunts other
@@ -69,6 +70,13 @@ namespace HeroArena
         private const float MIND_CONTROL_HUNT_RADIUS = 600f;
 
         public bool IsMindControlled => _mindControl.IsControlled;
+
+        private StatusEffectState _status = new();
+        public bool IsSlowed => _status.IsSlowed;
+        public bool IsBurning => _status.IsBurning;
+
+        public void ApplySlow(float duration, float ratio = 0.30f) => _status.ApplySlow(duration, ratio);
+        public void ApplyBurn(float duration, float dps = 5f) => _status.ApplyBurn(duration, dps);
 
         private Vector2 _lastGridPos;
         protected CharacterJuiceState _juice = new();
@@ -169,6 +177,14 @@ namespace HeroArena
 
             if (State != EnemyAIState.Dead)
             {
+                // Status effects tick (burn damage + slow decay)
+                float burnDmg = _status.Update(dt);
+                if (burnDmg > 0f)
+                {
+                    ApplyHealth(CurrentHealth - burnDmg);
+                    EventBus.Instance?.EmitDamageNumber(GlobalPosition, burnDmg, DamageType.Energy, false);
+                }
+
                 if (IsMindControlled)
                     MoveMindControlled(dt);
                 else
@@ -221,7 +237,13 @@ namespace HeroArena
                 ? flow.GetFlowDirection(GlobalPosition)
                 : (_hero.GlobalPosition - GlobalPosition).Normalized();
 
-            Velocity = dir * MoveSpeed;
+            float speedMult = _status.GetSpeedMultiplier();
+            if (_hero.Stats.FrostAura && HeroCombatMechanics.IsInFrostAura(DistanceSquaredToHero(), true))
+            {
+                speedMult = MathF.Min(speedMult, 1f - HeroCombatMechanics.FROST_AURA_SLOW_RATIO);
+            }
+
+            Velocity = dir * (MoveSpeed * speedMult);
             MoveAndSlide();
         }
 
@@ -323,7 +345,43 @@ namespace HeroArena
             State = EnemyAIState.Dead;
             GameManager.Instance?.SpatialGrid?.Remove(_entityId);
             EventBus.Instance?.EmitEnemyKilled(this);
+            TryDropWeapon();
             QueueFree();
+        }
+
+        /// <summary>Apply an instantaneous knockback impulse (used by the
+        /// level-up ring and explosive weapons). Applied to Velocity so the
+        /// next MoveAndSlide carries the enemy away.</summary>
+        public void ApplyKnockback(Vector2 direction, float force)
+        {
+            Velocity = direction * force;
+        }
+
+        /// <summary>Crimsonland weapon drop: enemies occasionally drop a
+        /// weapon pickup on the ground. The hero walks over it to equip
+        /// (one weapon at a time; re-equipping tops off ammo).</summary>
+        private void TryDropWeapon()
+        {
+            var gm = GameManager.Instance;
+            if (gm == null) return;
+            // Weapon Picker / Nukefism: no weapon pickups drop.
+            if (gm.CurrentGameModeRules.WeaponPickupsDisabled) return;
+            if (_dropRng.NextDouble() > 0.06) return; // 6% drop chance per kill
+
+            var candidates = new List<WeaponId>
+            {
+                WeaponId.SubmachineGun, WeaponId.Shotgun, WeaponId.AssaultRifle,
+                WeaponId.SniperRifle, WeaponId.PlasmaRifle, WeaponId.Railgun,
+                WeaponId.GrenadeLauncher, WeaponId.Minigun
+            };
+            WeaponId drop = candidates[_dropRng.Next(candidates.Count)];
+
+            var pickupScene = GD.Load<PackedScene>("res://scenes/items/PickupItem.tscn");
+            if (pickupScene == null) return;
+            var pickup = pickupScene.Instantiate<PickupItem>();
+            pickup.Weapon = drop;
+            pickup.GlobalPosition = GlobalPosition;
+            GetTree().CurrentScene?.AddChild(pickup);
         }
 
         protected float DistanceSquaredToHero()

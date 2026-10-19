@@ -28,6 +28,18 @@ public class WaveFormulasTests
     }
 
     [Fact]
+    public void LateWaves_EscalateSustainably()
+    {
+        // Wave 25 count should be higher than Wave 20 and Wave 15 due to sustained escalation
+        int w15 = WaveFormulas.CalculateWaveEnemyCount(15, activeEnemyCount: 0);
+        int w20 = WaveFormulas.CalculateWaveEnemyCount(20, activeEnemyCount: 0);
+        int w25 = WaveFormulas.CalculateWaveEnemyCount(25, activeEnemyCount: 0);
+
+        w20.Should().BeGreaterThanOrEqualTo(w15);
+        w25.Should().BeGreaterThan(w20);
+    }
+
+    [Fact]
     public void NeverBelowMinimum_EvenForWaveZero()
     {
         // Weibull intensity is 0 at wave 0, so the floor must hold.

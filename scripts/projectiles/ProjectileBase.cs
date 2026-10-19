@@ -116,10 +116,32 @@ namespace HeroArena
         {
             if (!IsActive) return;
 
+            var hero = GameManager.Instance?.ActiveHero;
+
             if (body is EnemyBase enemy)
             {
                 enemy.TakeDamage(Damage, DamageType);
                 EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType);
+
+                // On-hit status effects (R2)
+                if (hero != null)
+                {
+                    if (hero.Stats.SlowOnHit)
+                        enemy.ApplySlow(2.5f, 0.30f);
+                    if (hero.Stats.BurnOnHit)
+                        enemy.ApplyBurn(3.0f, 5.0f);
+
+                    // Life steal (R2)
+                    float heal = HeroCombatMechanics.CalculateLifeSteal(Damage, hero.Stats.LifeStealPct);
+                    if (heal > 0f)
+                        hero.Heal(heal);
+                }
+
+                // Explosive rounds AoE (R2)
+                if (hero != null && hero.Stats.ProjectileExplosive)
+                {
+                    TriggerExplosion(hero);
+                }
 
                 if (PiercingCount > 0)
                 {
@@ -128,9 +150,9 @@ namespace HeroArena
                 }
                 OnHit(body);
             }
-            else if (body is HeroBase hero)
+            else if (body is HeroBase targetHero)
             {
-                hero.TakeDamage(Damage, DamageType);
+                targetHero.TakeDamage(Damage, DamageType);
                 EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType);
                 OnHit(body);
             }
@@ -138,8 +160,31 @@ namespace HeroArena
             {
                 dest.TakeDamage(Damage);
                 EventBus.Instance.EmitProjectileHit(GlobalPosition, DamageType);
+                if (hero != null && hero.Stats.ProjectileExplosive)
+                {
+                    TriggerExplosion(hero);
+                }
                 OnHit(body);
             }
+        }
+
+        private void TriggerExplosion(HeroBase hero)
+        {
+            var grid = GameManager.Instance?.SpatialGrid;
+            if (grid == null) return;
+
+            float expDmg = Damage * HeroCombatMechanics.EXPLOSIVE_ROUNDS_DAMAGE_RATIO;
+            float radius = HeroCombatMechanics.EXPLOSIVE_ROUNDS_RADIUS * hero.Stats.AoeRadiusMult;
+            int[] hits = grid.QueryRadius(GlobalPosition, radius, out int count, out bool _);
+            for (int i = 0; i < count; i++)
+            {
+                if (EnemyBase.TryGetById(hits[i], out var splashEnemy) && splashEnemy != null
+                    && splashEnemy.State != EnemyAIState.Dead)
+                {
+                    splashEnemy.TakeDamage(expDmg, DamageType.Energy);
+                }
+            }
+            EventBus.Instance.EmitDecalRequested(GlobalPosition, DecalType.ScorchMark, radius);
         }
 
         private void OnHit(Node? _)
