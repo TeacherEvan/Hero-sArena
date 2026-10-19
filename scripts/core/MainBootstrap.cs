@@ -42,11 +42,25 @@ namespace HeroArena
             EnsureEnvironment(gm);
             SpawnHero(gm);
             _camera = GetParent().GetNodeOrNull<Camera2D>("Camera");
-            // Direct boot (run/main_scene) has no menu to call StartGame; the
-            // menu sets PendingStartAfterSceneChange and starts it later, so
-            // only auto-start when nobody else will. Exactly one path fires.
-            if (!gm.PendingStartAfterSceneChange && gm.CurrentState == GameState.MainMenu)
+            // Start the run exactly once after the scene is wired.
+            // - Menu-driven boot: MainMenu sets PendingStartAfterSceneChange and
+            //   changes scene; MainBootstrap owns starting the run here (a
+            //   CallDeferred on the freed MainMenu node would be dropped).
+            // - Direct boot (run/main_scene): PendingStartAfterSceneChange is false
+            //   and state is MainMenu, so we auto-start here instead.
+            // Exactly one path fires: StartGame transitions MainMenu→Playing and
+            // kicks off WaveManager, so it must not be called twice.
+            if (gm.PendingStartAfterSceneChange)
+            {
+                gm.PendingStartAfterSceneChange = false;
+                if (!gm.PendingTutorial)
+                    gm.StartGame();
+                gm.PendingTutorial = false;
+            }
+            else if (gm.CurrentState == GameState.MainMenu)
+            {
                 gm.StartGame();
+            }
 
             // Tutorial handoff (R1): MainMenu set PendingTutorial + called
             // GameManager.StartTutorial() before the scene change. Spawn the

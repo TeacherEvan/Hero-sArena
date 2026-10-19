@@ -265,10 +265,10 @@ namespace HeroArena
             if (cfg.Load("user://settings.cfg") != Error.Ok) return;
 
             var sec = MetaProgressionState.ConfigSection;
-            MetaProgression.Scrap = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.ScrapKey).AsString(), 0);
-            MetaProgression.HealthUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.HealthTierKey).AsString(), 0);
-            MetaProgression.SpeedUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.SpeedTierKey).AsString(), 0);
-            MetaProgression.DamageUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.DamageTierKey).AsString(), 0);
+            MetaProgression.Scrap = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.ScrapKey, 0).AsString(), 0);
+            MetaProgression.HealthUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.HealthTierKey, 0).AsString(), 0);
+            MetaProgression.SpeedUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.SpeedTierKey, 0).AsString(), 0);
+            MetaProgression.DamageUpgradeTier = MetaProgressionState.ParseInt(cfg.GetValue(sec, MetaProgressionState.DamageTierKey, 0).AsString(), 0);
         }
 
         // ── Private helpers ───────────────────────────────────────────────────
