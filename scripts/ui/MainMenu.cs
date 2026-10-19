@@ -124,15 +124,15 @@ namespace HeroArena
         private void StartGame()
         {
             if (GameScene == null) return;
-            // Defer the actual StartGame() until after the new scene is mounted and
-            // its WaveManager / SpatialGrid are reachable. ChangeSceneToPacked runs on
-            // the next frame; CallDeferred puts us one frame later still, which is
-            // when the new scene's _Ready has fired and GameManager.WaveManager
-            // (assigned by the scene) is non-null.
+            // Flag the run so MainBootstrap (which lives in Main.tscn and survives
+            // the scene change) can start it after wiring WaveManager/SpatialGrid.
+            // We deliberately do NOT CallDeferred(OnSceneChanged) here: the
+            // MainMenu node is freed by ChangeSceneToPacked, so a deferred call on
+            // it would be dropped and the run would never start (no waves, no
+            // enemies). MainBootstrap is the single owner of starting the run.
             GameManager.Instance.PendingStartAfterSceneChange = true;
             GameManager.Instance.PendingHeroClass = _selectedHero;
             GetTree().ChangeSceneToPacked(GameScene);
-            CallDeferred(MethodName.OnSceneChanged);
         }
 
         private void StartTutorial()
@@ -142,26 +142,6 @@ namespace HeroArena
             GameManager.Instance.PendingTutorial = true;
             GameManager.Instance.StartTutorial(); // sets state = Tutorial on the autoload
             GetTree().ChangeSceneToPacked(GameScene);
-            CallDeferred(MethodName.OnSceneChanged);
-        }
-
-        // CallDeferred target: Godot invokes script methods on the node
-        // instance, so it must remain non-static even though it reads no
-        // instance state (CA1822 exception, documented in lieu of static).
-        [System.Diagnostics.CodeAnalysis.SuppressMessage(
-            "Style", "CA1822:Mark members as static",
-            Justification = "CallDeferred dispatch target; Godot bridges instance methods only")]
-        private void OnSceneChanged()
-        {
-            if (GameManager.Instance.PendingStartAfterSceneChange)
-            {
-                GameManager.Instance.PendingStartAfterSceneChange = false;
-                // StartTutorial() already called GameManager.StartTutorial() before
-                // the scene change; StartGame() would override to Playing, so skip it.
-                if (!GameManager.Instance.PendingTutorial)
-                    GameManager.Instance.StartGame();
-                GameManager.Instance.PendingTutorial = false;
-            }
         }
 
         private void OpenSettings()
