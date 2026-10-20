@@ -38,11 +38,12 @@ namespace HeroArena
 
             var container = GetNodeOrNull<Control>("Container");
             if (container != null) VisualTheme.StylePanel(container);
-            VisualTheme.StyleButtonPrimary(ResumeButton);
-            VisualTheme.StyleButton(RestartButton);
-            VisualTheme.StyleButton(SettingsButton);
-            VisualTheme.StyleButton(MainMenuButton);
-            VisualTheme.StyleButtonDanger(QuitButton);
+            VisualTheme.StyleButtonTactilePrimary(ResumeButton);
+            VisualTheme.StyleButtonTactile(RestartButton);
+            VisualTheme.StyleButtonTactile(SettingsButton);
+            VisualTheme.StyleButtonTactile(MainMenuButton);
+            VisualTheme.StyleButtonTactileDanger(QuitButton);
+            VisualTheme.StyleButtonFocus(ResumeButton);
 
             // Style title.
             var title = GetNodeOrNull<Label>("Container/TitleLabel");

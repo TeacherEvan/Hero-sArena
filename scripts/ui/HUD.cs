@@ -130,8 +130,8 @@ namespace HeroArena
 
             _dodgeCooldownLabel = new Label { Text = "DODGE [SPACE]: READY" };
             _abilityCooldownLabel = new Label { Text = "ABILITY [E]: READY" };
-            VisualTheme.StyleLabel(_dodgeCooldownLabel, VisualTheme.Cyan);
-            VisualTheme.StyleLabel(_abilityCooldownLabel, VisualTheme.Gold);
+            VisualTheme.StyleLabelTabular(_dodgeCooldownLabel, VisualTheme.Cyan);
+            VisualTheme.StyleLabelTabular(_abilityCooldownLabel, VisualTheme.Gold);
             _dodgeCooldownLabel.AddThemeFontSizeOverride("font_size", 16);
             _abilityCooldownLabel.AddThemeFontSizeOverride("font_size", 16);
 
@@ -294,17 +294,17 @@ namespace HeroArena
             VisualTheme.StylePanel(GetNode<VBoxContainer>("VBoxContainer"));
             VisualTheme.StylePanel(PowerupList);
 
-            VisualTheme.StyleLabel(LevelLabel, VisualTheme.Gold);
-            VisualTheme.StyleLabel(WaveLabel, VisualTheme.Gold);
-            VisualTheme.StyleLabel(ScoreLabel, VisualTheme.Text);
-            VisualTheme.StyleLabel(EnemyCountLabel, VisualTheme.Text);
-            VisualTheme.StyleLabel(ThreatLabel, VisualTheme.Text);
+            VisualTheme.StyleLabelTabular(LevelLabel, VisualTheme.Gold);
+            VisualTheme.StyleLabelTabular(WaveLabel, VisualTheme.Gold);
+            VisualTheme.StyleLabelTabular(ScoreLabel, VisualTheme.Text);
+            VisualTheme.StyleLabelTabular(EnemyCountLabel, VisualTheme.Text);
+            VisualTheme.StyleLabelTabular(ThreatLabel, VisualTheme.Text);
 
-            VisualTheme.StyleProgressBar(HealthBar, VisualTheme.Gold);
-            VisualTheme.StyleProgressBar(XpBar, VisualTheme.Cyan);
+            VisualTheme.StyleProgressBarTactile(HealthBar, VisualTheme.Gold);
+            VisualTheme.StyleProgressBarTactile(XpBar, VisualTheme.Cyan);
 
             for (int i = 0; i < _powerupLabels.Length; i++)
-                VisualTheme.StyleLabel(_powerupLabels[i], VisualTheme.TextMuted);
+                VisualTheme.StyleLabelTabular(_powerupLabels[i], VisualTheme.TextMuted);
         }
 
         public override void _ExitTree()

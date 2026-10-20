@@ -31,7 +31,8 @@ namespace HeroArena
             _sessionStartTime = Time.GetUnixTimeFromSystem();
             BackButton.Pressed += () => { Close(); OnBack?.Invoke(); };
             VisualTheme.StylePanel(this);
-            VisualTheme.StyleButton(BackButton);
+            VisualTheme.StyleButtonTactile(BackButton);
+            VisualTheme.StyleButtonFocus(BackButton);
 
             // Style section headers.
             var sectionSession = GetNodeOrNull<Label>("Container/SectionSession");

@@ -58,13 +58,13 @@ namespace HeroArena
             if (sectionDifficulty != null) VisualTheme.StyleSectionHeader(sectionDifficulty);
 
             // Style buttons: difficulty as primary when selected, plain otherwise.
-            VisualTheme.StyleButton(EasyButton);
-            VisualTheme.StyleButton(NormalButton);
-            VisualTheme.StyleButton(HardButton);
-            VisualTheme.StyleButton(BackButton);
-            VisualTheme.StyleSliderValue(MasterValueLabel);
-            VisualTheme.StyleSliderValue(SfxValueLabel);
-            VisualTheme.StyleSliderValue(MusicValueLabel);
+            VisualTheme.StyleButtonTactile(EasyButton);
+            VisualTheme.StyleButtonTactile(NormalButton);
+            VisualTheme.StyleButtonTactile(HardButton);
+            VisualTheme.StyleButtonTactile(BackButton);
+            VisualTheme.StyleSliderValueTactile(MasterValueLabel);
+            VisualTheme.StyleSliderValueTactile(SfxValueLabel);
+            VisualTheme.StyleSliderValueTactile(MusicValueLabel);
 
             RefreshDifficultyButtons();
             RefreshVolumeLabels();
@@ -179,9 +179,9 @@ namespace HeroArena
             var current = GameManager.Instance?.CurrentDifficulty ?? Difficulty.Normal;
 
             // Base style for all three, then gold-highlight the selected one.
-            VisualTheme.StyleButton(EasyButton);
-            VisualTheme.StyleButton(NormalButton);
-            VisualTheme.StyleButton(HardButton);
+            VisualTheme.StyleButtonTactile(EasyButton);
+            VisualTheme.StyleButtonTactile(NormalButton);
+            VisualTheme.StyleButtonTactile(HardButton);
 
             if (current == Difficulty.Easy)
                 HighlightDifficultyButton(EasyButton);

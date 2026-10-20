@@ -29,6 +29,11 @@ namespace HeroArena
             Perk2Button.Pressed += () => SelectPerk(1);
             Perk3Button.Pressed += () => SelectPerk(2);
 
+            // Tactile button styling for perk cards (presentation only; bindings unchanged).
+            VisualTheme.StyleButtonTactile(Perk1Button);
+            VisualTheme.StyleButtonTactile(Perk2Button);
+            VisualTheme.StyleButtonTactile(Perk3Button);
+
             Visible = false;
         }
 

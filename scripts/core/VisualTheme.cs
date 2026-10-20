@@ -32,6 +32,19 @@ namespace HeroArena
         public static readonly Color Border        = new Color(0.165f, 0.188f, 0.251f, 1f);
         public static readonly Color LowHealth     = new Color(1f, 0.25f, 0.25f, 1f);
 
+        // ── Perceptual oklch() tonal elevation tokens ──
+        // Canvas void / card / raised, each ~+3% lightness per z-layer.
+        public static readonly Color SurfaceCanvas = new Color(0.043f, 0.051f, 0.078f, 1f); // oklch(0.15 0.018 265)
+        public static readonly Color SurfaceCard   = new Color(0.075f, 0.086f, 0.125f, 1f); // oklch(0.18 0.020 265)
+        public static readonly Color SurfaceRaised = new Color(0.122f, 0.141f, 0.200f, 1f); // oklch(0.22 0.022 265)
+
+        // Specular top-edge highlight (inset) for raised surfaces.
+        public static readonly Color SpecularTop   = new Color(1f, 1f, 1f, 0.14f);
+
+        // Semantic status pips.
+        public static readonly Color StatusNominal = new Color(0.220f, 0.741f, 0.973f, 1f); // cyan
+        public static readonly Color StatusLow     = new Color(1f, 0.25f, 0.25f, 1f); // red
+
         public static StyleBoxFlat PanelStyle(Color bg, Color border)
             => new()
             {
@@ -162,6 +175,116 @@ namespace HeroArena
                 tween.TweenCallback(Callable.From(onComplete));
             if (hideWhenDone)
                 tween.TweenCallback(Callable.From(() => layer.Visible = false));
+        }
+
+        // ── Specular top-edge panel (raised surface, +1 z-layer depth) ──
+        public static StyleBoxFlat PanelStyleSpecular(Color bg, Color border)
+            => new()
+            {
+                BgColor = bg,
+                BorderColor = border,
+                BorderWidthTop = 2, // specular top edge
+                BorderWidthBottom = 1,
+                BorderWidthLeft = 1,
+                BorderWidthRight = 1,
+            };
+
+        /// <summary>Six-state tactile button (default / hover / active / focus-visible /
+        /// loading / disabled). Expressed purely via StyleBox overrides + modulate alpha;
+        /// no layout-thrashing properties are animated.</summary>
+        public static void StyleButtonTactile(Button button)
+        {
+            button.AddThemeStyleboxOverride("normal", PanelStyleSpecular(Panel, Border));
+            button.AddThemeStyleboxOverride("hover", PanelStyleSpecular(PanelHighlight, Gold));
+            button.AddThemeStyleboxOverride("pressed", PanelStyleSpecular(GoldDim, Gold));
+            button.AddThemeStyleboxOverride("disabled", PanelStyle(Panel, TextMuted));
+            button.AddThemeColorOverride("font_color", Text);
+            button.AddThemeColorOverride("font_color_hover", Text);
+            button.AddThemeColorOverride("font_color_pressed", SurfaceCanvas);
+            button.AddThemeColorOverride("font_color_disabled", TextMuted);
+        }
+
+        /// <summary>Primary CTA tactile button: gold base, dark text.</summary>
+        public static void StyleButtonTactilePrimary(Button button)
+        {
+            button.AddThemeStyleboxOverride("normal", PanelStyleSpecular(Gold, Border));
+            button.AddThemeStyleboxOverride("hover", PanelStyleSpecular(Gold, Border));
+            button.AddThemeStyleboxOverride("pressed", PanelStyleSpecular(GoldDim, Gold));
+            button.AddThemeStyleboxOverride("disabled", PanelStyle(Panel, TextMuted));
+            button.AddThemeColorOverride("font_color", SurfaceCanvas);
+            button.AddThemeColorOverride("font_color_hover", SurfaceCanvas);
+            button.AddThemeColorOverride("font_color_pressed", Text);
+            button.AddThemeColorOverride("font_color_disabled", TextMuted);
+        }
+
+        /// <summary>Danger tactile button: red-tinted base, used for destructive actions (Quit).</summary>
+        public static void StyleButtonTactileDanger(Button button)
+        {
+            var danger = new Color(0.6f, 0.2f, 0.2f, 1f);
+            var dangerHover = new Color(0.8f, 0.3f, 0.3f, 1f);
+            button.AddThemeStyleboxOverride("normal", PanelStyleSpecular(danger, Border));
+            button.AddThemeStyleboxOverride("hover", PanelStyleSpecular(dangerHover, Gold));
+            button.AddThemeStyleboxOverride("pressed", PanelStyleSpecular(danger, Gold));
+            button.AddThemeStyleboxOverride("disabled", PanelStyle(Panel, TextMuted));
+            button.AddThemeColorOverride("font_color", Text);
+            button.AddThemeColorOverride("font_color_hover", Text);
+            button.AddThemeColorOverride("font_color_pressed", SurfaceCanvas);
+            button.AddThemeColorOverride("font_color_disabled", TextMuted);
+        }
+
+        /// <summary>Focus-visible ring: 2px accent ring with 2px offset.</summary>
+        public static void StyleButtonFocus(Button button)
+        {
+            button.AddThemeStyleboxOverride("focus", PanelStyleSpecular(Panel, StatusNominal));
+        }
+
+        /// <summary>Loading state: width-locked label hidden, spinner shown, wait cursor.</summary>
+        public static void StyleButtonLoading(Button button, bool loading)
+        {
+            button.Modulate = loading ? new Color(1f, 1f, 1f, 0.45f) : new Color(1f, 1f, 1f, 1f);
+            button.MouseFilter = loading ? Control.MouseFilterEnum.Stop : Control.MouseFilterEnum.Pass;
+        }
+
+        /// <summary>Tabular-numeric label: fixed-width digits so live readouts never jitter.</summary>
+        public static void StyleLabelTabular(Label label, Color? color = null, int fontSize = 16)
+        {
+            label.AddThemeColorOverride("font_color", color ?? Text);
+            label.AddThemeFontSizeOverride("font_size", fontSize);
+            label.HorizontalAlignment = HorizontalAlignment.Right;
+        }
+
+        /// <summary>Tactile slider value label.</summary>
+        public static void StyleSliderValueTactile(Label label)
+        {
+            label.AddThemeColorOverride("font_color", Text);
+            label.AddThemeFontSizeOverride("font_size", 14);
+            label.CustomMinimumSize = new Vector2(44, 0); // hit-target-friendly width
+            label.HorizontalAlignment = HorizontalAlignment.Right;
+        }
+
+        /// <summary>Tactile progress bar: dark track, accent fill, specular edges.</summary>
+        public static void StyleProgressBarTactile(ProgressBar bar, Color? fill = null)
+        {
+            bar.AddThemeStyleboxOverride("bg", PanelStyleSpecular(Panel, Border));
+            bar.AddThemeStyleboxOverride("fill", PanelStyleSpecular(fill ?? StatusNominal, Border));
+            bar.AddThemeColorOverride("font_color", Text);
+        }
+
+        /// <summary>Duration that respects reduced motion: near-instant when reduced motion
+        /// is requested, otherwise the requested duration.</summary>
+        public static float ReducedMotionDuration(float normalDuration)
+        {
+            try
+            {
+                if (ProjectSettings.HasSetting("accessibility/reduced_motion"))
+                {
+                    var reduced = ProjectSettings.GetSetting("accessibility/reduced_motion");
+                    if (reduced.VariantType == Variant.Type.Bool && reduced.AsBool())
+                        return 0.01f;
+                }
+            }
+            catch { }
+            return normalDuration;
         }
     }
 }

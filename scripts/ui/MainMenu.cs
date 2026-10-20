@@ -57,6 +57,25 @@ namespace HeroArena
             NormalButton.Pressed += () => SelectDifficulty(Difficulty.Normal);
             HardButton.Pressed += () => SelectDifficulty(Difficulty.Hard);
             SelectDifficulty(LoadSavedDifficulty());
+
+            // ── Tactile button styling (presentation only; bindings unchanged) ──
+            VisualTheme.StyleButtonTactile(AtlasButton);
+            VisualTheme.StyleButtonTactile(ZephyrButton);
+            VisualTheme.StyleButtonTactile(SynapseButton);
+            VisualTheme.StyleButtonTactile(VoltButton);
+            VisualTheme.StyleButtonTactile(IgnisButton);
+            VisualTheme.StyleButtonTactile(ToxisButton);
+            VisualTheme.StyleButtonTactile(HavocButton);
+            VisualTheme.StyleButtonTactilePrimary(StartButton);   // primary CTA
+            VisualTheme.StyleButtonTactile(OptionsButton);
+            VisualTheme.StyleButtonTactile(QuitButton);
+            VisualTheme.StyleButtonTactile(SandboxButton);
+            VisualTheme.StyleButtonTactile(TutorialButton);
+            VisualTheme.StyleButtonTactile(DashboardButton);
+            VisualTheme.StyleButtonTactile(EasyButton);
+            VisualTheme.StyleButtonTactile(NormalButton);
+            VisualTheme.StyleButtonTactile(HardButton);
+            VisualTheme.StyleButtonFocus(StartButton);
         }
 
         private void SelectHero(HeroClass hero)
