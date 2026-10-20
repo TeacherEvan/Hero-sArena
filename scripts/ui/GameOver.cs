@@ -29,8 +29,9 @@ namespace HeroArena
 
             var container = GetNodeOrNull<Control>("Container");
             if (container != null) VisualTheme.StylePanel(container);
-            VisualTheme.StyleButtonPrimary(RestartButton);
-            VisualTheme.StyleButton(MainMenuButton);
+            VisualTheme.StyleButtonTactilePrimary(RestartButton);
+            VisualTheme.StyleButtonTactile(MainMenuButton);
+            VisualTheme.StyleButtonFocus(RestartButton);
 
             // Style title and stat labels.
             var title = GetNodeOrNull<Label>("Container/TitleLabel");
