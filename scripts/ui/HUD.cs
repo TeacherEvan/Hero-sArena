@@ -23,6 +23,8 @@ namespace HeroArena
 
         private long _lastScore = -1;
         private int _lastEnemyCount = -1;
+        private int _lastHealthValue = -1;
+        private float _lastHealthMax = -1f;
         private float _lastMaxHealth = -1f;
         private bool _lastHealthLow = false;
         // Cooldown label text cached and rebuilt only when the tenths digit
@@ -39,6 +41,7 @@ namespace HeroArena
         private ColorRect _lowHealthVignette = null!;
         private Label _dodgeCooldownLabel = null!;
         private Label _abilityCooldownLabel = null!;
+        private Label _healthLabel = null!;
         private float _waveWarningTimer;
 
         private const float LOW_HEALTH_THRESHOLD = 0.30f;
@@ -167,6 +170,15 @@ namespace HeroArena
                 HealthBar.Value = hero.CurrentHealth;
                 XpBar.Value = hero.Experience;
 
+                // Health read-out: rebuilt only when the number changes.
+                int hp = Mathf.RoundToInt(hero.CurrentHealth);
+                if (hp != _lastHealthValue || !Mathf.IsEqualApprox(hero.MaxHealth, _lastHealthMax))
+                {
+                    _lastHealthValue = hp;
+                    _lastHealthMax = hero.MaxHealth;
+                    _healthLabel.Text = $"Health: {hp}/{Mathf.RoundToInt(hero.MaxHealth)}";
+                }
+
                 // Cooldown indicators (text rebuilt only when the tenths digit
                 // changes — no per-frame string allocation during cooldowns).
                 if (_dodgeCooldownLabel != null)
@@ -291,20 +303,63 @@ namespace HeroArena
 
         private void ApplyTheme()
         {
-            VisualTheme.StylePanel(GetNode<VBoxContainer>("VBoxContainer"));
-            VisualTheme.StylePanel(PowerupList);
+            var statBlock = GetNode<VBoxContainer>("VBoxContainer");
 
-            VisualTheme.StyleLabelTabular(LevelLabel, VisualTheme.Gold);
-            VisualTheme.StyleLabelTabular(WaveLabel, VisualTheme.Gold);
-            VisualTheme.StyleLabelTabular(ScoreLabel, VisualTheme.Text);
-            VisualTheme.StyleLabelTabular(EnemyCountLabel, VisualTheme.Text);
-            VisualTheme.StyleLabelTabular(ThreatLabel, VisualTheme.Text);
+            // The stat block hugs its content (the scene sized it to a fixed
+            // 200px tall box), so the surface behind it is a snug card. It
+            // is inset from the screen edge so the card is not clipped.
+            statBlock.OffsetTop = 14;
+            statBlock.OffsetBottom = 14;
+            VisualTheme.StylePanel(statBlock);
+
+            VisualTheme.StyleLabelTabular(LevelLabel, VisualTheme.Gold, 18);
+            VisualTheme.StyleLabelTabular(WaveLabel, VisualTheme.Gold, 18);
+            VisualTheme.StyleLabelTabular(ScoreLabel, VisualTheme.Text, 16);
+            VisualTheme.StyleLabelTabular(EnemyCountLabel, VisualTheme.Text, 16);
+            VisualTheme.StyleLabelTabular(ThreatLabel, VisualTheme.Text, 16);
+
+            // Stat rows read as rows: a chip plate behind each line, all of
+            // them the same width so the block stays a tidy column.
+            foreach (var row in new[] { LevelLabel, WaveLabel, ScoreLabel, EnemyCountLabel, ThreatLabel })
+            {
+                VisualTheme.StyleChip(row);
+                row.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            }
 
             VisualTheme.StyleProgressBarTactile(HealthBar, VisualTheme.Gold);
             VisualTheme.StyleProgressBarTactile(XpBar, VisualTheme.Cyan);
 
+            // The bars carry no percentage text: the health row below spells
+            // the numbers out (and stays readable on both fills).
+            HealthBar.ShowPercentage = false;
+            XpBar.ShowPercentage = false;
+            HealthBar.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            XpBar.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+
+            // Health read-out row, right under the bars. The value changes
+            // rarely, so the text is only rebuilt when it actually changes.
+            _healthLabel = new Label { Text = "Health: 0/0" };
+            VisualTheme.StyleLabelTabular(_healthLabel, VisualTheme.Text, 16);
+            VisualTheme.StyleChip(_healthLabel);
+            statBlock.AddChild(_healthLabel);
+            statBlock.MoveChild(_healthLabel, 2);
+
+            // Elevated surface behind the stat block (a CanvasLayer child of a
+            // VBox never draws a panel stylebox of its own).
+            VisualTheme.AttachSurface(statBlock, 12);
+
+            // Powerup / achievement toasts live on the right edge: give the
+            // strip enough width that a long toast cannot clip off-screen.
+            PowerupList.OffsetLeft = -340;
+
             for (int i = 0; i < _powerupLabels.Length; i++)
-                VisualTheme.StyleLabelTabular(_powerupLabels[i], VisualTheme.TextMuted);
+            {
+                VisualTheme.StyleLabelTabular(_powerupLabels[i], VisualTheme.TextMuted, 14);
+                _powerupLabels[i].CustomMinimumSize = new Vector2(320, 0);
+                // Right-aligned: the toast strip hugs the right edge, so long
+                // toasts grow leftwards instead of clipping off-screen.
+                _powerupLabels[i].HorizontalAlignment = HorizontalAlignment.Right;
+            }
         }
 
         public override void _ExitTree()

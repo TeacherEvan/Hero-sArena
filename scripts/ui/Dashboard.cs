@@ -30,7 +30,14 @@ namespace HeroArena
         {
             _sessionStartTime = Time.GetUnixTimeFromSystem();
             BackButton.Pressed += () => { Close(); OnBack?.Invoke(); };
-            VisualTheme.StylePanel(this);
+            var container = GetNodeOrNull<Control>("Container");
+            if (container != null)
+            {
+                VisualTheme.StylePanel(container);
+                // Elevated surface behind the dashboard column.
+                VisualTheme.FitColumnHeight(container);
+                VisualTheme.AttachSurface(container, 24);
+            }
             VisualTheme.StyleButtonTactile(BackButton);
             VisualTheme.StyleButtonFocus(BackButton);
 
@@ -40,13 +47,22 @@ namespace HeroArena
             if (sectionSession != null) VisualTheme.StyleSectionHeader(sectionSession);
             if (sectionLifetime != null) VisualTheme.StyleSectionHeader(sectionLifetime);
 
-            // Style stat cards.
+            // Typography: the dashboard title is the headline.
+            var title = GetNodeOrNull<Label>("Container/TitleLabel");
+            if (title != null)
+            {
+                VisualTheme.StyleTitle(title, VisualTheme.Gold, 34);
+                title.HorizontalAlignment = HorizontalAlignment.Center;
+            }
+
+            // Stat cards: the rows carry the chip plates (a VBoxContainer never
+            // draws a panel stylebox, so the card would stay invisible).
             var sessionCard = GetNodeOrNull<Control>("Container/SessionCard");
             var lifetimeCard = GetNodeOrNull<Control>("Container/LifetimeCard");
             if (sessionCard != null) VisualTheme.StyleStatCard(sessionCard);
             if (lifetimeCard != null) VisualTheme.StyleStatCard(lifetimeCard);
 
-            // Style stat values/labels.
+            // Style stat values/labels: each row is a chip plate.
             StyleStatLabel(ScoreLabel, true);
             StyleStatLabel(KillsLabel, true);
             StyleStatLabel(WavesLabel, true);
@@ -63,9 +79,9 @@ namespace HeroArena
         private static void StyleStatLabel(Label label, bool isValue)
         {
             if (isValue)
-                VisualTheme.StyleStatValue(label);
+                VisualTheme.StyleStatRow(label, true);
             else
-                VisualTheme.StyleStatLabel(label);
+                VisualTheme.StyleStatRow(label, false);
         }
 
         public void Open()
@@ -84,14 +100,14 @@ namespace HeroArena
             var gm = GameManager.Instance;
             if (gm != null)
             {
-                ScoreLabel.Text = gm.Score.ToString("N0");
-                KillsLabel.Text = gm.KillCount.ToString("N0");
-                WavesLabel.Text = gm.CurrentWave.ToString("N0");
-                DifficultyLabel.Text = gm.CurrentDifficulty.ToString();
+                ScoreLabel.Text = $"Score: {gm.Score:N0}";
+                KillsLabel.Text = $"Kills: {gm.KillCount:N0}";
+                WavesLabel.Text = $"Waves Survived: {gm.CurrentWave:N0}";
+                DifficultyLabel.Text = $"Difficulty: {gm.CurrentDifficulty}";
             }
 
             var sessionSeconds = Time.GetUnixTimeFromSystem() - _sessionStartTime;
-            PlayTimeLabel.Text = FormatTime(sessionSeconds);
+            PlayTimeLabel.Text = $"Play Time: {FormatTime(sessionSeconds)}";
 
             var cfg = new ConfigFile();
             if (cfg.Load(SettingsPath) == Error.Ok)
@@ -109,18 +125,18 @@ namespace HeroArena
                 var gmInstance = GameManager.Instance;
                 var scrap = gmInstance?.MetaProgression.Scrap ?? 0;
                 LifetimeKillsLabel.Text = $"Lifetime Kills: {lifetimeKills:N0}  |  Scrap: {scrap:N0}";
-                LifetimeScoreLabel.Text = lifetimeScore.ToString("N0");
-                LifetimeWavesLabel.Text = lifetimeWaves.ToString("N0");
-                LifetimePlayTimeLabel.Text = FormatTime(lifetimePlay);
+                LifetimeScoreLabel.Text = $"Lifetime Score: {lifetimeScore:N0}";
+                LifetimeWavesLabel.Text = $"Lifetime Waves: {lifetimeWaves:N0}";
+                LifetimePlayTimeLabel.Text = $"Lifetime Play Time: {FormatTime(lifetimePlay)}";
             }
             else
             {
                 var gmInstance = GameManager.Instance;
                 var scrap = gmInstance?.MetaProgression.Scrap ?? 0;
                 LifetimeKillsLabel.Text = $"Lifetime Kills: 0  |  Scrap: {scrap:N0}";
-                LifetimeScoreLabel.Text = "0";
-                LifetimeWavesLabel.Text = "0";
-                LifetimePlayTimeLabel.Text = "0m 0s";
+                LifetimeScoreLabel.Text = "Lifetime Score: 0";
+                LifetimeWavesLabel.Text = "Lifetime Waves: 0";
+                LifetimePlayTimeLabel.Text = "Lifetime Play Time: 0m 0s";
             }
         }
 

@@ -58,13 +58,44 @@ namespace HeroArena
             if (sectionDifficulty != null) VisualTheme.StyleSectionHeader(sectionDifficulty);
 
             // Style buttons: difficulty as primary when selected, plain otherwise.
-            VisualTheme.StyleButtonTactile(EasyButton);
-            VisualTheme.StyleButtonTactile(NormalButton);
-            VisualTheme.StyleButtonTactile(HardButton);
+            VisualTheme.StyleButtonTactileSegment(EasyButton);
+            VisualTheme.StyleButtonTactileSegment(NormalButton);
+            VisualTheme.StyleButtonTactileSegment(HardButton);
             VisualTheme.StyleButtonTactile(BackButton);
+            foreach (var seg in new[] { EasyButton, NormalButton, HardButton })
+                seg.CustomMinimumSize = new Vector2(100, 32);
             VisualTheme.StyleSliderValueTactile(MasterValueLabel);
             VisualTheme.StyleSliderValueTactile(SfxValueLabel);
             VisualTheme.StyleSliderValueTactile(MusicValueLabel);
+
+            // Sliders: dark track + celestial fill instead of the stock widget.
+            // Expand so the value read-out is pushed to the row's right edge.
+            foreach (var slider in new[] { MasterSlider, SfxSlider, MusicSlider })
+            {
+                VisualTheme.StyleSlider(slider);
+                slider.SizeFlagsHorizontal = Control.SizeFlags.ExpandFill;
+            }
+            VisualTheme.StyleCheckButton(FullscreenToggle);
+            VisualTheme.StyleCheckButton(VSyncToggle);
+
+            // Elevated surface behind the settings column (containers never
+            // draw a panel stylebox of their own).
+            var column = GetNodeOrNull<Control>("Container");
+            if (column != null)
+            {
+                VisualTheme.FitColumnHeight(column);
+                VisualTheme.AttachSurface(column, 24);
+            }
+
+            // The Back button is an action, not a bar: keep it compact and
+            // centred instead of stretching across the whole column.
+            BackButton.CustomMinimumSize = new Vector2(180, 34);
+            BackButton.SizeFlagsHorizontal = Control.SizeFlags.ShrinkCenter;
+
+            // Typography: title is the headline, section headers stay gold.
+            var title = GetNodeOrNull<Label>("Container/TitleLabel");
+            if (title != null)
+                VisualTheme.StyleTitle(title, VisualTheme.Gold, 34);
 
             RefreshDifficultyButtons();
             RefreshVolumeLabels();
@@ -80,14 +111,14 @@ namespace HeroArena
             SetProcessInput(true);
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 1f, 0.2f);
+            _fadeTween.TweenProperty(this, "modulate:a", 1f, VisualTheme.ReducedMotionDuration(0.2f));
         }
 
         private void Close()
         {
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 0f, 0.2f);
+            _fadeTween.TweenProperty(this, "modulate:a", 0f, VisualTheme.ReducedMotionDuration(0.2f));
             _fadeTween.TweenCallback(Callable.From(() =>
             {
                 Visible = false;
@@ -178,10 +209,12 @@ namespace HeroArena
         {
             var current = GameManager.Instance?.CurrentDifficulty ?? Difficulty.Normal;
 
-            // Base style for all three, then gold-highlight the selected one.
-            VisualTheme.StyleButtonTactile(EasyButton);
-            VisualTheme.StyleButtonTactile(NormalButton);
-            VisualTheme.StyleButtonTactile(HardButton);
+            // Segmented control: the selected segment is the pressed one, so it
+            // lights up gold on its own (colour is never the only cue - the
+            // pressed geometry differs too).
+            VisualTheme.StyleButtonTactileSegment(EasyButton);
+            VisualTheme.StyleButtonTactileSegment(NormalButton);
+            VisualTheme.StyleButtonTactileSegment(HardButton);
 
             if (current == Difficulty.Easy)
                 HighlightDifficultyButton(EasyButton);
@@ -198,8 +231,8 @@ namespace HeroArena
         private static void HighlightDifficultyButton(Button button)
         {
             button.AddThemeStyleboxOverride("normal",
-                VisualTheme.PanelStyle(VisualTheme.Gold, VisualTheme.Border));
-            button.AddThemeColorOverride("font_color", VisualTheme.Background);
+                VisualTheme.PanelStyleSpecular(VisualTheme.Gold, new Color(1f, 1f, 1f, 0.30f)));
+            button.AddThemeColorOverride("font_color", VisualTheme.SurfaceCanvas);
         }
 
         private void RefreshVolumeLabels()

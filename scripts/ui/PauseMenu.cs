@@ -37,7 +37,14 @@ namespace HeroArena
             _settingsScene = GD.Load<PackedScene>("res://scenes/ui/Settings.tscn");
 
             var container = GetNodeOrNull<Control>("Container");
-            if (container != null) VisualTheme.StylePanel(container);
+            if (container != null)
+            {
+                VisualTheme.StylePanel(container);
+                // Elevated surface behind the pause column (containers never
+                // draw a panel stylebox of their own).
+                VisualTheme.FitColumnHeight(container);
+                VisualTheme.AttachSurface(container, 24);
+            }
             VisualTheme.StyleButtonTactilePrimary(ResumeButton);
             VisualTheme.StyleButtonTactile(RestartButton);
             VisualTheme.StyleButtonTactile(SettingsButton);
@@ -47,7 +54,11 @@ namespace HeroArena
 
             // Style title.
             var title = GetNodeOrNull<Label>("Container/TitleLabel");
-            if (title != null) VisualTheme.StyleLabel(title);
+            if (title != null)
+            {
+                VisualTheme.StyleTitle(title, VisualTheme.Gold, 34);
+                title.HorizontalAlignment = HorizontalAlignment.Center;
+            }
         }
 
         /// <summary>Toggle pause/resume. Called by MainBootstrap on ESC.</summary>
@@ -74,14 +85,14 @@ namespace HeroArena
             SetProcessInput(true);
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 1f, 0.2f);
+            _fadeTween.TweenProperty(this, "modulate:a", 1f, VisualTheme.ReducedMotionDuration(0.2f));
         }
 
         private void HideMenu()
         {
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 0f, 0.2f);
+            _fadeTween.TweenProperty(this, "modulate:a", 0f, VisualTheme.ReducedMotionDuration(0.2f));
             _fadeTween.TweenCallback(Callable.From(() =>
             {
                 Visible = false;

@@ -16,6 +16,11 @@ run/main_scene="res://scenes/ui/Splash.tscn"
 config/features=PackedStringArray("4.3", "C#", "2D")
 config/icon="res://icon.svg"
 
+[accessibility]
+
+; When true, UI fades collapse to near-instant (see VisualTheme.ReducedMotionDuration).
+reduced_motion=false
+
 [autoload]
 
 EventBus="*res://scripts/core/EventBus.cs"
