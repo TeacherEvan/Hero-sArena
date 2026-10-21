@@ -33,6 +33,29 @@ namespace HeroArena
             VisualTheme.StyleButtonTactile(Perk1Button);
             VisualTheme.StyleButtonTactile(Perk2Button);
             VisualTheme.StyleButtonTactile(Perk3Button);
+            foreach (var perkButton in new[] { Perk1Button, Perk2Button, Perk3Button })
+            {
+                perkButton.AutowrapMode = TextServer.AutowrapMode.WordSmart;
+                perkButton.CustomMinimumSize = new Vector2(0, 150);
+                perkButton.Alignment = HorizontalAlignment.Center;
+            }
+
+            // Elevated surface behind the perk row.
+            var row = GetNodeOrNull<Control>("HBoxContainer");
+            if (row != null)
+            {
+                VisualTheme.AttachSurface(row, 20);
+                // The perk row is the card: keep a clear gap between cards.
+                row.AddThemeConstantOverride("separation", 24);
+            }
+
+            // Title typography.
+            var title = GetNodeOrNull<Label>("Title");
+            if (title != null)
+            {
+                VisualTheme.StyleTitle(title, VisualTheme.Gold, 34);
+                title.HorizontalAlignment = HorizontalAlignment.Center;
+            }
 
             Visible = false;
         }
@@ -40,11 +63,17 @@ namespace HeroArena
         private void ShowMenu()
         {
             _currentPerks = _progression.GetRandomPerks(3);
-            Perk1Button.Text = PerkDisplayName(_currentPerks[0]);
-            Perk2Button.Text = PerkDisplayName(_currentPerks[1]);
-            Perk3Button.Text = PerkDisplayName(_currentPerks[2]);
+            SetPerkCard(Perk1Button, _currentPerks[0]);
+            SetPerkCard(Perk2Button, _currentPerks[1]);
+            SetPerkCard(Perk3Button, _currentPerks[2]);
             Visible = true;
             GameManager.Instance.PauseGame();
+        }
+
+        /// <summary>Perk card content: name plus what the perk actually does.</summary>
+        private static void SetPerkCard(Button button, PerkType perk)
+        {
+            button.Text = $"{PerkDisplayName(perk)}\n{GetPerkDescription(perk)}";
         }
 
         private void SelectPerk(int index)

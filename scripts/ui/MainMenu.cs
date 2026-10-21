@@ -72,10 +72,42 @@ namespace HeroArena
             VisualTheme.StyleButtonTactile(SandboxButton);
             VisualTheme.StyleButtonTactile(TutorialButton);
             VisualTheme.StyleButtonTactile(DashboardButton);
-            VisualTheme.StyleButtonTactile(EasyButton);
-            VisualTheme.StyleButtonTactile(NormalButton);
-            VisualTheme.StyleButtonTactile(HardButton);
             VisualTheme.StyleButtonFocus(StartButton);
+
+            // Difficulty picker: segmented control, the selected segment lights gold.
+            VisualTheme.StyleButtonTactileSegment(EasyButton);
+            VisualTheme.StyleButtonTactileSegment(NormalButton);
+            VisualTheme.StyleButtonTactileSegment(HardButton);
+            foreach (var seg in new[] { EasyButton, NormalButton, HardButton })
+                seg.CustomMinimumSize = new Vector2(72, 30);
+
+            // Elevated surface behind the menu column (containers never draw a
+            // panel stylebox, so the column needs a sibling surface).
+            var column = GetNodeOrNull<Control>("VBoxContainer");
+            if (column != null)
+            {
+                VisualTheme.FitColumnHeight(column);
+                VisualTheme.AttachSurface(column, 26);
+            }
+
+            // Comfortable touch/click target for the menu rows.
+            foreach (var row in new[] { AtlasButton, ZephyrButton, SynapseButton, VoltButton,
+                                        IgnisButton, ToxisButton, HavocButton, StartButton,
+                                        OptionsButton, QuitButton, SandboxButton, TutorialButton,
+                                        DashboardButton })
+                row.CustomMinimumSize = new Vector2(0, 34);
+
+            // Typography: the title is the headline, the blurb is secondary.
+            var title = GetNodeOrNull<Label>("VBoxContainer/Title");
+            if (title != null)
+            {
+                VisualTheme.StyleTitle(title, VisualTheme.Gold, 44);
+                title.HorizontalAlignment = HorizontalAlignment.Center;
+            }
+            VisualTheme.StyleLabelMuted(HeroDescLabel);
+            HeroDescLabel.HorizontalAlignment = HorizontalAlignment.Center;
+            VisualTheme.StyleLabel(DifficultyLabel, VisualTheme.Text);
+            DifficultyLabel.VerticalAlignment = VerticalAlignment.Center;
         }
 
         private void SelectHero(HeroClass hero)

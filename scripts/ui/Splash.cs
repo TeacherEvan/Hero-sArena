@@ -20,8 +20,10 @@ namespace HeroArena
         {
             Visible = true;
 
-            VisualTheme.StyleLabel(TitleLabel, VisualTheme.Gold);
-            VisualTheme.StyleLabelMuted(SubtitleLabel);
+            VisualTheme.StyleTitle(TitleLabel, VisualTheme.Gold, 64);
+            TitleLabel.HorizontalAlignment = HorizontalAlignment.Center;
+            VisualTheme.StyleLabel(SubtitleLabel, VisualTheme.TextMuted);
+            SubtitleLabel.HorizontalAlignment = HorizontalAlignment.Center;
 
             TitleLabel.Modulate = new Color(1f, 1f, 1f, 0f);
             SubtitleLabel.Modulate = new Color(1f, 1f, 1f, 0f);
@@ -47,8 +49,9 @@ namespace HeroArena
                 // Fade the title in once the video is underway.
                 _fadeTween = CreateTween();
                 _fadeTween.TweenInterval(0.6f);
-                _fadeTween.TweenProperty(TitleLabel, "modulate:a", 1f, 0.75f);
-                _fadeTween.TweenProperty(SubtitleLabel, "modulate:a", 1f, 0.75f);
+                var fade = VisualTheme.ReducedMotionDuration(0.75f);
+                _fadeTween.TweenProperty(TitleLabel, "modulate:a", 1f, fade);
+                _fadeTween.TweenProperty(SubtitleLabel, "modulate:a", 1f, fade);
             }
             else
             {

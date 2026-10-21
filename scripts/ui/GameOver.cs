@@ -28,19 +28,29 @@ namespace HeroArena
             SetProcessInput(false);
 
             var container = GetNodeOrNull<Control>("Container");
-            if (container != null) VisualTheme.StylePanel(container);
+            if (container != null)
+            {
+                VisualTheme.StylePanel(container);
+                // Elevated surface behind the summary column.
+                VisualTheme.FitColumnHeight(container);
+                VisualTheme.AttachSurface(container, 24);
+            }
             VisualTheme.StyleButtonTactilePrimary(RestartButton);
             VisualTheme.StyleButtonTactile(MainMenuButton);
             VisualTheme.StyleButtonFocus(RestartButton);
 
             // Style title and stat labels.
             var title = GetNodeOrNull<Label>("Container/TitleLabel");
-            if (title != null) VisualTheme.StyleLabel(title);
-            VisualTheme.StyleStatValue(ScoreLabel);
-            VisualTheme.StyleStatLabel(KillsLabel);
-            VisualTheme.StyleStatLabel(WavesLabel);
-            VisualTheme.StyleStatLabel(DifficultyLabel);
-            VisualTheme.StyleStatLabel(PlayTimeLabel);
+            if (title != null)
+            {
+                VisualTheme.StyleTitle(title, VisualTheme.LowHealth, 40);
+                title.HorizontalAlignment = HorizontalAlignment.Center;
+            }
+            // Stat rows read as rows: a chip plate behind each line, with the
+            // score picked out in the celestial accent.
+            foreach (var stat in new[] { KillsLabel, WavesLabel, DifficultyLabel, PlayTimeLabel })
+                VisualTheme.StyleStatRow(stat);
+            VisualTheme.StyleStatRow(ScoreLabel, true, VisualTheme.Cyan);
 
             RestartButton.Pressed += Restart;
             MainMenuButton.Pressed += ToMainMenu;
@@ -51,11 +61,13 @@ namespace HeroArena
         {
             _runSeconds = runSeconds;
 
-            ScoreLabel.Text = score.ToString("N0");
-            KillsLabel.Text = kills.ToString("N0");
-            WavesLabel.Text = waves.ToString("N0");
-            DifficultyLabel.Text = difficulty.ToString();
-            PlayTimeLabel.Text = FormatTime(runSeconds);
+            // Stat rows keep their "Name: value" caption so the summary is
+            // self-describing (display strings only - no data contract change).
+            ScoreLabel.Text = $"Score: {score:N0}";
+            KillsLabel.Text = $"Kills: {kills:N0}";
+            WavesLabel.Text = $"Waves Survived: {waves:N0}";
+            DifficultyLabel.Text = $"Difficulty: {difficulty}";
+            PlayTimeLabel.Text = $"Play Time: {FormatTime(runSeconds)}";
 
             // Record lifetime stats and meta scrap reward (R3)
             Dashboard.RecordRunEnd(kills, score, waves, runSeconds);
@@ -79,7 +91,7 @@ namespace HeroArena
             SetProcessInput(true);
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 1f, 0.3f);
+            _fadeTween.TweenProperty(this, "modulate:a", 1f, VisualTheme.ReducedMotionDuration(0.3f));
         }
 
         private void Restart()
@@ -103,7 +115,7 @@ namespace HeroArena
         {
             _fadeTween?.Kill();
             _fadeTween = CreateTween();
-            _fadeTween.TweenProperty(this, "modulate:a", 0f, 0.3f);
+            _fadeTween.TweenProperty(this, "modulate:a", 0f, VisualTheme.ReducedMotionDuration(0.3f));
             _fadeTween.TweenCallback(Callable.From(() =>
             {
                 Visible = false;
